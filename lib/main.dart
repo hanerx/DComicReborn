@@ -5,6 +5,7 @@ import 'package:dcomic/providers/config_provider.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_adaptive_ui/flutter_adaptive_ui.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -38,23 +39,25 @@ class App extends StatelessWidget {
           lazy: false,
         )
       ],
-      builder: (context, child) => MaterialApp(
-          title: 'DComic',
-          // theme: ThemeData(
-          //   primarySwatch: Colors.blue,
-          // ),
-          supportedLocales: S.delegate.supportedLocales,
-          localizationsDelegates: const [
-            //此处
-            S.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            DefaultCupertinoLocalizations.delegate,
-            //TODO 这个不知道干嘛的，反正先不用他
-            // ChineseCupertinoLocalizations.delegate,
-          ],
-          themeMode: Provider.of<ConfigProvider>(context).themeMode,
-          home: const MainFramework()),
+      builder: (context, child) => Breakpoint(
+          breakpointData: const BreakpointData(),
+          child: MaterialApp(
+              title: 'DComic',
+              // theme: ThemeData(
+              //   primarySwatch: Colors.blue,
+              // ),
+              supportedLocales: S.delegate.supportedLocales,
+              localizationsDelegates: const [
+                //此处
+                S.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                DefaultCupertinoLocalizations.delegate,
+                //TODO 这个不知道干嘛的，反正先不用他
+                // ChineseCupertinoLocalizations.delegate,
+              ],
+              themeMode: Provider.of<ConfigProvider>(context).themeMode,
+              home: const MainFramework())),
     );
   }
 }
