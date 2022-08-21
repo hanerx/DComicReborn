@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
+import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +37,10 @@ class App extends StatelessWidget {
       providers: [
         ChangeNotifierProvider<ConfigProvider>(
           create: (_) => ConfigProvider(),
+          lazy: false,
+        ),
+        ChangeNotifierProvider<NavigatorProvider>(
+          create: (_) => NavigatorProvider(context),
           lazy: false,
         )
       ],
@@ -72,20 +77,106 @@ class MainFramework extends StatefulWidget {
 class _MainFrameworkState extends State<MainFramework> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(S.of(context).AppName),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[
-            Text(
-              'You have pushed the button this many times:',
+    return AdaptiveBuilder(
+      defaultBuilder: (context, screen) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(S.of(context).AppName),
+          ),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const <Widget>[
+                Text(
+                  'You have pushed the button this many times:',
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
+      layoutDelegate: AdaptiveLayoutDelegateWithMinimallScreenType(
+          handset: (context, screen) => Scaffold(
+                appBar: AppBar(
+                  title: Text(S.of(context).AppName),
+                ),
+                drawer: Navigator(
+                  key: Provider.of<NavigatorProvider>(context).leftNavigator,
+                  initialRoute: '',
+                  onGenerateRoute: (val) => PageRouteBuilder(
+                      pageBuilder: (BuildContext nContext,
+                              Animation<double> animation,
+                              Animation<double> secondaryAnimation) =>
+                          Container(
+                            color: Colors.brown,
+                          )),
+                ),
+              ),
+          tablet: (context, screen) => Scaffold(
+                appBar: AppBar(
+                  title: Text(S.of(context).AppName),
+                ),
+                drawer: Navigator(
+                  key: Provider.of<NavigatorProvider>(context).leftNavigator,
+                  initialRoute: '',
+                  onGenerateRoute: (val) => PageRouteBuilder(
+                      pageBuilder: (BuildContext nContext,
+                              Animation<double> animation,
+                              Animation<double> secondaryAnimation) =>
+                          Container(
+                            color: Colors.brown,
+                          )),
+                ),
+                body: Navigator(
+                  key: Provider.of<NavigatorProvider>(context).largeNavigator,
+                  initialRoute: '',
+                  onGenerateRoute: (val) => PageRouteBuilder(
+                      pageBuilder: (BuildContext nContext,
+                              Animation<double> animation,
+                              Animation<double> secondaryAnimation) =>
+                          Row(
+                            children: [
+                              Expanded(
+                                  child: Container(
+                                color: Colors.white,
+                              )),
+                              Expanded(
+                                  child: Container(
+                                color: Colors.orange,
+                              ))
+                            ],
+                          )),
+                ),
+              ),
+          desktop: (context, screen) => Scaffold(
+                appBar: AppBar(
+                  title: Text(S.of(context).AppName),
+                ),
+                body: Navigator(
+                  key: Provider.of<NavigatorProvider>(context).largeNavigator,
+                  initialRoute: '',
+                  onGenerateRoute: (val) => PageRouteBuilder(
+                      pageBuilder: (BuildContext nContext,
+                          Animation<double> animation,
+                          Animation<double> secondaryAnimation) =>
+                          Row(
+                            children: [
+                              Expanded(
+                                  child: Container(
+                                    color: Colors.brown,
+                                  )),
+                              Expanded(
+                                  child: Container(
+                                    color: Colors.white,
+                                  )),
+                              Expanded(
+                                  child: Container(
+                                    color: Colors.orange,
+                                  ))
+                            ],
+                          )),
+                ),
+              )),
     );
   }
 }
