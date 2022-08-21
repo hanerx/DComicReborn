@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
+import 'package:dcomic/view/homepage/homepage.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -137,9 +138,8 @@ class _MainFrameworkState extends State<MainFramework> {
                           Row(
                             children: [
                               Expanded(
-                                  child: Container(
-                                color: Colors.white,
-                              )),
+                                  child: HomePage(),
+                              ),
                               Expanded(
                                   child: Container(
                                 color: Colors.orange,
@@ -157,22 +157,22 @@ class _MainFrameworkState extends State<MainFramework> {
                   initialRoute: '',
                   onGenerateRoute: (val) => PageRouteBuilder(
                       pageBuilder: (BuildContext nContext,
-                          Animation<double> animation,
-                          Animation<double> secondaryAnimation) =>
+                              Animation<double> animation,
+                              Animation<double> secondaryAnimation) =>
                           Row(
                             children: [
                               Expanded(
                                   child: Container(
-                                    color: Colors.brown,
-                                  )),
+                                color: Colors.brown,
+                              )),
                               Expanded(
                                   child: Container(
-                                    color: Colors.white,
-                                  )),
+                                color: Colors.white,
+                              )),
                               Expanded(
                                   child: Container(
-                                    color: Colors.orange,
-                                  ))
+                                color: Colors.orange,
+                              ))
                             ],
                           )),
                 ),
