@@ -59,6 +59,76 @@ class S {
       args: [],
     );
   }
+
+  /// `DComic 00Q[T]`
+  String get DrawerEmail {
+    return Intl.message(
+      'DComic 00Q[T]',
+      name: 'DrawerEmail',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your Screen Size is not support, please connect author.`
+  String get UnknownScreen {
+    return Intl.message(
+      'Your Screen Size is not support, please connect author.',
+      name: 'UnknownScreen',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Home`
+  String get MainPageHome {
+    return Intl.message(
+      'Home',
+      name: 'MainPageHome',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Category`
+  String get MainPageCategory {
+    return Intl.message(
+      'Category',
+      name: 'MainPageCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Rank`
+  String get MainPageRank {
+    return Intl.message(
+      'Rank',
+      name: 'MainPageRank',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Latest`
+  String get MainPageLatest {
+    return Intl.message(
+      'Latest',
+      name: 'MainPageLatest',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unknown Image Type`
+  String get ImageTypeNotSupport {
+    return Intl.message(
+      'Unknown Image Type',
+      name: 'ImageTypeNotSupport',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

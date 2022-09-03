@@ -22,6 +22,15 @@ class MessageLookup extends MessageLookupByLibrary {
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
-        "AppName": MessageLookupByLibrary.simpleMessage("DComic")
+        "AppName": MessageLookupByLibrary.simpleMessage("DComic"),
+        "DrawerEmail": MessageLookupByLibrary.simpleMessage("DComic 00Q[T]"),
+        "ImageTypeNotSupport":
+            MessageLookupByLibrary.simpleMessage("Unknown Image Type"),
+        "MainPageCategory": MessageLookupByLibrary.simpleMessage("Category"),
+        "MainPageHome": MessageLookupByLibrary.simpleMessage("Home"),
+        "MainPageLatest": MessageLookupByLibrary.simpleMessage("Latest"),
+        "MainPageRank": MessageLookupByLibrary.simpleMessage("Rank"),
+        "UnknownScreen": MessageLookupByLibrary.simpleMessage(
+            "Your Screen Size is not support, please connect author.")
       };
 }
