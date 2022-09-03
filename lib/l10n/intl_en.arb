@@ -1,4 +1,13 @@
 {
   "@@locale" : "en",
-  "AppName": "DComic"
+  "AppName": "DComic",
+  "DrawerEmail": "DComic 00Q[T]",
+  "UnknownScreen": "Your Screen Size is not support, please connect author.",
+
+  "MainPageHome": "Home",
+  "MainPageCategory": "Category",
+  "MainPageRank": "Rank",
+  "MainPageLatest": "Latest",
+
+  "ImageTypeNotSupport": "Unknown Image Type"
 }
