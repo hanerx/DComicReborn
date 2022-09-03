@@ -15,3 +15,7 @@ abstract class BaseComicChapterEntityModel extends BaseModel{
 abstract class BaseComicChapterDetailModel extends BaseModel{
 
 }
+
+abstract class BaseComicHomepageModel extends BaseModel{
+
+}

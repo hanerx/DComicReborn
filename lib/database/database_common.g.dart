@@ -63,6 +63,8 @@ class _$DComicDatabase extends DComicDatabase {
 
   ConfigDao? _configDaoInstance;
 
+  ComicHistoryDao? _comicHistoryDaoInstance;
+
   Future<sqflite.Database> open(String path, List<Migration> migrations,
       [Callback? callback]) async {
     final databaseOptions = sqflite.OpenDatabaseOptions(
@@ -83,6 +85,8 @@ class _$DComicDatabase extends DComicDatabase {
       onCreate: (database, version) async {
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `ConfigEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT)');
+        await database.execute(
+            'CREATE TABLE IF NOT EXISTS `ComicHistoryEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `title` TEXT, `cover` TEXT, `coverType` INTEGER, `lastChapterTitle` TEXT, `lastChapterId` TEXT, `timestamp` INTEGER, `providerName` TEXT)');
 
         await callback?.onCreate?.call(database, version);
       },
@@ -93,6 +97,12 @@ class _$DComicDatabase extends DComicDatabase {
   @override
   ConfigDao get configDao {
     return _configDaoInstance ??= _$ConfigDao(database, changeListener);
+  }
+
+  @override
+  ComicHistoryDao get comicHistoryDao {
+    return _comicHistoryDaoInstance ??=
+        _$ComicHistoryDao(database, changeListener);
   }
 }
 
@@ -154,3 +164,120 @@ class _$ConfigDao extends ConfigDao {
         configEntity, OnConflictStrategy.abort);
   }
 }
+
+class _$ComicHistoryDao extends ComicHistoryDao {
+  _$ComicHistoryDao(this.database, this.changeListener)
+      : _queryAdapter = QueryAdapter(database),
+        _comicHistoryEntityInsertionAdapter = InsertionAdapter(
+            database,
+            'ComicHistoryEntity',
+            (ComicHistoryEntity item) => <String, Object?>{
+                  'id': item.id,
+                  'comicId': item.comicId,
+                  'title': item.title,
+                  'cover': item.cover,
+                  'coverType':
+                      _imageTypeNullableConverter.encode(item.coverType),
+                  'lastChapterTitle': item.lastChapterTitle,
+                  'lastChapterId': item.lastChapterId,
+                  'timestamp':
+                      _dateTimeNullableConverter.encode(item.timestamp),
+                  'providerName': item.providerName
+                }),
+        _comicHistoryEntityUpdateAdapter = UpdateAdapter(
+            database,
+            'ComicHistoryEntity',
+            ['id'],
+            (ComicHistoryEntity item) => <String, Object?>{
+                  'id': item.id,
+                  'comicId': item.comicId,
+                  'title': item.title,
+                  'cover': item.cover,
+                  'coverType':
+                      _imageTypeNullableConverter.encode(item.coverType),
+                  'lastChapterTitle': item.lastChapterTitle,
+                  'lastChapterId': item.lastChapterId,
+                  'timestamp':
+                      _dateTimeNullableConverter.encode(item.timestamp),
+                  'providerName': item.providerName
+                });
+
+  final sqflite.DatabaseExecutor database;
+
+  final StreamController<String> changeListener;
+
+  final QueryAdapter _queryAdapter;
+
+  final InsertionAdapter<ComicHistoryEntity>
+      _comicHistoryEntityInsertionAdapter;
+
+  final UpdateAdapter<ComicHistoryEntity> _comicHistoryEntityUpdateAdapter;
+
+  @override
+  Future<List<ComicHistoryEntity>> getAllComicHistoryEntity() async {
+    return _queryAdapter.queryList('SELECT * FROM ComicHistoryEntity',
+        mapper: (Map<String, Object?> row) => ComicHistoryEntity(
+            row['id'] as int?,
+            row['comicId'] as String,
+            row['title'] as String?,
+            row['cover'] as String?,
+            _imageTypeNullableConverter.decode(row['coverType'] as int?),
+            row['lastChapterTitle'] as String?,
+            row['lastChapterId'] as String?,
+            _dateTimeNullableConverter.decode(row['timestamp'] as int?),
+            row['providerName'] as String?));
+  }
+
+  @override
+  Future<ComicHistoryEntity?> getComicHistoryByComicId(String comicId) async {
+    return _queryAdapter.query(
+        'SELECT * FROM ComicHistoryEntity WHERE comicId= ?1',
+        mapper: (Map<String, Object?> row) => ComicHistoryEntity(
+            row['id'] as int?,
+            row['comicId'] as String,
+            row['title'] as String?,
+            row['cover'] as String?,
+            _imageTypeNullableConverter.decode(row['coverType'] as int?),
+            row['lastChapterTitle'] as String?,
+            row['lastChapterId'] as String?,
+            _dateTimeNullableConverter.decode(row['timestamp'] as int?),
+            row['providerName'] as String?),
+        arguments: [comicId]);
+  }
+
+  @override
+  Future<List<ComicHistoryEntity>> getComicHistoryByProvider(
+      String providerName) async {
+    return _queryAdapter.queryList(
+        'SELECT * FROM ComicHistoryEntity WHERE providerName= ?1',
+        mapper: (Map<String, Object?> row) => ComicHistoryEntity(
+            row['id'] as int?,
+            row['comicId'] as String,
+            row['title'] as String?,
+            row['cover'] as String?,
+            _imageTypeNullableConverter.decode(row['coverType'] as int?),
+            row['lastChapterTitle'] as String?,
+            row['lastChapterId'] as String?,
+            _dateTimeNullableConverter.decode(row['timestamp'] as int?),
+            row['providerName'] as String?),
+        arguments: [providerName]);
+  }
+
+  @override
+  Future<void> insertComicHistory(ComicHistoryEntity comicHistoryEntity) async {
+    await _comicHistoryEntityInsertionAdapter.insert(
+        comicHistoryEntity, OnConflictStrategy.replace);
+  }
+
+  @override
+  Future<void> updateComicHistory(ComicHistoryEntity comicHistoryEntity) async {
+    await _comicHistoryEntityUpdateAdapter.update(
+        comicHistoryEntity, OnConflictStrategy.replace);
+  }
+}
+
+// ignore_for_file: unused_element
+final _dateTimeConverter = DateTimeConverter();
+final _dateTimeNullableConverter = DateTimeNullableConverter();
+final _imageTypeConverter = ImageTypeConverter();
+final _imageTypeNullableConverter = ImageTypeNullableConverter();
