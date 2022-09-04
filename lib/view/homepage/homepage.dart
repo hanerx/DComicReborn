@@ -20,41 +20,76 @@ class _HomePageState extends State<HomePage> {
         onRefresh: () async {
           await Future.delayed(const Duration(seconds: 2));
         },
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            CarouselSlider(
-              options: CarouselOptions(
-                viewportFraction: 1,
-                enableInfiniteScroll: true,
-                autoPlay: true,
-                aspectRatio: 16 / 7,
+        refreshOnStart: true,
+        child:Container(
+          color: Theme.of(context).colorScheme.surfaceVariant,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              CarouselSlider(
+                options: CarouselOptions(
+                  viewportFraction: 1,
+                  enableInfiniteScroll: true,
+                  autoPlay: true,
+                  aspectRatio: 16 / 7,
+                ),
+                items: [
+                  Card(
+                    elevation: 0,
+                    child: DComicImage(ImageEntity(ImageType.network,
+                        "https://www.baidu.com/img/flexible/logo/pc/result.png")),
+                  ),
+                  Card(
+                    elevation: 0,
+                    child: DComicImage(ImageEntity(ImageType.network,
+                        "https://www.baidu.com/img/flexible/logo/pc/result.png")),
+                  ),
+                  Card(
+                    elevation: 0,
+                    child: DComicImage(ImageEntity(ImageType.network,
+                        "https://www.baidu.com/img/flexible/logo/pc/result.png")),
+                  ),
+                ],
               ),
-              items: [
-                Card(
-                  elevation: 0,
-                  color: Theme.of(context).colorScheme.surfaceVariant,
-                  child: DComicImage(ImageEntity(ImageType.network,
-                      "https://www.baidu.com/img/flexible/logo/pc/result.png")),
+              GridCard("Title1",
+                onSideIconPressed: (){},
+                children: [
+                  GridCardItem(
+                    image: ImageEntity(ImageType.network,"http://images.dmzj.com/webpic/1/xsdjs20220825.jpg",imageHeaders: {"referer":"http://dmzj.com"}),
+                    onTap: (){},
+                    title: "Title1",
+                    subtitle: "SubTitle1",
+                  ),GridCardItem(
+                    image: ImageEntity(ImageType.unknown,""),
+                    onTap: (){},
+                    title: "Title1",
+                    subtitle: "SubTitle1",
+                  ),GridCardItem(
+                    image: ImageEntity(ImageType.unknown,""),
+                    onTap: (){},
+                    title: "Title1",
+                    subtitle: "SubTitle1",
+                  ),
+                ],),
+              GridCard("Title2",crossAxisCount: 2,children: [
+                GridCardItem(
+                  image: ImageEntity(ImageType.network,"http://images.dmzj.com/webpic/1/xsdjs20220825.jpg",imageHeaders: {"referer":"http://dmzj.com"}),
+                  onTap: (){},
+                  title: "Title2",
+                ),GridCardItem(
+                  image: ImageEntity(ImageType.unknown,""),
+                  onTap: (){},
+                ),GridCardItem(
+                  image: ImageEntity(ImageType.unknown,""),
+                  onTap: (){},
+                ),GridCardItem(
+                  image: ImageEntity(ImageType.unknown,""),
+                  onTap: (){},
                 ),
-                Card(
-                  elevation: 0,
-                  color: Theme.of(context).colorScheme.surfaceVariant,
-                  child: DComicImage(ImageEntity(ImageType.network,
-                      "https://www.baidu.com/img/flexible/logo/pc/result.png")),
-                ),
-                Card(
-                  elevation: 0,
-                  color: Theme.of(context).colorScheme.surfaceVariant,
-                  child: DComicImage(ImageEntity(ImageType.network,
-                      "https://www.baidu.com/img/flexible/logo/pc/result.png")),
-                ),
-              ],
-            ),
-             GridCard(),
-            GridCard(),
-            GridCard(),
-          ],
+              ],),
+              GridCard("Title3"),
+            ],
+          ),
         ));
   }
 }

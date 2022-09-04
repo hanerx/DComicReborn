@@ -129,6 +129,186 @@ class S {
       args: [],
     );
   }
+
+  /// `Favorite`
+  String get DrawerFavorite {
+    return Intl.message(
+      'Favorite',
+      name: 'DrawerFavorite',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `History`
+  String get DrawerHistory {
+    return Intl.message(
+      'History',
+      name: 'DrawerHistory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Downloads`
+  String get DrawerDownloads {
+    return Intl.message(
+      'Downloads',
+      name: 'DrawerDownloads',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Setting`
+  String get DrawerSetting {
+    return Intl.message(
+      'Setting',
+      name: 'DrawerSetting',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reader Settings`
+  String get ReaderSettings {
+    return Intl.message(
+      'Reader Settings',
+      name: 'ReaderSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Settings About Comic Reader`
+  String get ReaderSettingsDescription {
+    return Intl.message(
+      'Settings About Comic Reader',
+      name: 'ReaderSettingsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Source Settings`
+  String get SourceSettings {
+    return Intl.message(
+      'Source Settings',
+      name: 'SourceSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage Comic Source`
+  String get SourceSettingsDescription {
+    return Intl.message(
+      'Manage Comic Source',
+      name: 'SourceSettingsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Account Settings`
+  String get AccountSettings {
+    return Intl.message(
+      'Account Settings',
+      name: 'AccountSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage All Comic Source With Account`
+  String get AccountSettingsDescription {
+    return Intl.message(
+      'Manage All Comic Source With Account',
+      name: 'AccountSettingsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `About`
+  String get AboutSettings {
+    return Intl.message(
+      'About',
+      name: 'AboutSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `About DComic`
+  String get AboutSettingsDescription {
+    return Intl.message(
+      'About DComic',
+      name: 'AboutSettingsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Download Settings`
+  String get DownloadSettings {
+    return Intl.message(
+      'Download Settings',
+      name: 'DownloadSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage Local File Settings`
+  String get DownloadSettingsDescription {
+    return Intl.message(
+      'Manage Local File Settings',
+      name: 'DownloadSettingsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Debug Settings`
+  String get DebugSettings {
+    return Intl.message(
+      'Debug Settings',
+      name: 'DebugSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Debug Settings (Some may not work)`
+  String get DebugSettingsDescription {
+    return Intl.message(
+      'Debug Settings (Some may not work)',
+      name: 'DebugSettingsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Experimental Settings`
+  String get ExperimentalSettings {
+    return Intl.message(
+      'Experimental Settings',
+      name: 'ExperimentalSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `DComic 00Q[T] Trans-Arm, Quantum Burst!`
+  String get ExperimentalSettingsDescription {
+    return Intl.message(
+      'DComic 00Q[T] Trans-Arm, Quantum Burst!',
+      name: 'ExperimentalSettingsDescription',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

@@ -17,11 +17,11 @@ class NavigatorProvider extends BaseProvider {
   NavigatorState? getNavigator(
       BuildContext context, NavigatorType navigatorType) {
     if (Screen.fromContext(context).isHandset) {
-      return Navigator.of(_context);
+      return Navigator.of(context);
     }
     switch (navigatorType) {
       case NavigatorType.defaultNavigator:
-        return Navigator.of(_context);
+        return Navigator.of(context);
       case NavigatorType.home:
         return _homeNavigator.currentState;
       case NavigatorType.right:

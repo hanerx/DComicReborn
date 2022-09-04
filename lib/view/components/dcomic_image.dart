@@ -8,8 +8,9 @@ import 'package:dcomic/generated/l10n.dart';
 
 class DComicImage extends StatelessWidget {
   final ImageEntity imageEntity;
+  final TextOverflow? errorMessageOverflow;
 
-  const DComicImage(this.imageEntity, {super.key});
+  const DComicImage(this.imageEntity, {super.key,this.errorMessageOverflow});
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +48,7 @@ class DComicImage extends StatelessWidget {
             ),
             Text(
               errorMessage,
-              style: TextStyle(color: Theme.of(context).disabledColor),
+              style: TextStyle(color: Theme.of(context).disabledColor,overflow: errorMessageOverflow),
             ),
             const Expanded(child: SizedBox()),
           ],

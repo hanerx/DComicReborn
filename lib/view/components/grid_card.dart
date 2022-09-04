@@ -1,8 +1,23 @@
+import 'package:dcomic/utils/image_utils.dart';
+import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class GridCard extends StatelessWidget {
-  const GridCard({super.key});
+  final String title;
+  final IconData? sideIcon;
+  final void Function()? onSideIconPressed;
+  final List<Widget> children;
+  final int crossAxisCount;
+  final double? childAspectRatio;
+
+  const GridCard(this.title,
+      {super.key,
+      this.sideIcon,
+      this.onSideIconPressed,
+      this.children = const [],
+      this.crossAxisCount = 3,
+      this.childAspectRatio});
 
   @override
   Widget build(BuildContext context) {
@@ -13,31 +28,108 @@ class GridCard extends StatelessWidget {
           Row(
             children: [
               Padding(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.fromLTRB(10, 2, 2, 2),
                 child: Text(
-                  "Title",
-                  style: TextStyle(fontSize: 20),
+                  title,
+                  style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.bodySmall?.color),
                 ),
               ),
-              Expanded(child: SizedBox()),
-              IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    Icons.arrow_forward_ios,
-                    size: 20,
-                    color: Theme.of(context).disabledColor,
-                  ))
+              const Expanded(
+                  child: SizedBox(
+                height: 0,
+              )),
+              SizedBox(
+                height: 40,
+                width: 40,
+                child: TextButton(
+                    style: const ButtonStyle(
+                      minimumSize: MaterialStatePropertyAll(Size(30, 30)),
+                    ),
+                    onPressed: onSideIconPressed,
+                    child: Icon(
+                      sideIcon,
+                      size: 20,
+                      color: Theme.of(context).disabledColor,
+                    )),
+              )
             ],
           ),
           GridView(
-            physics: NeverScrollableScrollPhysics(),
-            gridDelegate:
-                SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: _getRatio(context)),
             shrinkWrap: true,
-            children: [Card(), Card(), Card()],
+            children: children,
           )
         ],
       ),
     );
+  }
+
+  double _getRatio(BuildContext context) {
+    if (childAspectRatio != null) {
+      return childAspectRatio!;
+    }
+    if (crossAxisCount % 3 == 0) {
+      return 4 / 6;
+    }
+    if (crossAxisCount % 2 == 0) {
+      return 2 / 1;
+    }
+    return 1;
+  }
+}
+
+class GridCardItem extends StatelessWidget {
+  final String? title;
+  final String? subtitle;
+  final ImageEntity image;
+  final void Function()? onTap;
+
+  const GridCardItem(
+      {super.key, this.title, this.subtitle, required this.image, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(5),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(3),
+          child: Column(
+            children: _buildColumn(context),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildColumn(BuildContext context) {
+    List<Widget> list = [
+      Expanded(
+          child: ClipRRect(
+        borderRadius: BorderRadius.circular(5),
+        child: DComicImage(
+          image,
+          errorMessageOverflow: TextOverflow.ellipsis,
+        ),
+      )),
+    ];
+    if (title != null) {
+      list.add(Text("$title"));
+    }
+    if (subtitle != null) {
+      list.add(Text(
+        "$subtitle",
+        style: Theme.of(context).textTheme.bodySmall,
+      ));
+    }
+    return list;
   }
 }

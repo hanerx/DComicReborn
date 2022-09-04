@@ -22,14 +22,44 @@ class MessageLookup extends MessageLookupByLibrary {
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
+        "AboutSettings": MessageLookupByLibrary.simpleMessage("About"),
+        "AboutSettingsDescription":
+            MessageLookupByLibrary.simpleMessage("About DComic"),
+        "AccountSettings":
+            MessageLookupByLibrary.simpleMessage("Account Settings"),
+        "AccountSettingsDescription": MessageLookupByLibrary.simpleMessage(
+            "Manage All Comic Source With Account"),
         "AppName": MessageLookupByLibrary.simpleMessage("DComic"),
+        "DebugSettings": MessageLookupByLibrary.simpleMessage("Debug Settings"),
+        "DebugSettingsDescription": MessageLookupByLibrary.simpleMessage(
+            "Debug Settings (Some may not work)"),
+        "DownloadSettings":
+            MessageLookupByLibrary.simpleMessage("Download Settings"),
+        "DownloadSettingsDescription":
+            MessageLookupByLibrary.simpleMessage("Manage Local File Settings"),
+        "DrawerDownloads": MessageLookupByLibrary.simpleMessage("Downloads"),
         "DrawerEmail": MessageLookupByLibrary.simpleMessage("DComic 00Q[T]"),
+        "DrawerFavorite": MessageLookupByLibrary.simpleMessage("Favorite"),
+        "DrawerHistory": MessageLookupByLibrary.simpleMessage("History"),
+        "DrawerSetting": MessageLookupByLibrary.simpleMessage("Setting"),
+        "ExperimentalSettings":
+            MessageLookupByLibrary.simpleMessage("Experimental Settings"),
+        "ExperimentalSettingsDescription": MessageLookupByLibrary.simpleMessage(
+            "DComic 00Q[T] Trans-Arm, Quantum Burst!"),
         "ImageTypeNotSupport":
             MessageLookupByLibrary.simpleMessage("Unknown Image Type"),
         "MainPageCategory": MessageLookupByLibrary.simpleMessage("Category"),
         "MainPageHome": MessageLookupByLibrary.simpleMessage("Home"),
         "MainPageLatest": MessageLookupByLibrary.simpleMessage("Latest"),
         "MainPageRank": MessageLookupByLibrary.simpleMessage("Rank"),
+        "ReaderSettings":
+            MessageLookupByLibrary.simpleMessage("Reader Settings"),
+        "ReaderSettingsDescription":
+            MessageLookupByLibrary.simpleMessage("Settings About Comic Reader"),
+        "SourceSettings":
+            MessageLookupByLibrary.simpleMessage("Source Settings"),
+        "SourceSettingsDescription":
+            MessageLookupByLibrary.simpleMessage("Manage Comic Source"),
         "UnknownScreen": MessageLookupByLibrary.simpleMessage(
             "Your Screen Size is not support, please connect author.")
       };

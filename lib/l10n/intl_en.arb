@@ -9,5 +9,25 @@
   "MainPageRank": "Rank",
   "MainPageLatest": "Latest",
 
-  "ImageTypeNotSupport": "Unknown Image Type"
+  "ImageTypeNotSupport": "Unknown Image Type",
+
+  "DrawerFavorite": "Favorite",
+  "DrawerHistory": "History",
+  "DrawerDownloads": "Downloads",
+  "DrawerSetting": "Setting",
+
+  "ReaderSettings": "Reader Settings",
+  "ReaderSettingsDescription": "Settings About Comic Reader",
+  "SourceSettings": "Source Settings",
+  "SourceSettingsDescription": "Manage Comic Source",
+  "AccountSettings": "Account Settings",
+  "AccountSettingsDescription": "Manage All Comic Source With Account",
+  "AboutSettings": "About",
+  "AboutSettingsDescription": "About DComic",
+  "DownloadSettings": "Download Settings",
+  "DownloadSettingsDescription": "Manage Local File Settings",
+  "DebugSettings": "Debug Settings",
+  "DebugSettingsDescription": "Debug Settings (Some may not work)",
+  "ExperimentalSettings": "Experimental Settings",
+  "ExperimentalSettingsDescription": "DComic 00Q[T] Trans-Arm, Quantum Burst!"
 }
