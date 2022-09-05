@@ -42,7 +42,6 @@ dependencies:
   firebase_core: ^1.21.0
   firebase_analytics: ^9.3.2
   firebase_crashlytics: ^2.8.8
-  firebase_performance: ^0.8.2+4
   logger: ^1.1.0
   floor: ^1.3.0
   direct_select_flutter: ^1.1.1

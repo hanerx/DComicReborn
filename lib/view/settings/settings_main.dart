@@ -1,6 +1,7 @@
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/view/settings/about_page.dart';
+import 'package:dcomic/view/settings/debug_page.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -62,6 +63,13 @@ class _MainSettingPageState extends State<MainSettingPage> {
               leading: const Icon(Icons.code),
               title: Text(S.of(context).DebugSettings),
               subtitle: Text(S.of(context).DebugSettingsDescription),
+              onTap: (){
+                Provider.of<NavigatorProvider>(context, listen: false)
+                    .getNavigator(context, NavigatorType.defaultNavigator)
+                    ?.push(MaterialPageRoute(
+                    builder: (context) => const DebugPage(),
+                    settings: const RouteSettings(name: 'DebugPage')));
+              },
             ),
             ListTile(
               leading: const Icon(FontAwesome5.flask),
@@ -78,7 +86,7 @@ class _MainSettingPageState extends State<MainSettingPage> {
                     .getNavigator(context, NavigatorType.defaultNavigator)
                     ?.push(MaterialPageRoute(
                     builder: (context) => const AboutPage(),
-                    settings: const RouteSettings(name: 'MainSettingPage')));
+                    settings: const RouteSettings(name: 'AboutPage')));
               },
             ),
           ],

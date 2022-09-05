@@ -65,10 +65,12 @@ class _$DComicDatabase extends DComicDatabase {
 
   ComicHistoryDao? _comicHistoryDaoInstance;
 
+  CookieDao? _cookieDaoInstance;
+
   Future<sqflite.Database> open(String path, List<Migration> migrations,
       [Callback? callback]) async {
     final databaseOptions = sqflite.OpenDatabaseOptions(
-      version: 1,
+      version: 2,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
         await callback?.onConfigure?.call(database);
@@ -87,6 +89,8 @@ class _$DComicDatabase extends DComicDatabase {
             'CREATE TABLE IF NOT EXISTS `ConfigEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT)');
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `ComicHistoryEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `title` TEXT, `cover` TEXT, `coverType` INTEGER, `lastChapterTitle` TEXT, `lastChapterId` TEXT, `timestamp` INTEGER, `providerName` TEXT)');
+        await database.execute(
+            'CREATE TABLE IF NOT EXISTS `CookieEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT NOT NULL)');
 
         await callback?.onCreate?.call(database, version);
       },
@@ -103,6 +107,11 @@ class _$DComicDatabase extends DComicDatabase {
   ComicHistoryDao get comicHistoryDao {
     return _comicHistoryDaoInstance ??=
         _$ComicHistoryDao(database, changeListener);
+  }
+
+  @override
+  CookieDao get cookieDao {
+    return _cookieDaoInstance ??= _$CookieDao(database, changeListener);
   }
 }
 
@@ -273,6 +282,71 @@ class _$ComicHistoryDao extends ComicHistoryDao {
   Future<void> updateComicHistory(ComicHistoryEntity comicHistoryEntity) async {
     await _comicHistoryEntityUpdateAdapter.update(
         comicHistoryEntity, OnConflictStrategy.replace);
+  }
+}
+
+class _$CookieDao extends CookieDao {
+  _$CookieDao(this.database, this.changeListener)
+      : _queryAdapter = QueryAdapter(database),
+        _cookieEntityInsertionAdapter = InsertionAdapter(
+            database,
+            'CookieEntity',
+            (CookieEntity item) => <String, Object?>{
+                  'id': item.id,
+                  'key': item.key,
+                  'value': item.value
+                }),
+        _cookieEntityUpdateAdapter = UpdateAdapter(
+            database,
+            'CookieEntity',
+            ['id'],
+            (CookieEntity item) => <String, Object?>{
+                  'id': item.id,
+                  'key': item.key,
+                  'value': item.value
+                });
+
+  final sqflite.DatabaseExecutor database;
+
+  final StreamController<String> changeListener;
+
+  final QueryAdapter _queryAdapter;
+
+  final InsertionAdapter<CookieEntity> _cookieEntityInsertionAdapter;
+
+  final UpdateAdapter<CookieEntity> _cookieEntityUpdateAdapter;
+
+  @override
+  Future<List<CookieEntity>> getAllCookies() async {
+    return _queryAdapter.queryList('SELECT * FROM CookieEntity',
+        mapper: (Map<String, Object?> row) => CookieEntity(
+            row['id'] as int?, row['key'] as String, row['value'] as String));
+  }
+
+  @override
+  Future<CookieEntity?> getCookieByKey(String key) async {
+    return _queryAdapter.query('SELECT * FROM CookieEntity WHERE key = ?1',
+        mapper: (Map<String, Object?> row) => CookieEntity(
+            row['id'] as int?, row['key'] as String, row['value'] as String),
+        arguments: [key]);
+  }
+
+  @override
+  Future<void> deleteCookie(String key) async {
+    await _queryAdapter.queryNoReturn('DELETE FROM CookieEntity WHERE key = ?1',
+        arguments: [key]);
+  }
+
+  @override
+  Future<void> insertCookie(CookieEntity cookieEntity) async {
+    await _cookieEntityInsertionAdapter.insert(
+        cookieEntity, OnConflictStrategy.replace);
+  }
+
+  @override
+  Future<void> updateCookie(CookieEntity cookieEntity) async {
+    await _cookieEntityUpdateAdapter.update(
+        cookieEntity, OnConflictStrategy.replace);
   }
 }
 

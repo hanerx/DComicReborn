@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
+
+import 'firebase_options.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
@@ -14,10 +17,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_adaptive_ui/flutter_adaptive_ui.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:provider/provider.dart';
-import 'firebase_options.dart';
 
 Future<void> main() async {
   runZonedGuarded<Future<void>>(() async {

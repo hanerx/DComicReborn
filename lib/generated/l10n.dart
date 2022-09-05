@@ -309,6 +309,26 @@ class S {
       args: [],
     );
   }
+
+  /// `Network Check`
+  String get DebugPageNetworkCheck {
+    return Intl.message(
+      'Network Check',
+      name: 'DebugPageNetworkCheck',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Just check network by ping baidu.com, maybe change to more useful page in future.`
+  String get DebugPageNetworkCheckDescription {
+    return Intl.message(
+      'Just check network by ping baidu.com, maybe change to more useful page in future.',
+      name: 'DebugPageNetworkCheckDescription',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

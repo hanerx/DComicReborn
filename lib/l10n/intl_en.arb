@@ -29,5 +29,8 @@
   "DebugSettings": "Debug Settings",
   "DebugSettingsDescription": "Debug Settings (Some may not work)",
   "ExperimentalSettings": "Experimental Settings",
-  "ExperimentalSettingsDescription": "DComic 00Q[T] Trans-Arm, Quantum Burst!"
+  "ExperimentalSettingsDescription": "DComic 00Q[T] Trans-Arm, Quantum Burst!",
+
+  "DebugPageNetworkCheck": "Network Check",
+  "DebugPageNetworkCheckDescription": "Just check network by ping baidu.com, maybe change to more useful page in future."
 }

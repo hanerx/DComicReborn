@@ -30,6 +30,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "AccountSettingsDescription": MessageLookupByLibrary.simpleMessage(
             "Manage All Comic Source With Account"),
         "AppName": MessageLookupByLibrary.simpleMessage("DComic"),
+        "DebugPageNetworkCheck":
+            MessageLookupByLibrary.simpleMessage("Network Check"),
+        "DebugPageNetworkCheckDescription": MessageLookupByLibrary.simpleMessage(
+            "Just check network by ping baidu.com, maybe change to more useful page in future."),
         "DebugSettings": MessageLookupByLibrary.simpleMessage("Debug Settings"),
         "DebugSettingsDescription": MessageLookupByLibrary.simpleMessage(
             "Debug Settings (Some may not work)"),
