@@ -118,6 +118,7 @@ class GridCardItem extends StatelessWidget {
         child: DComicImage(
           image,
           errorMessageOverflow: TextOverflow.ellipsis,
+          fit: BoxFit.fill,
         ),
       )),
     ];
@@ -127,7 +128,7 @@ class GridCardItem extends StatelessWidget {
         style: const TextStyle(overflow: TextOverflow.ellipsis),
       ));
     }
-    if (subtitle != null&&subtitle!.isNotEmpty) {
+    if (subtitle != null && subtitle!.isNotEmpty) {
       list.add(Text.rich(
         TextSpan(
             text: "$subtitle",
@@ -137,5 +138,55 @@ class GridCardItem extends StatelessWidget {
       ));
     }
     return list;
+  }
+}
+
+class GridCardPlaceHolder extends StatelessWidget {
+  const GridCardPlaceHolder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Container(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  width: 100,
+                  height: 20,
+                ),
+              ),
+            ],
+          ),
+          GridView(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3, childAspectRatio: 4 / 6),
+            shrinkWrap: true,
+            children: [
+              Card(
+                elevation: 0,
+                margin: const EdgeInsets.all(5),
+                color: Theme.of(context).colorScheme.primaryContainer,
+              ),
+              Card(
+                elevation: 0,
+                margin: const EdgeInsets.all(5),
+                color: Theme.of(context).colorScheme.primaryContainer,
+              ),
+              Card(
+                elevation: 0,
+                margin: const EdgeInsets.all(5),
+                color: Theme.of(context).colorScheme.primaryContainer,
+              ),
+            ],
+          )
+        ],
+      ),
+    );
   }
 }

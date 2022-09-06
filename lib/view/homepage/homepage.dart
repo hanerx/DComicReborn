@@ -74,6 +74,11 @@ class _HomePageState extends State<HomePage> {
 
   List<Widget> _buildListView(BuildContext context) {
     List<Widget> data = [_buildCarousels(context)];
+    if (Provider.of<ComicHomepageController>(context).homepageCards.isEmpty) {
+      for (int i = 0; i < 5; i++) {
+        data.add(const GridCardPlaceHolder());
+      }
+    }
     for (var entity
         in Provider.of<ComicHomepageController>(context).homepageCards) {
       List<Widget> gridCards = [];
@@ -92,7 +97,7 @@ class _HomePageState extends State<HomePage> {
       data.add(GridCard(
         entity.title,
         sideIcon: entity.icon,
-        crossAxisCount :gridCards.length%3==0?3:2,
+        crossAxisCount: gridCards.length % 3 == 0 ? 3 : 2,
         onSideIconPressed: entity.onTap == null
             ? null
             : () {
