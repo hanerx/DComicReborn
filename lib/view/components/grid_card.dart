@@ -78,7 +78,7 @@ class GridCard extends StatelessWidget {
       return 4 / 6;
     }
     if (crossAxisCount % 2 == 0) {
-      return 2 / 1;
+      return 2 / 1.5;
     }
     return 1;
   }
@@ -122,12 +122,18 @@ class GridCardItem extends StatelessWidget {
       )),
     ];
     if (title != null) {
-      list.add(Text("$title"));
-    }
-    if (subtitle != null) {
       list.add(Text(
-        "$subtitle",
+        "$title",
+        style: const TextStyle(overflow: TextOverflow.ellipsis),
+      ));
+    }
+    if (subtitle != null&&subtitle!.isNotEmpty) {
+      list.add(Text.rich(
+        TextSpan(
+            text: "$subtitle",
+            style: const TextStyle(overflow: TextOverflow.ellipsis)),
         style: Theme.of(context).textTheme.bodySmall,
+        overflow: TextOverflow.ellipsis,
       ));
     }
     return list;

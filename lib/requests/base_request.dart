@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dcomic/requests/dmzj/dmzj_request.dart';
 import 'package:dcomic/utils/db_cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
@@ -74,4 +75,8 @@ class RequestHandler {
     } catch (e) {}
     return -1;
   }
+}
+
+class RequestHandlers{
+  static DMZJV3RequestHandler dmzjv3requestHandler=DMZJV3RequestHandler();
 }

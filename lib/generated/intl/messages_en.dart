@@ -52,6 +52,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "DComic 00Q[T] Trans-Arm, Quantum Burst!"),
         "ImageTypeNotSupport":
             MessageLookupByLibrary.simpleMessage("Unknown Image Type"),
+        "Loading": MessageLookupByLibrary.simpleMessage("Loading..."),
         "MainPageCategory": MessageLookupByLibrary.simpleMessage("Category"),
         "MainPageHome": MessageLookupByLibrary.simpleMessage("Home"),
         "MainPageLatest": MessageLookupByLibrary.simpleMessage("Latest"),

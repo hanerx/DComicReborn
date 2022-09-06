@@ -1,10 +1,13 @@
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:dcomic/generated/l10n.dart';
+import 'package:dcomic/providers/page_controllers/comic_homepage_controller.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:dcomic/view/components/grid_card.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,80 +19,88 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
-    return EasyRefresh(
-        onRefresh: () async {
-          await Future.delayed(const Duration(seconds: 2));
-        },
-        refreshOnStart: true,
-        child:Container(
-          color: Theme.of(context).colorScheme.surfaceVariant,
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              CarouselSlider(
-                options: CarouselOptions(
-                  viewportFraction: 1,
-                  enableInfiniteScroll: true,
-                  autoPlay: true,
-                  aspectRatio: 16 / 7,
-                ),
-                items: [
-                  Card(
-                    elevation: 0,
-                    child: DComicImage(ImageEntity(ImageType.network,
-                        "https://www.baidu.com/img/flexible/logo/pc/result.png")),
-                  ),
-                  Card(
-                    elevation: 0,
-                    child: DComicImage(ImageEntity(ImageType.network,
-                        "https://www.baidu.com/img/flexible/logo/pc/result.png")),
-                  ),
-                  Card(
-                    elevation: 0,
-                    child: DComicImage(ImageEntity(ImageType.network,
-                        "https://www.baidu.com/img/flexible/logo/pc/result.png")),
-                  ),
-                ],
+    return ChangeNotifierProvider(
+      create: (_) => ComicHomepageController(),
+      builder: (context, child) => EasyRefresh(
+          onRefresh: () async {
+            await Provider.of<ComicHomepageController>(context, listen: false)
+                .refresh(context);
+          },
+          refreshOnStart: true,
+          child: Container(
+            color: Theme.of(context).colorScheme.surfaceVariant,
+            child: ListView(
+              shrinkWrap: true,
+              children: _buildListView(context),
+            ),
+          )),
+    );
+  }
+
+  Widget _buildCarousels(BuildContext context) {
+    return CarouselSlider.builder(
+      options: CarouselOptions(
+        viewportFraction: 1,
+        enableInfiniteScroll: true,
+        autoPlay: true,
+        aspectRatio: 16 / 9,
+      ),
+      itemCount: Provider.of<ComicHomepageController>(context)
+          .homepageCarousels
+          .length,
+      itemBuilder: (context, index, realIndex) {
+        if (Provider.of<ComicHomepageController>(context)
+            .homepageCarousels
+            .isEmpty) {
+          return Card(
+            elevation: 0,
+            child: Center(
+              child: Text(
+                S.of(context).Loading,
+                style: TextStyle(color: Theme.of(context).disabledColor),
               ),
-              GridCard("Title1",
-                onSideIconPressed: (){},
-                children: [
-                  GridCardItem(
-                    image: ImageEntity(ImageType.network,"http://images.dmzj.com/webpic/1/xsdjs20220825.jpg",imageHeaders: {"referer":"http://dmzj.com"}),
-                    onTap: (){},
-                    title: "Title1",
-                    subtitle: "SubTitle1",
-                  ),GridCardItem(
-                    image: ImageEntity(ImageType.unknown,""),
-                    onTap: (){},
-                    title: "Title1",
-                    subtitle: "SubTitle1",
-                  ),GridCardItem(
-                    image: ImageEntity(ImageType.unknown,""),
-                    onTap: (){},
-                    title: "Title1",
-                    subtitle: "SubTitle1",
-                  ),
-                ],),
-              GridCard("Title2",crossAxisCount: 2,children: [
-                GridCardItem(
-                  image: ImageEntity(ImageType.network,"http://images.dmzj.com/webpic/1/xsdjs20220825.jpg",imageHeaders: {"referer":"http://dmzj.com"}),
-                  onTap: (){},
-                  title: "Title2",
-                ),GridCardItem(
-                  image: ImageEntity(ImageType.unknown,""),
-                  onTap: (){},
-                ),GridCardItem(
-                  image: ImageEntity(ImageType.unknown,""),
-                  onTap: (){},
-                ),GridCardItem(
-                  image: ImageEntity(ImageType.unknown,""),
-                  onTap: (){},
-                ),
-              ],),
-              GridCard("Title3"),
-            ],
-          ),
+            ),
+          );
+        }
+        var entity = Provider.of<ComicHomepageController>(context)
+            .homepageCarousels[index];
+        return Card(
+          elevation: 0,
+          child: DComicImage(entity.cover),
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildListView(BuildContext context) {
+    List<Widget> data = [_buildCarousels(context)];
+    for (var entity
+        in Provider.of<ComicHomepageController>(context).homepageCards) {
+      List<Widget> gridCards = [];
+      for (var cards in entity.children) {
+        gridCards.add(GridCardItem(
+          image: cards.cover,
+          onTap: cards.onTap == null
+              ? null
+              : () {
+                  cards.onTap!(context);
+                },
+          title: cards.title,
+          subtitle: cards.subtitle,
         ));
+      }
+      data.add(GridCard(
+        entity.title,
+        sideIcon: entity.icon,
+        crossAxisCount :gridCards.length%3==0?3:2,
+        onSideIconPressed: entity.onTap == null
+            ? null
+            : () {
+                entity.onTap!(context);
+              },
+        children: gridCards,
+      ));
+    }
+    return data;
   }
 }

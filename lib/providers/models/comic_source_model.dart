@@ -52,7 +52,7 @@ abstract class BaseComicHomepageModel extends BaseModel {
 class CarouselEntity {
   final ImageEntity cover;
   final String title;
-  final void Function()? onTap;
+  final void Function(BuildContext context)? onTap;
 
   CarouselEntity(this.cover, this.title, this.onTap);
 }
@@ -60,7 +60,7 @@ class CarouselEntity {
 class HomepageCardEntity {
   final String title;
   final IconData? icon;
-  final void Function()? onTap;
+  final void Function(BuildContext context)? onTap;
   final List<GridItemEntity> children;
 
   HomepageCardEntity(this.title, this.icon, this.onTap, this.children);
@@ -70,7 +70,7 @@ class GridItemEntity {
   final String? title;
   final String? subtitle;
   final ImageEntity cover;
-  final void Function()? onTap;
+  final void Function(BuildContext context)? onTap;
 
   GridItemEntity(this.title, this.subtitle, this.cover, this.onTap);
 }

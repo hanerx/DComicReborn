@@ -10,6 +10,7 @@
   "MainPageLatest": "Latest",
 
   "ImageTypeNotSupport": "Unknown Image Type",
+  "Loading": "Loading...",
 
   "DrawerFavorite": "Favorite",
   "DrawerHistory": "History",

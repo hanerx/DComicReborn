@@ -9,8 +9,9 @@ import 'package:dcomic/generated/l10n.dart';
 class DComicImage extends StatelessWidget {
   final ImageEntity imageEntity;
   final TextOverflow? errorMessageOverflow;
+  final BoxFit? fit;
 
-  const DComicImage(this.imageEntity, {super.key,this.errorMessageOverflow});
+  const DComicImage(this.imageEntity, {super.key,this.errorMessageOverflow,this.fit});
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +24,7 @@ class DComicImage extends StatelessWidget {
         return _buildErrorWidget(context, S.of(context).ImageTypeNotSupport);
       case ImageType.network:
         return CachedNetworkImage(
+          fit: fit,
           imageUrl: imageEntity.imageUrl,
           progressIndicatorBuilder: (context, url, downloadProgress) => Center(
               child:
