@@ -33,27 +33,30 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
 }
 
 class DMZJComicHomepageModel extends BaseComicHomepageModel {
-  static List<int> blackList=[46];
+  static List<int> blackList = [46];
 
   @override
   Future<List<HomepageCardEntity>> getHomepageCard() async {
     List<HomepageCardEntity> data = [];
     Response response =
-    await RequestHandlers.dmzjv3requestHandler.getMainPageRecommendNew();
+        await RequestHandlers.dmzjv3requestHandler.getMainPageRecommendNew();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (var rawData in response.data) {
-          if(blackList.contains(rawData['category_id'])){
+          if (blackList.contains(rawData['category_id'])) {
             continue;
           }
           List<GridItemEntity> children = [];
           for (var rawItem in rawData['data']) {
-            children.add(GridItemEntity(rawItem['title'], rawItem['sub_title'],
+            children.add(GridItemEntity(
+                rawItem['title'],
+                rawItem['sub_title'],
                 ImageEntity(ImageType.network, rawItem['cover'],
-                    imageHeaders: {"referer": "https://i.dmzj.com"}), (
-                    context) {}));
+                    imageHeaders: {"referer": "https://i.dmzj.com"}),
+                (context) {}));
           }
-          data.add(HomepageCardEntity(rawData['title'], null, (context) { }, children));
+          data.add(HomepageCardEntity(
+              rawData['title'], null, (context) {}, children));
         }
       }
     } catch (e, s) {
@@ -66,15 +69,38 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
   Future<List<CarouselEntity>> getHomepageCarousel() async {
     List<CarouselEntity> data = [];
     Response response =
-    await RequestHandlers.dmzjv3requestHandler.getMainPageRecommendNew();
+        await RequestHandlers.dmzjv3requestHandler.getMainPageRecommendNew();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         var rawData = response.data[0];
         for (var rawItem in rawData['data']) {
-          data.add(
-              CarouselEntity(ImageEntity(ImageType.network, rawItem['cover'],
+          data.add(CarouselEntity(
+              ImageEntity(ImageType.network, rawItem['cover'],
                   imageHeaders: {"referer": "https://i.dmzj.com"}),
-                  rawItem['title'], (context) {}));
+              rawItem['title'],
+              (context) {}));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', e, s);
+    }
+    return data;
+  }
+
+  @override
+  Future<List<GridItemEntity>> getCategoryList() async {
+    List<GridItemEntity> data = [];
+    Response response =
+        await RequestHandlers.dmzjv3requestHandler.getCategory();
+    try {
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        for (var rawData in response.data['data']) {
+          data.add(GridItemEntity(
+              rawData['title'],
+              null,
+              ImageEntity(ImageType.network, rawData['cover'],
+                  imageHeaders: {"referer": "https://i.dmzj.com"}),
+              (context) {}));
         }
       }
     } catch (e, s) {

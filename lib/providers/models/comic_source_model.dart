@@ -1,5 +1,6 @@
 import 'package:dcomic/database/entity/comic_history.dart';
 import 'package:dcomic/providers/models/base_model.dart';
+import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 
@@ -47,6 +48,9 @@ abstract class BaseComicHomepageModel extends BaseModel {
 
   /// 获取首页各个卡片数据
   Future<List<HomepageCardEntity>> getHomepageCard();
+
+  /// 获取漫画分类目录
+  Future<List<GridItemEntity>> getCategoryList();
 }
 
 class CarouselEntity {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dcomic/view/homepage/category_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart';
@@ -34,7 +35,7 @@ Future<void> main() async {
     EasyRefresh.defaultFooterBuilder = () => const ClassicFooter();
 
     runApp(const App());
-  }, (error, stack) => FirebaseCrashlytics.instance.recordError(error, stack));
+  }, (error, stack) => FirebaseCrashlytics.instance.recordError(error, stack,fatal: true));
 }
 
 class App extends StatelessWidget {
@@ -118,10 +119,8 @@ class _MainFrameworkState extends State<MainFramework> {
               drawer: LeftDrawer(),
               body: TabBarView(
                 children: [
-                  HomePage(),
-                  Container(
-                    color: Colors.red,
-                  ),
+                  const HomePage(),
+                  const CategoryPage(),
                   Container(
                     color: Colors.green,
                   ),
@@ -133,46 +132,44 @@ class _MainFrameworkState extends State<MainFramework> {
             ),
           );
         },
-        layoutDelegate: AdaptiveLayoutDelegateWithMinimallScreenType(
-          handset: (context, screen) => DefaultTabController(
-            length: 4,
-            child: Scaffold(
-              appBar: AppBar(
-                title: Text(S.of(context).AppName),
-                bottom: TabBar(
-                  tabs: [
-                    Tab(
-                      text: S.of(context).MainPageHome,
-                    ),
-                    Tab(
-                      text: S.of(context).MainPageCategory,
-                    ),
-                    Tab(
-                      text: S.of(context).MainPageRank,
-                    ),
-                    Tab(
-                      text: S.of(context).MainPageLatest,
-                    )
-                  ],
-                ),
-              ),
-              drawer: LeftDrawer(),
-              body: TabBarView(
-                children: [
-                  HomePage(),
-                  Container(
-                    color: Colors.red,
-                  ),
-                  Container(
-                    color: Colors.green,
-                  ),
-                  Container(
-                    color: Colors.blue,
-                  )
-                ],
-              ),
-            ),
-          ),
+        layoutDelegate: const AdaptiveLayoutDelegateWithMinimallScreenType(
+          // handset: (context, screen) => DefaultTabController(
+          //   length: 4,
+          //   child: Scaffold(
+          //     appBar: AppBar(
+          //       title: Text(S.of(context).AppName),
+          //       bottom: TabBar(
+          //         tabs: [
+          //           Tab(
+          //             text: S.of(context).MainPageHome,
+          //           ),
+          //           Tab(
+          //             text: S.of(context).MainPageCategory,
+          //           ),
+          //           Tab(
+          //             text: S.of(context).MainPageRank,
+          //           ),
+          //           Tab(
+          //             text: S.of(context).MainPageLatest,
+          //           )
+          //         ],
+          //       ),
+          //     ),
+          //     drawer: LeftDrawer(),
+          //     body: TabBarView(
+          //       children: [
+          //         const HomePage(),
+          //         const CategoryPage(),
+          //         Container(
+          //           color: Colors.green,
+          //         ),
+          //         Container(
+          //           color: Colors.blue,
+          //         )
+          //       ],
+          //     ),
+          //   ),
+          // ),
           // Todo: 后面再写
           // tablet: (context, screen) => Scaffold(
           //       appBar: Provider.of<AppBarProvider>(context).currentAppBar,
