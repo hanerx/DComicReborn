@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dcomic/view/homepage/category_page.dart';
+import 'package:dcomic/view/homepage/latest_page.dart';
 import 'package:dcomic/view/homepage/rank_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -118,14 +119,12 @@ class _MainFrameworkState extends State<MainFramework> {
                 ),
               ),
               drawer: LeftDrawer(),
-              body: TabBarView(
+              body: const TabBarView(
                 children: [
-                  const HomePage(),
-                  const CategoryPage(),
-                  const RankPage(),
-                  Container(
-                    color: Colors.blue,
-                  )
+                  HomePage(),
+                  CategoryPage(),
+                  RankPage(),
+                  LatestPage()
                 ],
               ),
             ),

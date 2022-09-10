@@ -51,6 +51,12 @@ abstract class BaseComicHomepageModel extends BaseModel {
 
   /// 获取漫画分类目录
   Future<List<GridItemEntity>> getCategoryList();
+
+  /// 获取排行榜数据
+  Future<List<ListItemEntity>> getRankingList({int page = 0});
+
+  /// 获取更新列表数据
+  Future<List<ListItemEntity>> getLatestList({int page = 0});
 }
 
 class CarouselEntity {
@@ -77,4 +83,13 @@ class GridItemEntity {
   final void Function(BuildContext context)? onTap;
 
   GridItemEntity(this.title, this.subtitle, this.cover, this.onTap);
+}
+
+class ListItemEntity {
+  final String title;
+  final ImageEntity cover;
+  final Map<IconData, String> details;
+  final void Function(BuildContext context)? onTap;
+
+  ListItemEntity(this.title, this.cover, this.details,this.onTap);
 }

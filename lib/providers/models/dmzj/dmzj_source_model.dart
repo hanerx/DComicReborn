@@ -1,8 +1,11 @@
+import 'package:date_format/date_format.dart';
 import 'package:dcomic/database/entity/comic_history.dart';
+import 'package:dcomic/protobuf/comic.pb.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 
 class DMZJComicSourceModel extends BaseComicSourceModel {
   @override
@@ -105,6 +108,52 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
       }
     } catch (e, s) {
       logger.e('$e', e, s);
+    }
+    return data;
+  }
+
+  @override
+  Future<List<ListItemEntity>> getRankingList({int page = 0}) async {
+    List<ListItemEntity> data = [];
+    List<ComicRankListItemResponse> rawData =
+        await RequestHandlers.dmzjv4requestHandler.getRankingList(page: page);
+    for (var rawListItem in rawData) {
+      data.add(ListItemEntity(
+          rawListItem.title,
+          ImageEntity(ImageType.network, rawListItem.cover,
+              imageHeaders: {"referer": "https://i.dmzj.com"}),
+          {
+            Icons.supervisor_account_rounded: rawListItem.authors,
+            Icons.apps: rawListItem.types,
+            Icons.history_edu: formatDate(
+                DateTime.fromMicrosecondsSinceEpoch(
+                    rawListItem.lastUpdatetime.toInt() * 1000000),
+                [yyyy, '-', mm, '-', dd])
+          },
+          (context) {}));
+    }
+    return data;
+  }
+
+  @override
+  Future<List<ListItemEntity>> getLatestList({int page = 0}) async{
+    List<ListItemEntity> data = [];
+    List<ComicUpdateListItemResponse> rawData =
+        await RequestHandlers.dmzjv4requestHandler.getUpdateList(page: page);
+    for (var rawListItem in rawData) {
+      data.add(ListItemEntity(
+          rawListItem.title,
+          ImageEntity(ImageType.network, rawListItem.cover,
+              imageHeaders: {"referer": "https://i.dmzj.com"}),
+          {
+            Icons.supervisor_account_rounded: rawListItem.authors,
+            Icons.apps: rawListItem.types,
+            Icons.history_edu: formatDate(
+                DateTime.fromMicrosecondsSinceEpoch(
+                    rawListItem.lastUpdatetime.toInt() * 1000000),
+                [yyyy, '-', mm, '-', dd])
+          },
+              (context) {}));
     }
     return data;
   }

@@ -1,3 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:crypton/crypton.dart';
+import 'package:dcomic/protobuf/comic.pb.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dio/dio.dart';
 
@@ -68,7 +74,8 @@ class DMZJV3RequestHandler extends RequestHandler {
   }
 
   // 获取主页推荐
-  @Deprecated('getMainPageRecommend is deprecated, use getMainPageRecommendNew instead.')
+  @Deprecated(
+      'getMainPageRecommend is deprecated, use getMainPageRecommendNew instead.')
   Future<Response> getMainPageRecommend() {
     return dio.get('/recommend.json');
   }
@@ -116,12 +123,83 @@ class DMZJV3RequestHandler extends RequestHandler {
   }
 
   // 获取小说排行
-  Future<Response> getNovelRankingList({int type = 0, int tag = 0, int page = 0}) {
+  Future<Response> getNovelRankingList(
+      {int type = 0, int tag = 0, int page = 0}) {
     return dio.get('/novel/rank/$type/$tag/$page.json');
+  }
+
+  // 获取漫画排行
+  @Deprecated("已无法使用")
+  Future<Response> getRankingList({int type = 0, int tag = 0, int page = 0}) {
+    return dio.get('/rank/$type/$tag/$page.json');
   }
 
   // 获取小说过滤标签
   Future<Response> getNovelFilterTags() {
     return dio.get('/novel/tag.json');
+  }
+}
+
+class DMZJV4RequestHandler extends RequestHandler {
+  DMZJV4RequestHandler() : super('https://nnv4api.muwai.com');
+
+  static get privateKey =>
+      "MIICeAIBADANBgkqhkiG9w0BAQEFAASCAmIwggJeAgEAAoGBAK8nNR1lTnIfIes6oRWJNj3mB6OssDGx0uGMpgpbVCpf6+VwnuI2stmhZNoQcM417Iz7WqlPzbUmu9R4dEKmLGEEqOhOdVaeh9Xk2IPPjqIu5TbkLZRxkY3dJM1htbz57d/roesJLkZXqssfG5EJauNc+RcABTfLb4IiFjSMlTsnAgMBAAECgYEAiz/pi2hKOJKlvcTL4jpHJGjn8+lL3wZX+LeAHkXDoTjHa47g0knYYQteCbv+YwMeAGupBWiLy5RyyhXFoGNKbbnvftMYK56hH+iqxjtDLnjSDKWnhcB7089sNKaEM9Ilil6uxWMrMMBH9v2PLdYsqMBHqPutKu/SigeGPeiB7VECQQDizVlNv67go99QAIv2n/ga4e0wLizVuaNBXE88AdOnaZ0LOTeniVEqvPtgUk63zbjl0P/pzQzyjitwe6HoCAIpAkEAxbOtnCm1uKEp5HsNaXEJTwE7WQf7PrLD4+BpGtNKkgja6f6F4ld4QZ2TQ6qvsCizSGJrjOpNdjVGJ7bgYMcczwJBALvJWPLmDi7ToFfGTB0EsNHZVKE66kZ/8Stx+ezueke4S556XplqOflQBjbnj2PigwBN/0afT+QZUOBOjWzoDJkCQClzo+oDQMvGVs9GEajS/32mJ3hiWQZrWvEzgzYRqSf3XVcEe7PaXSd8z3y3lACeeACsShqQoc8wGlaHXIJOHTcCQQCZw5127ZGs8ZDTSrogrH73Kw/HvX55wGAeirKYcv28eauveCG7iyFR0PFB/P/EDZnyb+ifvyEFlucPUI0+Y87F";
+
+  static Uint8List decrypt(String text) {
+    try {
+      RSAKeypair rsaKeypair = RSAKeypair(RSAPrivateKey.fromString(privateKey));
+      // print(rsaKeypair.privateKey.toPEM());
+      var decrypted = rsaKeypair.privateKey.decryptData(base64.decode(text));
+      return decrypted;
+    } catch (e) {
+      throw TypeError();
+    }
+  }
+
+  Future<Map<String, dynamic>> getParam({bool login = false}) async {
+    var data = {
+      "channel": Platform.operatingSystem,
+      "version": "3.0.0",
+      "timestamp":
+          (DateTime.now().millisecondsSinceEpoch / 1000).toStringAsFixed(0),
+    };
+    return data;
+  }
+
+  // 获取漫画排行
+  Future<List<ComicRankListItemResponse>> getRankingList(
+      {int tagId = 0, int byTime = 0, int rankType = 0, int page = 0}) async {
+    Map<String, dynamic> map = {
+      'tag_id': tagId,
+      'by_time': byTime,
+      'rank_type': rankType,
+      'page': page + 1
+    };
+    map.addAll(await getParam(login: true));
+    var response = await dio.get('/comic/rank/list', queryParameters: map);
+    if (response.statusCode == 200) {
+      var data = ComicRankListResponse.fromBuffer(decrypt(response.data));
+      if (data.errno != 0) {
+        throw data.errmsg;
+      }
+      return data.data;
+    }
+    return [];
+  }
+
+  // 获取更新列表
+  Future<List<ComicUpdateListItemResponse>> getUpdateList(
+      {String type = '0', int page = 0}) async {
+    var response = await dio.get('/comic/update/list/$type/$page',
+        queryParameters: await getParam(login: true));
+    if (response.statusCode == 200) {
+      var data = ComicUpdateListResponse.fromBuffer(decrypt(response.data));
+      if (data.errno != 0) {
+        throw data.errmsg;
+      }
+      return data.data;
+    }
+    return [];
   }
 }
