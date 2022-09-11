@@ -67,10 +67,12 @@ class _$DComicDatabase extends DComicDatabase {
 
   CookieDao? _cookieDaoInstance;
 
+  ModelConfigDao? _modelConfigDaoInstance;
+
   Future<sqflite.Database> open(String path, List<Migration> migrations,
       [Callback? callback]) async {
     final databaseOptions = sqflite.OpenDatabaseOptions(
-      version: 2,
+      version: 3,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
         await callback?.onConfigure?.call(database);
@@ -91,6 +93,8 @@ class _$DComicDatabase extends DComicDatabase {
             'CREATE TABLE IF NOT EXISTS `ComicHistoryEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `title` TEXT, `cover` TEXT, `coverType` INTEGER, `lastChapterTitle` TEXT, `lastChapterId` TEXT, `timestamp` INTEGER, `providerName` TEXT)');
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `CookieEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT NOT NULL)');
+        await database.execute(
+            'CREATE TABLE IF NOT EXISTS `ModelConfigEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT, `sourceModel` TEXT)');
 
         await callback?.onCreate?.call(database, version);
       },
@@ -112,6 +116,12 @@ class _$DComicDatabase extends DComicDatabase {
   @override
   CookieDao get cookieDao {
     return _cookieDaoInstance ??= _$CookieDao(database, changeListener);
+  }
+
+  @override
+  ModelConfigDao get modelConfigDao {
+    return _modelConfigDaoInstance ??=
+        _$ModelConfigDao(database, changeListener);
   }
 }
 
@@ -347,6 +357,71 @@ class _$CookieDao extends CookieDao {
   Future<void> updateCookie(CookieEntity cookieEntity) async {
     await _cookieEntityUpdateAdapter.update(
         cookieEntity, OnConflictStrategy.replace);
+  }
+}
+
+class _$ModelConfigDao extends ModelConfigDao {
+  _$ModelConfigDao(this.database, this.changeListener)
+      : _queryAdapter = QueryAdapter(database),
+        _modelConfigEntityInsertionAdapter = InsertionAdapter(
+            database,
+            'ModelConfigEntity',
+            (ModelConfigEntity item) => <String, Object?>{
+                  'id': item.id,
+                  'key': item.key,
+                  'value': item.value,
+                  'sourceModel': item.sourceModel
+                }),
+        _modelConfigEntityUpdateAdapter = UpdateAdapter(
+            database,
+            'ModelConfigEntity',
+            ['id'],
+            (ModelConfigEntity item) => <String, Object?>{
+                  'id': item.id,
+                  'key': item.key,
+                  'value': item.value,
+                  'sourceModel': item.sourceModel
+                });
+
+  final sqflite.DatabaseExecutor database;
+
+  final StreamController<String> changeListener;
+
+  final QueryAdapter _queryAdapter;
+
+  final InsertionAdapter<ModelConfigEntity> _modelConfigEntityInsertionAdapter;
+
+  final UpdateAdapter<ModelConfigEntity> _modelConfigEntityUpdateAdapter;
+
+  @override
+  Future<List<ModelConfigEntity>> getAllConfig() async {
+    return _queryAdapter.queryList('SELECT * FROM ModelConfigEntity',
+        mapper: (Map<String, Object?> row) => ModelConfigEntity(
+            row['id'] as int?,
+            row['key'] as String,
+            row['value'] as String?,
+            row['sourceModel'] as String?));
+  }
+
+  @override
+  Future<ModelConfigEntity?> getConfigByKeyAndModel(
+      String key, String sourceModel) async {
+    return _queryAdapter.query(
+        'SELECT * FROM ModelConfigEntity WHERE key = ?1 AND sourceModel = ?2 LIMIT 1',
+        mapper: (Map<String, Object?> row) => ModelConfigEntity(row['id'] as int?, row['key'] as String, row['value'] as String?, row['sourceModel'] as String?),
+        arguments: [key, sourceModel]);
+  }
+
+  @override
+  Future<void> insertConfig(ModelConfigEntity configEntity) async {
+    await _modelConfigEntityInsertionAdapter.insert(
+        configEntity, OnConflictStrategy.abort);
+  }
+
+  @override
+  Future<void> updateConfig(ModelConfigEntity configEntity) async {
+    await _modelConfigEntityUpdateAdapter.update(
+        configEntity, OnConflictStrategy.abort);
   }
 }
 

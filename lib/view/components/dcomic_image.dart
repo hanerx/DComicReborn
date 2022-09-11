@@ -10,8 +10,9 @@ class DComicImage extends StatelessWidget {
   final ImageEntity imageEntity;
   final TextOverflow? errorMessageOverflow;
   final BoxFit? fit;
+  final Color? customErrorMessageColor;
 
-  const DComicImage(this.imageEntity, {super.key,this.errorMessageOverflow,this.fit});
+  const DComicImage(this.imageEntity, {super.key,this.errorMessageOverflow,this.fit, this.customErrorMessageColor});
 
   @override
   Widget build(BuildContext context) {
@@ -46,11 +47,11 @@ class DComicImage extends StatelessWidget {
             Icon(
               Icons.broken_image,
               size: 60,
-              color: Theme.of(context).disabledColor,
+              color: customErrorMessageColor ?? Theme.of(context).disabledColor,
             ),
             Text(
               errorMessage,
-              style: TextStyle(color: Theme.of(context).disabledColor,overflow: errorMessageOverflow),
+              style: TextStyle(color: customErrorMessageColor ?? Theme.of(context).disabledColor,overflow: errorMessageOverflow),
             ),
             const Expanded(child: SizedBox()),
           ],

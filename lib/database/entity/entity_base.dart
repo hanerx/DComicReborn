@@ -1,7 +1,7 @@
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 class EntityBase{
-  Object? convertValue<T>(dynamic value){
+  dynamic convertValue<T>(dynamic value){
     try {
       switch(T){
         case String:

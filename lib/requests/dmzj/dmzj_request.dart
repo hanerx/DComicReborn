@@ -3,9 +3,11 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypton/crypton.dart';
+import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/protobuf/comic.pb.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 
 class DMZJV3RequestHandler extends RequestHandler {
   DMZJV3RequestHandler() : super('https://nnv3api.muwai.com');
@@ -164,6 +166,15 @@ class DMZJV4RequestHandler extends RequestHandler {
       "timestamp":
           (DateTime.now().millisecondsSinceEpoch / 1000).toStringAsFixed(0),
     };
+    if (login) {
+      var databaseInstance = await DatabaseInstance.instance;
+      String uid = (await databaseInstance.modelConfigDao
+              .getOrCreateConfigByKey('uid', 'dmzj'))
+          .get<String>();
+      if (uid.isNotEmpty) {
+        data['uid'] = uid;
+      }
+    }
     return data;
   }
 
@@ -201,5 +212,21 @@ class DMZJV4RequestHandler extends RequestHandler {
       return data.data;
     }
     return [];
+  }
+
+  Future<ComicDetailInfoResponse?> getComicDetail(String comicId) async {
+    var response = await dio.get('/comic/detail/$comicId',
+        queryParameters: await getParam(login: true));
+    if (response.statusCode == 200) {
+      var data = ComicDetailResponse.fromBuffer(decrypt(response.data));
+      if (data.errno != 0) {
+        throw ErrorDescription(data.errmsg);
+      }
+      if (data.data.chapters.isEmpty) {
+        throw ErrorDescription('解析错误');
+      }
+      return data.data;
+    }
+    return null;
   }
 }

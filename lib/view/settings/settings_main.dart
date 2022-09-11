@@ -1,6 +1,7 @@
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/view/settings/about_page.dart';
+import 'package:dcomic/view/settings/account_login_page.dart';
 import 'package:dcomic/view/settings/debug_page.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
@@ -52,6 +53,14 @@ class _MainSettingPageState extends State<MainSettingPage> {
               leading: const Icon(Icons.account_box),
               title: Text(S.of(context).AccountSettings),
               subtitle: Text(S.of(context).AccountSettingsDescription),
+              onTap: (){
+                // TODO 当前的只是debug用
+                Provider.of<NavigatorProvider>(context, listen: false)
+                    .getNavigator(context, NavigatorType.defaultNavigator)
+                    ?.push(MaterialPageRoute(
+                    builder: (context) => const AccountLoginPage(),
+                    settings: const RouteSettings(name: 'AccountLoginPage')));
+              },
             ),
             ListTile(
               leading: const Icon(Icons.file_download_outlined),

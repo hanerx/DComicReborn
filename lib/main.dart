@@ -101,6 +101,9 @@ class _MainFrameworkState extends State<MainFramework> {
             child: Scaffold(
               appBar: AppBar(
                 title: Text(S.of(context).AppName),
+                actions: [
+                  IconButton(onPressed: (){}, icon: const Icon(Icons.search))
+                ],
                 bottom: TabBar(
                   tabs: [
                     Tab(

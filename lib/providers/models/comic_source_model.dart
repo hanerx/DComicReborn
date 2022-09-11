@@ -15,6 +15,11 @@ class ComicSourceEntity {
       {this.hasHomepage = false,
       this.hasAccountSupport = false,
       this.hasComment = false});
+
+  @override
+  String toString() {
+    return 'ComicSourceEntity{sourceName: $sourceName, sourceId: $sourceId, hasHomepage: $hasHomepage, hasAccountSupport: $hasAccountSupport, hasComment: $hasComment}';
+  }
 }
 
 abstract class BaseComicSourceModel extends BaseModel {
@@ -24,22 +29,87 @@ abstract class BaseComicSourceModel extends BaseModel {
 
   ComicSourceEntity get type => ComicSourceEntity("初始漫画源", "BaseComicSource");
 
-  Future<BaseComicDetailModel?> getComicDetail(String comicId);
+  Future<BaseComicDetailModel?> getComicDetail(String comicId, String title);
 
   Future<List<BaseComicDetailModel>> searchComicDetail(String keyword,
       {int page = 0});
 
   Future<List<ComicHistoryEntity>> getComicHistory();
+
+  @override
+  Future<void> init()async{
+    if(accountModel!=null){
+      await accountModel!.init();
+    }
+  }
 }
 
-abstract class BaseComicDetailModel extends BaseModel {}
+abstract class BaseComicDetailModel extends BaseModel {
+  ImageEntity get cover;
 
-abstract class BaseComicChapterEntityModel extends BaseModel {}
+  String get title;
+
+  DateTime get lastUpdate;
+
+  Map<String, List<BaseComicChapterEntityModel>> get chapters;
+
+  String get description;
+
+  String get status;
+
+  String get comicId;
+
+  Future<BaseComicChapterDetailModel?> getChapter(String chapterId);
+}
+
+abstract class BaseComicChapterEntityModel extends BaseModel {
+  String get title;
+
+  String get chapterId;
+
+  DateTime get uploadTime;
+}
+
+class DefaultComicChapterEntityModel extends BaseComicChapterEntityModel {
+  final String _title;
+  final String _chapterId;
+  final DateTime _uploadTime;
+
+  DefaultComicChapterEntityModel(
+      this._title, this._chapterId, this._uploadTime);
+
+  @override
+  String get chapterId => _chapterId;
+
+  @override
+  String get title => _title;
+
+  @override
+  DateTime get uploadTime => _uploadTime;
+}
 
 abstract class BaseComicChapterDetailModel extends BaseModel {}
 
 abstract class BaseComicAccountModel extends BaseModel {
   bool get isLogin => false;
+
+  bool get isLoading => false;
+
+  String? get uid;
+
+  ImageEntity? get avatar;
+
+  String? get nickname;
+
+  String? get username;
+
+  Future<void> init();
+
+  Future<bool> login(String username, String password);
+
+  Future<bool> logout();
+
+  Widget buildLoginWidget(BuildContext context);
 }
 
 abstract class BaseComicHomepageModel extends BaseModel {
@@ -91,5 +161,5 @@ class ListItemEntity {
   final Map<IconData, String> details;
   final void Function(BuildContext context)? onTap;
 
-  ListItemEntity(this.title, this.cover, this.details,this.onTap);
+  ListItemEntity(this.title, this.cover, this.details, this.onTap);
 }

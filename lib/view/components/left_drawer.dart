@@ -111,7 +111,7 @@ class _LeftDrawerState extends State<LeftDrawer> {
             Provider.of<ComicSourceProvider>(context).activeHomeModelIndex,
         itemBuilder: (BaseComicSourceModel value) =>
             DirectSelectItem<BaseComicSourceModel>(
-                itemHeight: 56,
+                itemHeight: 50,
                 value: value,
                 itemBuilder: (context, value) {
                   return Text(

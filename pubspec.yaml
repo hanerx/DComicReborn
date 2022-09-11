@@ -59,6 +59,7 @@ dependencies:
   crypton: ^2.0.5
   protobuf: ^2.1.0
   date_format: ^2.0.6
+  extended_nested_scroll_view: ^5.1.3
 
 dev_dependencies:
   flutter_test:

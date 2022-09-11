@@ -17,7 +17,7 @@ class ConfigEntity extends EntityBase {
     this.value = convertFromValue(value);
   }
 
-  Object? get<T>() => convertValue<T>(value);
+  dynamic get<T>() => convertValue<T>(value);
 
   void set(dynamic value) {
     this.value = convertFromValue(value);
