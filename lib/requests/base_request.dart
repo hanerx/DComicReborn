@@ -80,4 +80,5 @@ class RequestHandler {
 class RequestHandlers{
   static DMZJV3RequestHandler dmzjv3requestHandler=DMZJV3RequestHandler();
   static DMZJV4RequestHandler dmzjv4requestHandler=DMZJV4RequestHandler();
+  static DMZJUserRequestHandler dmzjUserRequestHandler=DMZJUserRequestHandler();
 }

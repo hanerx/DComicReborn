@@ -33,5 +33,21 @@
   "ExperimentalSettingsDescription": "DComic 00Q[T] Trans-Arm, Quantum Burst!",
 
   "DebugPageNetworkCheck": "Network Check",
-  "DebugPageNetworkCheckDescription": "Just check network by ping baidu.com, maybe change to more useful page in future."
+  "DebugPageNetworkCheckDescription": "Just check network by ping baidu.com, maybe change to more useful page in future.",
+
+  "ComicDetailPageAuthor": "Author: ",
+  "ComicDetailPageCategory": "Category: ",
+  "ComicDetailPageOriginalComicId": "Origin ComicID: ",
+  "ComicDetailPageBindComicId": "Bind ComicID: ",
+  "ComicDetailPageGridMode": "Grid",
+  "ComicDetailPageListMode": "List",
+  "ComicDetailPageChapterEntitySubtitle": "Upload Time: {uploadTime} ChapterID: {chapterId}",
+  "@ComicDetailPageChapterEntitySubtitle": {
+    "placeholders": {
+      "uploadTime": {},
+      "chapterId": {}
+    }
+  },
+  "ComicDetailPagePositiveMode": "Positive",
+  "ComicDetailPageReverseMode": "Reverse"
 }

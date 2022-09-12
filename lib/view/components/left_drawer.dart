@@ -2,6 +2,7 @@ import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/source_provider.dart';
+import 'package:dcomic/view/drawer_page/favorite_page.dart';
 import 'package:dcomic/view/settings/settings_main.dart';
 import 'package:direct_select_flutter/direct_select_container.dart';
 import 'package:direct_select_flutter/direct_select_item.dart';
@@ -71,7 +72,13 @@ class _LeftDrawerState extends State<LeftDrawer> {
       ListTile(
         leading: const Icon(Icons.favorite_border),
         title: Text(S.of(context).DrawerFavorite),
-        onTap: () {},
+        onTap: () {
+          Provider.of<NavigatorProvider>(context, listen: false)
+              .getNavigator(context, NavigatorType.defaultNavigator)
+              ?.push(MaterialPageRoute(
+              builder: (context) => const FavoritePage(),
+              settings: const RouteSettings(name: 'FavoritePage')));
+        },
       ),
       ListTile(
         leading: const Icon(Icons.history_edu),

@@ -14,16 +14,17 @@ class _AccountLoginPageState extends State<AccountLoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Login"),
-      ),
-      body: Container(
-        color: Theme.of(context).colorScheme.surfaceVariant,
-        child: Provider.of<ComicSourceProvider>(context)
-            .activeModel
-            .accountModel!
-            .buildLoginWidget(context),
-      ),
-    );
+          appBar: AppBar(
+            title: Text("Login"),
+            elevation: 0,
+          ),
+          body: Container(
+            color: Theme.of(context).colorScheme.surfaceVariant,
+            child: Provider.of<ComicSourceProvider>(context)
+                .activeModel
+                .accountModel!
+                .buildLoginWidget(context),
+          ),
+        );
   }
 }

@@ -20,6 +20,9 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'en';
 
+  static String m0(uploadTime, chapterId) =>
+      "Upload Time: ${uploadTime} ChapterID: ${chapterId}";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
         "AboutSettings": MessageLookupByLibrary.simpleMessage("About"),
@@ -30,6 +33,21 @@ class MessageLookup extends MessageLookupByLibrary {
         "AccountSettingsDescription": MessageLookupByLibrary.simpleMessage(
             "Manage All Comic Source With Account"),
         "AppName": MessageLookupByLibrary.simpleMessage("DComic"),
+        "ComicDetailPageAuthor":
+            MessageLookupByLibrary.simpleMessage("Author: "),
+        "ComicDetailPageBindComicId":
+            MessageLookupByLibrary.simpleMessage("Bind ComicID: "),
+        "ComicDetailPageCategory":
+            MessageLookupByLibrary.simpleMessage("Category: "),
+        "ComicDetailPageChapterEntitySubtitle": m0,
+        "ComicDetailPageGridMode": MessageLookupByLibrary.simpleMessage("Grid"),
+        "ComicDetailPageListMode": MessageLookupByLibrary.simpleMessage("List"),
+        "ComicDetailPageOriginalComicId":
+            MessageLookupByLibrary.simpleMessage("Origin ComicID: "),
+        "ComicDetailPagePositiveMode":
+            MessageLookupByLibrary.simpleMessage("Positive"),
+        "ComicDetailPageReverseMode":
+            MessageLookupByLibrary.simpleMessage("Reverse"),
         "DebugPageNetworkCheck":
             MessageLookupByLibrary.simpleMessage("Network Check"),
         "DebugPageNetworkCheckDescription": MessageLookupByLibrary.simpleMessage(

@@ -20,7 +20,7 @@ class DMZJV3RequestHandler extends RequestHandler {
   // 检查是否订阅
   Future<Response> getIfSubscribe(String comicId, String uid,
       {int type = 0}) async {
-    return dio.get('$baseUrl/subscribe/$type/$uid/$comicId');
+    return dio.get('/subscribe/$type/$uid/$comicId');
   }
 
   // 取消订阅
@@ -228,5 +228,13 @@ class DMZJV4RequestHandler extends RequestHandler {
       return data.data;
     }
     return null;
+  }
+}
+
+class DMZJUserRequestHandler extends RequestHandler{
+  DMZJUserRequestHandler() : super('https://user.muwai.com');
+  
+  Future<Response> loginV2(String username,String password)async {
+    return dio.post('/loginV2/m_confirm',data: FormData.fromMap({"passwd": password, "nickname": username}));
   }
 }

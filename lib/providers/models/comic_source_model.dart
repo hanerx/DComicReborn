@@ -2,6 +2,7 @@ import 'package:dcomic/database/entity/comic_history.dart';
 import 'package:dcomic/providers/models/base_model.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/utils/image_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class ComicSourceEntity {
@@ -44,6 +45,13 @@ abstract class BaseComicSourceModel extends BaseModel {
   }
 }
 
+class CategoryEntity{
+  final String title;
+  final String categoryId;
+
+  CategoryEntity(this.title, this.categoryId);
+}
+
 abstract class BaseComicDetailModel extends BaseModel {
   ImageEntity get cover;
 
@@ -58,6 +66,14 @@ abstract class BaseComicDetailModel extends BaseModel {
   String get status;
 
   String get comicId;
+
+  bool get subscribe => false;
+
+  set subscribe(bool subscribe){}
+
+  List<CategoryEntity> get authors;
+
+  List<CategoryEntity> get categories;
 
   Future<BaseComicChapterDetailModel?> getChapter(String chapterId);
 }
@@ -110,6 +126,12 @@ abstract class BaseComicAccountModel extends BaseModel {
   Future<bool> logout();
 
   Widget buildLoginWidget(BuildContext context);
+
+  Future<bool> getIfSubscribed(String comicId);
+
+  Future<bool> subscribeComic(String comicId);
+
+  Future<bool> unsubscribeComic(String comicId);
 }
 
 abstract class BaseComicHomepageModel extends BaseModel {

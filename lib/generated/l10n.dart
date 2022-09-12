@@ -339,6 +339,97 @@ class S {
       args: [],
     );
   }
+
+  /// `Author: `
+  String get ComicDetailPageAuthor {
+    return Intl.message(
+      'Author: ',
+      name: 'ComicDetailPageAuthor',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Category: `
+  String get ComicDetailPageCategory {
+    return Intl.message(
+      'Category: ',
+      name: 'ComicDetailPageCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Origin ComicID: `
+  String get ComicDetailPageOriginalComicId {
+    return Intl.message(
+      'Origin ComicID: ',
+      name: 'ComicDetailPageOriginalComicId',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Bind ComicID: `
+  String get ComicDetailPageBindComicId {
+    return Intl.message(
+      'Bind ComicID: ',
+      name: 'ComicDetailPageBindComicId',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Grid`
+  String get ComicDetailPageGridMode {
+    return Intl.message(
+      'Grid',
+      name: 'ComicDetailPageGridMode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `List`
+  String get ComicDetailPageListMode {
+    return Intl.message(
+      'List',
+      name: 'ComicDetailPageListMode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Upload Time: {uploadTime} ChapterID: {chapterId}`
+  String ComicDetailPageChapterEntitySubtitle(
+      Object uploadTime, Object chapterId) {
+    return Intl.message(
+      'Upload Time: $uploadTime ChapterID: $chapterId',
+      name: 'ComicDetailPageChapterEntitySubtitle',
+      desc: '',
+      args: [uploadTime, chapterId],
+    );
+  }
+
+  /// `Positive`
+  String get ComicDetailPagePositiveMode {
+    return Intl.message(
+      'Positive',
+      name: 'ComicDetailPagePositiveMode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reverse`
+  String get ComicDetailPageReverseMode {
+    return Intl.message(
+      'Reverse',
+      name: 'ComicDetailPageReverseMode',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

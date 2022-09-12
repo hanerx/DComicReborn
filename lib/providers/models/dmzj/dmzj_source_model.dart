@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:date_format/date_format.dart';
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/entity/comic_history.dart';
@@ -9,14 +11,15 @@ import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:provider/provider.dart';
 
 class DMZJComicSourceModel extends BaseComicSourceModel {
   final DMZJComicAccountModel _accountModel = DMZJComicAccountModel();
 
   @override
-  ComicSourceEntity get type =>
-      ComicSourceEntity("大妈之家", "dmzj", hasHomepage: true);
+  ComicSourceEntity get type => ComicSourceEntity("大妈之家", "dmzj",
+      hasHomepage: true, hasAccountSupport: true);
 
   @override
   Future<BaseComicDetailModel?> getComicDetail(
@@ -25,10 +28,11 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
       ComicDetailInfoResponse? rawData =
           await RequestHandlers.dmzjv4requestHandler.getComicDetail(comicId);
       if (rawData != null) {
-        return DMZJV4ComicDetailModel(rawData);
+        return DMZJV4ComicDetailModel(rawData, this);
       }
     } catch (e, s) {
       logger.e('$e', e, s);
+      rethrow;
     }
     return null;
   }
@@ -207,8 +211,17 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
 
 class DMZJV4ComicDetailModel extends BaseComicDetailModel {
   final ComicDetailInfoResponse rawData;
+  final DMZJComicSourceModel parent;
 
-  DMZJV4ComicDetailModel(this.rawData);
+  bool _isSubscribe = false;
+
+  DMZJV4ComicDetailModel(this.rawData, this.parent);
+
+  @override
+  Future<void> init() async {
+    super.init();
+    _isSubscribe = await parent.accountModel!.getIfSubscribed(comicId);
+  }
 
   @override
   Map<String, List<BaseComicChapterEntityModel>> get chapters {
@@ -250,8 +263,32 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
   String get title => rawData.title;
 
   @override
+  bool get subscribe => _isSubscribe;
+
+  @override
+  set subscribe(bool subscribe) {
+    if (subscribe) {
+      parent.accountModel!.subscribeComic(comicId);
+    } else {
+      parent.accountModel!.unsubscribeComic(comicId);
+    }
+    _isSubscribe = subscribe;
+    notifyListeners();
+  }
+
+  @override
   ImageEntity get cover => ImageEntity(ImageType.network, rawData.cover,
       imageHeaders: {"referer": "https://i.dmzj.com"});
+
+  @override
+  List<CategoryEntity> get authors => rawData.authors
+      .map((e) => CategoryEntity(e.tagName, e.tagId.toString()))
+      .toList();
+
+  @override
+  List<CategoryEntity> get categories => rawData.types
+      .map((e) => CategoryEntity(e.tagName, e.tagId.toString()))
+      .toList();
 }
 
 class DMZJComicAccountModel extends BaseComicAccountModel {
@@ -273,38 +310,162 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
   @override
   Widget buildLoginWidget(BuildContext context) {
     GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    return Column(
+    TextEditingController usernameController = TextEditingController();
+    TextEditingController passwordController = TextEditingController();
+    return Stack(
       children: [
-        Card(
-          child: Column(
-            children: [
-              Form(key:formKey,child: Column(
-                children: [
-                  TextFormField(decoration: InputDecoration(
-                    hintText: '用户名',
-                  ),),
-                  TextFormField(decoration: InputDecoration(
-                    hintText: '密码',
-                  ),)
-                ],
-              )),
-              Row(
-                children: [
-                  Expanded(child: SizedBox(),),
-                  ElevatedButton(onPressed: (){}, child: Text("登录"))
-                ],
-              )
-            ],
-          ),
+        Container(
+          color: Theme.of(context).colorScheme.primary,
+          height: 100,
+        ),
+        Column(
+          children: [
+            Card(
+                elevation: 0,
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    children: [
+                      Center(
+                        child: Text(
+                          "DMZJ",
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
+                      ),
+                      Form(
+                          key: formKey,
+                          child: Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: TextFormField(
+                                  controller: usernameController,
+                                  decoration: InputDecoration(
+                                      isDense: true,
+                                      border: OutlineInputBorder(gapPadding: 1),
+                                      labelText: '用户名',
+                                      prefixIcon: Icon(Icons.account_circle),
+                                      hintText: '昵称/手机号/邮箱'),
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.only(bottom: 10),
+                                child: TextFormField(
+                                  controller: passwordController,
+                                  obscureText: true,
+                                  decoration: InputDecoration(
+                                      isDense: true,
+                                      border: OutlineInputBorder(gapPadding: 1),
+                                      labelText: '密码',
+                                      prefixIcon: Icon(Icons.lock),
+                                      hintText: '大妈之家登录密码'),
+                                ),
+                              )
+                            ],
+                          )),
+                    ],
+                  ),
+                )),
+            Row(
+              children: [
+                const Expanded(
+                  child: SizedBox(),
+                ),
+                Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          if (formKey.currentState!.validate()) {
+                            if (await login(usernameController.text,
+                                passwordController.text)) {
+                              Provider.of<NavigatorProvider>(context,
+                                      listen: false)
+                                  .getNavigator(
+                                      context, NavigatorType.defaultNavigator)
+                                  ?.pop();
+                            }
+                          }
+                        } catch (e, s) {
+                          logger.e(e, e, s);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text('登录失败: $e'),
+                          ));
+                        }
+                      },
+                      icon: const Icon(FontAwesome5.arrow_right),
+                      label: Text("登录"),
+                      style: ButtonStyle(
+                          shape:
+                              MaterialStateProperty.all(RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(3),
+                            bottomLeft: Radius.circular(3),
+                          ))),
+                          padding: MaterialStateProperty.all(
+                              EdgeInsets.only(top: 10, left: 10, bottom: 10))),
+                    ))
+              ],
+            ),
+            Row(
+              children: [
+                const Expanded(
+                  child: SizedBox(),
+                ),
+                Expanded(
+                    flex: 1,
+                    child: ElevatedButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(FontAwesome5.qq),
+                      label: Text("QQ登录"),
+                      style: ButtonStyle(
+                          backgroundColor:
+                              MaterialStateProperty.all(Colors.cyan),
+                          shape:
+                              MaterialStateProperty.all(RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(3),
+                            bottomLeft: Radius.circular(3),
+                          ))),
+                          padding: MaterialStateProperty.all(
+                              EdgeInsets.only(top: 10, left: 10, bottom: 10))),
+                    ))
+              ],
+            )
+          ],
         )
       ],
     );
   }
 
   @override
-  Future<bool> login(String username, String password) {
-    // TODO: implement login
-    throw UnimplementedError();
+  Future<bool> login(String username, String password) async {
+    var response = await RequestHandlers.dmzjUserRequestHandler
+        .loginV2(username, password);
+    try {
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        response.data = jsonDecode(response.data);
+        if (response.data['result'] == 1) {
+          var databaseInstance = await DatabaseInstance.instance;
+          var databaseIsLogin = (await databaseInstance.modelConfigDao
+              .getOrCreateConfigByKey('isLogin', parent!.type.sourceId));
+          databaseIsLogin.set(true);
+          await databaseInstance.modelConfigDao.updateConfig(databaseIsLogin);
+          var databaseUId = (await databaseInstance.modelConfigDao
+              .getOrCreateConfigByKey('uid', parent!.type.sourceId));
+          databaseUId.set(response.data['data']['uid']);
+          await databaseInstance.modelConfigDao.updateConfig(databaseUId);
+          await init();
+          return true;
+        } else {
+          throw response.data['msg'];
+        }
+      }
+    } catch (e, s) {
+      logger.e(e, e, s);
+      rethrow;
+    }
+    return false;
   }
 
   @override
@@ -356,4 +517,55 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
 
   @override
   bool get isLogin => _isLogin;
+
+  @override
+  Future<bool> getIfSubscribed(String comicId) async {
+    if (!isLogin) {
+      return false;
+    }
+    try {
+      var response = await RequestHandlers.dmzjv3requestHandler
+          .getIfSubscribe(comicId, uid!);
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        return response.data['code'] == 0;
+      }
+    } catch (e, s) {
+      logger.e(e, e, s);
+    }
+    return false;
+  }
+
+  @override
+  Future<bool> subscribeComic(String comicId) async{
+    if (!isLogin) {
+      return false;
+    }
+    try {
+      var response = await RequestHandlers.dmzjv3requestHandler
+          .addSubscribe(comicId, uid!);
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        return true;
+      }
+    } catch (e, s) {
+      logger.e(e, e, s);
+    }
+    return false;
+  }
+
+  @override
+  Future<bool> unsubscribeComic(String comicId) async{
+    if (!isLogin) {
+      return false;
+    }
+    try {
+      var response = await RequestHandlers.dmzjv3requestHandler
+          .cancelSubscribe(comicId, uid!);
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        return true;
+      }
+    } catch (e, s) {
+      logger.e(e, e, s);
+    }
+    return false;
+  }
 }
