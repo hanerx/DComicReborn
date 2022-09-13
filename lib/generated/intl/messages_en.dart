@@ -20,7 +20,13 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'en';
 
-  static String m0(uploadTime, chapterId) =>
+  static String m0(nickname) => "Nickname: ${nickname}";
+
+  static String m1(userId) => "UID: ${userId}";
+
+  static String m2(username) => "Username: ${username}";
+
+  static String m3(uploadTime, chapterId) =>
       "Upload Time: ${uploadTime} ChapterID: ${chapterId}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -28,6 +34,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "AboutSettings": MessageLookupByLibrary.simpleMessage("About"),
         "AboutSettingsDescription":
             MessageLookupByLibrary.simpleMessage("About DComic"),
+        "AccountManagePageSubtitleNickname": m0,
+        "AccountManagePageSubtitleUID": m1,
+        "AccountManagePageSubtitleUsername": m2,
         "AccountSettings":
             MessageLookupByLibrary.simpleMessage("Account Settings"),
         "AccountSettingsDescription": MessageLookupByLibrary.simpleMessage(
@@ -39,7 +48,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Bind ComicID: "),
         "ComicDetailPageCategory":
             MessageLookupByLibrary.simpleMessage("Category: "),
-        "ComicDetailPageChapterEntitySubtitle": m0,
+        "ComicDetailPageChapterEntitySubtitle": m3,
         "ComicDetailPageGridMode": MessageLookupByLibrary.simpleMessage("Grid"),
         "ComicDetailPageListMode": MessageLookupByLibrary.simpleMessage("List"),
         "ComicDetailPageOriginalComicId":

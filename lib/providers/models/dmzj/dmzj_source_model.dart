@@ -469,9 +469,21 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
   }
 
   @override
-  Future<bool> logout() {
-    // TODO: implement logout
-    throw UnimplementedError();
+  Future<bool> logout() async{
+    var databaseInstance = await DatabaseInstance.instance;
+    var databaseIsLogin = (await databaseInstance.modelConfigDao
+        .getOrCreateConfigByKey('isLogin', parent!.type.sourceId));
+    databaseIsLogin.set(false);
+    await databaseInstance.modelConfigDao.updateConfig(databaseIsLogin);
+    var databaseUId = (await databaseInstance.modelConfigDao
+        .getOrCreateConfigByKey('uid', parent!.type.sourceId));
+    databaseUId.set('');
+    await databaseInstance.modelConfigDao.updateConfig(databaseUId);
+    _avatar=null;
+    _username=null;
+    _nickname=null;
+    await init();
+    return true;
   }
 
   @override

@@ -13,6 +13,10 @@ class ComicSourceProvider extends BaseProvider {
     }
   }
 
+  void callNotify(){
+    notifyListeners();
+  }
+
   BaseComicSourceModel? _activeHomeModel;
   int? _activeHomeModelIndex;
 
@@ -23,6 +27,16 @@ class ComicSourceProvider extends BaseProvider {
     List<BaseComicSourceModel> result = [];
     for (var element in sources) {
       if (element.type.hasHomepage) {
+        result.add(element);
+      }
+    }
+    return result;
+  }
+
+  List<BaseComicSourceModel> get hasAccountSettingSources {
+    List<BaseComicSourceModel> result = [];
+    for (var element in sources) {
+      if (element.type.hasAccountSupport) {
         result.add(element);
       }
     }

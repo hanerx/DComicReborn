@@ -430,6 +430,36 @@ class S {
       args: [],
     );
   }
+
+  /// `Nickname: {nickname}`
+  String AccountManagePageSubtitleNickname(Object nickname) {
+    return Intl.message(
+      'Nickname: $nickname',
+      name: 'AccountManagePageSubtitleNickname',
+      desc: '',
+      args: [nickname],
+    );
+  }
+
+  /// `UID: {userId}`
+  String AccountManagePageSubtitleUID(Object userId) {
+    return Intl.message(
+      'UID: $userId',
+      name: 'AccountManagePageSubtitleUID',
+      desc: '',
+      args: [userId],
+    );
+  }
+
+  /// `Username: {username}`
+  String AccountManagePageSubtitleUsername(Object username) {
+    return Intl.message(
+      'Username: $username',
+      name: 'AccountManagePageSubtitleUsername',
+      desc: '',
+      args: [username],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

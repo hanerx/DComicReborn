@@ -1,10 +1,11 @@
+import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/source_provider.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class AccountLoginPage extends StatefulWidget {
-  const AccountLoginPage({super.key});
+  final BaseComicSourceModel sourceModel;
+  const AccountLoginPage({super.key, required this.sourceModel});
 
   @override
   State<StatefulWidget> createState() => _AccountLoginPageState();
@@ -20,8 +21,7 @@ class _AccountLoginPageState extends State<AccountLoginPage> {
           ),
           body: Container(
             color: Theme.of(context).colorScheme.surfaceVariant,
-            child: Provider.of<ComicSourceProvider>(context)
-                .activeModel
+            child: widget.sourceModel
                 .accountModel!
                 .buildLoginWidget(context),
           ),

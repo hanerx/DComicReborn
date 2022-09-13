@@ -49,5 +49,30 @@
     }
   },
   "ComicDetailPagePositiveMode": "Positive",
-  "ComicDetailPageReverseMode": "Reverse"
+  "ComicDetailPageReverseMode": "Reverse",
+
+  "AccountManagePageSubtitleNickname": "Nickname: {nickname}",
+  "@AccountManagePageSubtitleNickname": {
+    "placeholders": {
+      "nickname": {
+        "example": "Unknown"
+      }
+    }
+  },
+  "AccountManagePageSubtitleUID": "UID: {userId}",
+  "@AccountManagePageSubtitleUID": {
+    "placeholders": {
+      "userId": {
+        "example": "Unknown"
+      }
+    }
+  },
+  "AccountManagePageSubtitleUsername": "Username: {username}",
+  "@AccountManagePageSubtitleUsername": {
+    "placeholders": {
+      "username": {
+        "example": "Unknown"
+      }
+    }
+  }
 }

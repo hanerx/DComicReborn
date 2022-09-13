@@ -3,6 +3,7 @@ import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/source_provider.dart';
 import 'package:dcomic/view/drawer_page/favorite_page.dart';
+import 'package:dcomic/view/settings/account_manage_page.dart';
 import 'package:dcomic/view/settings/settings_main.dart';
 import 'package:direct_select_flutter/direct_select_container.dart';
 import 'package:direct_select_flutter/direct_select_item.dart';
@@ -56,7 +57,13 @@ class _LeftDrawerState extends State<LeftDrawer> {
             ),
           ),
           TextButton(
-            onPressed: () {},
+            onPressed: () {
+              Provider.of<NavigatorProvider>(context, listen: false)
+                  .getNavigator(context, NavigatorType.defaultNavigator)
+                  ?.push(MaterialPageRoute(
+                  builder: (context) => const AccountManagePage(),
+                  settings: const RouteSettings(name: 'AccountManagePage')));
+            },
             style: ButtonStyle(
                 shape: MaterialStateProperty.all(const CircleBorder()),
                 padding: MaterialStateProperty.all(const EdgeInsets.all(3))),

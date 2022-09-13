@@ -1,3 +1,4 @@
+import 'package:dcomic/generated/l10n.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 
@@ -16,7 +17,7 @@ class _FavoritePageState extends State<FavoritePage> {
         child: Scaffold(
           appBar: AppBar(
             elevation: 0,
-            title: Text("Favorite"),
+            title: Text(S.of(context).DrawerFavorite),
             bottom: TabBar(
               isScrollable: true,
               tabs: [
