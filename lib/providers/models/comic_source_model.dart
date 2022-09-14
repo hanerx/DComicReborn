@@ -119,6 +119,7 @@ abstract class BaseComicAccountModel extends BaseModel {
 
   String? get username;
 
+  @override
   Future<void> init();
 
   Future<bool> login(String username, String password);
@@ -132,6 +133,8 @@ abstract class BaseComicAccountModel extends BaseModel {
   Future<bool> subscribeComic(String comicId);
 
   Future<bool> unsubscribeComic(String comicId);
+
+  Future<List<GridItemEntity>> getSubscribeComics({int page=0});
 }
 
 abstract class BaseComicHomepageModel extends BaseModel {

@@ -580,4 +580,18 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
     }
     return false;
   }
+
+  @override
+  Future<List<GridItemEntity>> getSubscribeComics({int page = 0})async {
+    List<GridItemEntity> data=[];
+    try{
+      var response=await RequestHandlers.dmzjv3requestHandler.getSubscribe(int.parse(uid!), page);
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        //TODO favorite
+      }
+    }catch(e,s){
+      logger.e(e,e,s);
+    }
+    return data;
+  }
 }

@@ -42,6 +42,7 @@ class _FavoritePageState extends State<FavoritePage> {
               item.accountModel!.isLogin
                   ? EasyRefresh(
                       onRefresh: () {},
+                      onLoad: () {},
                       refreshOnStart: true,
                       child: Container(
                           color: Theme.of(context).colorScheme.surfaceVariant,
