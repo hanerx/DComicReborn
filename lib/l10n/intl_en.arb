@@ -11,6 +11,9 @@
 
   "ImageTypeNotSupport": "Unknown Image Type",
   "Loading": "Loading...",
+  "Empty":"No more Information",
+  "RequireLogin": "This Page Needs User Info, Please Login",
+  "JumpToLogin": "Jump To Login Page",
 
   "DrawerFavorite": "Favorite",
   "DrawerHistory": "History",

@@ -73,12 +73,15 @@ class MessageLookup extends MessageLookupByLibrary {
         "DrawerFavorite": MessageLookupByLibrary.simpleMessage("Favorite"),
         "DrawerHistory": MessageLookupByLibrary.simpleMessage("History"),
         "DrawerSetting": MessageLookupByLibrary.simpleMessage("Setting"),
+        "Empty": MessageLookupByLibrary.simpleMessage("No more Information"),
         "ExperimentalSettings":
             MessageLookupByLibrary.simpleMessage("Experimental Settings"),
         "ExperimentalSettingsDescription": MessageLookupByLibrary.simpleMessage(
             "DComic 00Q[T] Trans-Arm, Quantum Burst!"),
         "ImageTypeNotSupport":
             MessageLookupByLibrary.simpleMessage("Unknown Image Type"),
+        "JumpToLogin":
+            MessageLookupByLibrary.simpleMessage("Jump To Login Page"),
         "Loading": MessageLookupByLibrary.simpleMessage("Loading..."),
         "MainPageCategory": MessageLookupByLibrary.simpleMessage("Category"),
         "MainPageHome": MessageLookupByLibrary.simpleMessage("Home"),
@@ -88,6 +91,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Reader Settings"),
         "ReaderSettingsDescription":
             MessageLookupByLibrary.simpleMessage("Settings About Comic Reader"),
+        "RequireLogin": MessageLookupByLibrary.simpleMessage(
+            "This Page Needs User Info, Please Login"),
         "SourceSettings":
             MessageLookupByLibrary.simpleMessage("Source Settings"),
         "SourceSettingsDescription":

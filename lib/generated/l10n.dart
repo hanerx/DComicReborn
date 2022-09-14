@@ -140,6 +140,36 @@ class S {
     );
   }
 
+  /// `No more Information`
+  String get Empty {
+    return Intl.message(
+      'No more Information',
+      name: 'Empty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This Page Needs User Info, Please Login`
+  String get RequireLogin {
+    return Intl.message(
+      'This Page Needs User Info, Please Login',
+      name: 'RequireLogin',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Jump To Login Page`
+  String get JumpToLogin {
+    return Intl.message(
+      'Jump To Login Page',
+      name: 'JumpToLogin',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Favorite`
   String get DrawerFavorite {
     return Intl.message(
