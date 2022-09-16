@@ -104,7 +104,15 @@ class DefaultComicChapterEntityModel extends BaseComicChapterEntityModel {
   DateTime get uploadTime => _uploadTime;
 }
 
-abstract class BaseComicChapterDetailModel extends BaseModel {}
+abstract class BaseComicChapterDetailModel extends BaseModel {
+  String get title;
+
+  List<ImageEntity> get pages;
+
+  String get chapterId;
+
+
+}
 
 abstract class BaseComicAccountModel extends BaseModel {
   bool get isLogin => false;

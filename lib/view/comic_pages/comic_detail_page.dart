@@ -1,8 +1,10 @@
 import 'package:date_format/date_format.dart' as formatDate;
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
+import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/page_controllers/comic_detail_page_controller.dart';
 import 'package:dcomic/providers/source_provider.dart';
+import 'package:dcomic/view/comic_viewer/comic_viewer_page.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:direct_select_flutter/direct_select_container.dart';
 import 'package:direct_select_flutter/direct_select_item.dart';
@@ -278,10 +280,31 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                                 const Expanded(child: SizedBox()),
                                 TextButton.icon(
                                   onPressed: () {
-                                    Provider.of<ComicDetailPageController>(context,listen: false).reverse=!Provider.of<ComicDetailPageController>(context,listen: false).reverse;
+                                    Provider.of<ComicDetailPageController>(
+                                                context,
+                                                listen: false)
+                                            .reverse =
+                                        !Provider.of<ComicDetailPageController>(
+                                                context,
+                                                listen: false)
+                                            .reverse;
                                   },
-                                  icon: Icon(Provider.of<ComicDetailPageController>(context).reverse?FontAwesome5.sort_amount_down:FontAwesome5.sort_amount_down_alt),
-                                  label: Text(Provider.of<ComicDetailPageController>(context).reverse?S.of(context).ComicDetailPageReverseMode:S.of(context).ComicDetailPagePositiveMode),
+                                  icon: Icon(
+                                      Provider.of<ComicDetailPageController>(
+                                                  context)
+                                              .reverse
+                                          ? FontAwesome5.sort_amount_down
+                                          : FontAwesome5.sort_amount_down_alt),
+                                  label: Text(
+                                      Provider.of<ComicDetailPageController>(
+                                                  context)
+                                              .reverse
+                                          ? S
+                                              .of(context)
+                                              .ComicDetailPageReverseMode
+                                          : S
+                                              .of(context)
+                                              .ComicDetailPagePositiveMode),
                                   style: ButtonStyle(
                                       foregroundColor:
                                           MaterialStateProperty.all(
@@ -334,7 +357,10 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
           ),
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.refresh),
+            icon: Icon(
+              Icons.refresh,
+              color: Theme.of(context).colorScheme.secondary,
+            ),
             splashRadius: 25,
             visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
           )
@@ -346,14 +372,16 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
   Widget _buildSourceController(BuildContext context) {
     return Row(
       children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 5),
-          child: Icon(Icons.apps),
+        Padding(
+          padding: const EdgeInsets.only(left: 5),
+          child: Icon(
+            Icons.apps,
+            color: Theme.of(context).colorScheme.secondary,
+          ),
         ),
         Expanded(
           child: DirectSelectList<BaseComicSourceModel>(
-            values:
-                Provider.of<ComicSourceProvider>(context).sources,
+            values: Provider.of<ComicSourceProvider>(context).sources,
             defaultItemIndex:
                 Provider.of<ComicSourceProvider>(context).activeModelIndex,
             itemBuilder: (BaseComicSourceModel value) =>
@@ -387,9 +415,12 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
             ),
           ),
         ),
-        const Padding(
-          padding: EdgeInsets.only(right: 5),
-          child: Icon(Icons.unfold_more),
+        Padding(
+          padding: const EdgeInsets.only(right: 5),
+          child: Icon(
+            Icons.unfold_more,
+            color: Theme.of(context).colorScheme.secondary,
+          ),
         )
       ],
     );
@@ -418,7 +449,11 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                 ),
               ),
               const Divider(),
-              _buildChapterList(context, Provider.of<ComicDetailPageController>(context).reverse?tuple.value:tuple.value.reversed.toList())
+              _buildChapterList(
+                  context,
+                  Provider.of<ComicDetailPageController>(context).reverse
+                      ? tuple.value
+                      : tuple.value.reversed.toList())
             ],
           ),
         ),
@@ -438,14 +473,26 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3, childAspectRatio: 3 / 1),
         itemCount: data.length,
-        itemBuilder: (context,index)=>Padding(
+        itemBuilder: (context, index) => Padding(
           padding: const EdgeInsets.all(3),
           child: OutlinedButton(
-              onPressed: () {},
+              onPressed: () {
+                var detailModel=Provider.of<ComicDetailPageController>(context, listen: false)
+                    .detailModel!;
+                Provider.of<NavigatorProvider>(context, listen: false)
+                    .getNavigator(context, NavigatorType.defaultNavigator)
+                    ?.push(MaterialPageRoute(
+                        builder: (context) => ComicViewerPage(
+                            detailModel:detailModel,
+                            chapters: data,
+                            chapterId: data[index].chapterId),
+                        settings:
+                            const RouteSettings(name: 'ComicViewerPage')));
+              },
               child: Text(
                 data[index].title,
-                style: TextStyle(
-                    color: Theme.of(context).colorScheme.secondary),
+                style:
+                    TextStyle(color: Theme.of(context).colorScheme.secondary),
                 overflow: TextOverflow.ellipsis,
               )),
         ),
@@ -456,18 +503,25 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: data.length,
-        itemBuilder: (context,index)=>ListTile(
+        itemBuilder: (context, index) => ListTile(
           title: Text(data[index].title),
           subtitle: Text(S.of(context).ComicDetailPageChapterEntitySubtitle(
-              formatDate.formatDate(data[index].uploadTime, [
-                formatDate.yyyy,
-                '-',
-                formatDate.mm,
-                '-',
-                formatDate.dd
-              ]),
+              formatDate.formatDate(data[index].uploadTime,
+                  [formatDate.yyyy, '-', formatDate.mm, '-', formatDate.dd]),
               data[index].chapterId)),
-          onTap: () {},
+          onTap: () {
+            var detailModel=Provider.of<ComicDetailPageController>(context, listen: false)
+                .detailModel!;
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                builder: (context) => ComicViewerPage(
+                    detailModel: detailModel,
+                    chapters: data,
+                    chapterId: data[index].chapterId),
+                settings:
+                const RouteSettings(name: 'ComicViewerPage')));
+          },
         ),
       );
     }
@@ -475,9 +529,12 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
 
   List<Widget> _buildCategoryList(BuildContext context) {
     List<Widget> data = [
-      const Padding(
-        padding: EdgeInsets.only(left: 5),
-        child: Icon(Icons.apps),
+      Padding(
+        padding: const EdgeInsets.only(left: 5),
+        child: Icon(
+          Icons.apps,
+          color: Theme.of(context).colorScheme.secondary,
+        ),
       ),
       Text(S.of(context).ComicDetailPageCategory),
     ];
@@ -500,9 +557,12 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
 
   List<Widget> _buildAuthorList(BuildContext context) {
     List<Widget> data = [
-      const Padding(
-        padding: EdgeInsets.only(left: 5),
-        child: Icon(Icons.supervisor_account),
+      Padding(
+        padding: const EdgeInsets.only(left: 5),
+        child: Icon(
+          Icons.supervisor_account,
+          color: Theme.of(context).colorScheme.secondary,
+        ),
       ),
       Text(S.of(context).ComicDetailPageAuthor),
     ];

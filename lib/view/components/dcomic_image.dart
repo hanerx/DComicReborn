@@ -12,7 +12,11 @@ class DComicImage extends StatelessWidget {
   final BoxFit? fit;
   final Color? customErrorMessageColor;
 
-  const DComicImage(this.imageEntity, {super.key,this.errorMessageOverflow,this.fit, this.customErrorMessageColor});
+  const DComicImage(this.imageEntity,
+      {super.key,
+      this.errorMessageOverflow,
+      this.fit,
+      this.customErrorMessageColor});
 
   @override
   Widget build(BuildContext context) {
@@ -35,27 +39,35 @@ class DComicImage extends StatelessWidget {
               _buildErrorWidget(context, "$url Load Failed: $error"),
         );
       case ImageType.local:
-        return Image.file(File(imageEntity.imageUrl));
+        return Image.file(
+          File(imageEntity.imageUrl),
+          fit: fit,
+          errorBuilder: (context, object, error) =>
+              _buildErrorWidget(context, "$object Load Failed: $error"),
+        );
     }
   }
 
   Widget _buildErrorWidget(BuildContext context, String errorMessage) {
     return Center(
-        child: Column(
-          children: [
-            const Expanded(child: SizedBox()),
-            Icon(
-              Icons.broken_image,
-              size: 60,
-              color: customErrorMessageColor ?? Theme.of(context).disabledColor,
-            ),
-            Text(
-              errorMessage,
-              style: TextStyle(color: customErrorMessageColor ?? Theme.of(context).disabledColor,overflow: errorMessageOverflow),
-            ),
-            const Expanded(child: SizedBox()),
-          ],
-        ),
-      );
+      child: Column(
+        children: [
+          const Expanded(child: SizedBox()),
+          Icon(
+            Icons.broken_image,
+            size: 60,
+            color: customErrorMessageColor ?? Theme.of(context).disabledColor,
+          ),
+          Text(
+            errorMessage,
+            style: TextStyle(
+                color:
+                    customErrorMessageColor ?? Theme.of(context).disabledColor,
+                overflow: errorMessageOverflow),
+          ),
+          const Expanded(child: SizedBox()),
+        ],
+      ),
+    );
   }
 }

@@ -247,9 +247,19 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
   String get description => rawData.description;
 
   @override
-  Future<BaseComicChapterDetailModel?> getChapter(String chapterId) {
-    // TODO: implement getChapter
-    throw UnimplementedError();
+  Future<BaseComicChapterDetailModel?> getChapter(String chapterId) async {
+    try {
+      ComicChapterDetailInfoResponse? rawData = await RequestHandlers
+          .dmzjv4requestHandler
+          .getComicChapterDetail(comicId, chapterId);
+      if (rawData != null) {
+        return DMZJV4ComicChapterDetailModel(rawData, this);
+      }
+    } catch (e, s) {
+      logger.e('$e', e, s);
+      rethrow;
+    }
+    return null;
   }
 
   @override
@@ -289,6 +299,25 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
   List<CategoryEntity> get categories => rawData.types
       .map((e) => CategoryEntity(e.tagName, e.tagId.toString()))
       .toList();
+}
+
+class DMZJV4ComicChapterDetailModel extends BaseComicChapterDetailModel {
+  final ComicChapterDetailInfoResponse rawData;
+  final DMZJV4ComicDetailModel parent;
+
+  DMZJV4ComicChapterDetailModel(this.rawData, this.parent);
+
+  @override
+  String get chapterId => rawData.chapterId.toString();
+
+  @override
+  List<ImageEntity> get pages => rawData.rawPages
+      .map((e) => ImageEntity(ImageType.network, e,
+          imageHeaders: {"referer": "https://i.dmzj.com"}))
+      .toList();
+
+  @override
+  String get title => rawData.title;
 }
 
 class DMZJComicAccountModel extends BaseComicAccountModel {
@@ -469,7 +498,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
   }
 
   @override
-  Future<bool> logout() async{
+  Future<bool> logout() async {
     var databaseInstance = await DatabaseInstance.instance;
     var databaseIsLogin = (await databaseInstance.modelConfigDao
         .getOrCreateConfigByKey('isLogin', parent!.type.sourceId));
@@ -479,9 +508,9 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
         .getOrCreateConfigByKey('uid', parent!.type.sourceId));
     databaseUId.set('');
     await databaseInstance.modelConfigDao.updateConfig(databaseUId);
-    _avatar=null;
-    _username=null;
-    _nickname=null;
+    _avatar = null;
+    _username = null;
+    _nickname = null;
     await init();
     return true;
   }
@@ -548,7 +577,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
   }
 
   @override
-  Future<bool> subscribeComic(String comicId) async{
+  Future<bool> subscribeComic(String comicId) async {
     if (!isLogin) {
       return false;
     }
@@ -565,7 +594,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
   }
 
   @override
-  Future<bool> unsubscribeComic(String comicId) async{
+  Future<bool> unsubscribeComic(String comicId) async {
     if (!isLogin) {
       return false;
     }
@@ -582,15 +611,32 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
   }
 
   @override
-  Future<List<GridItemEntity>> getSubscribeComics({int page = 0})async {
-    List<GridItemEntity> data=[];
-    try{
-      var response=await RequestHandlers.dmzjv3requestHandler.getSubscribe(int.parse(uid!), page);
+  Future<List<GridItemEntity>> getSubscribeComics({int page = 0}) async {
+    List<GridItemEntity> data = [];
+    try {
+      var response = await RequestHandlers.dmzjv3requestHandler
+          .getSubscribe(int.parse(uid!), page);
       if ((response.statusCode == 200 || response.statusCode == 304)) {
-        //TODO favorite
+        for (var rawData in response.data) {
+          data.add(GridItemEntity(
+              rawData['name'],
+              rawData['sub_update'],
+              ImageEntity(ImageType.network, rawData['sub_img'],
+                  imageHeaders: {"referer": "https://i.dmzj.com"}), (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicDetailPage(
+                          title: rawData['name'],
+                          comicId: rawData['id'].toString(),
+                          comicSourceModel: parent,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
+          }));
+        }
       }
-    }catch(e,s){
-      logger.e(e,e,s);
+    } catch (e, s) {
+      logger.e(e, e, s);
     }
     return data;
   }

@@ -229,6 +229,20 @@ class DMZJV4RequestHandler extends RequestHandler {
     }
     return null;
   }
+
+  Future<ComicChapterDetailInfoResponse?> getComicChapterDetail(
+      String comicId, String chapterId) async {
+    var response = await dio.get('/comic/chapter/$comicId/$chapterId',
+        queryParameters: await getParam(login: true));
+    if (response.statusCode == 200) {
+      var data = ComicChapterDetailResponse.fromBuffer(decrypt(response.data));
+      if (data.errno != 0) {
+        throw ErrorDescription('解析错误');
+      }
+      return data.data;
+    }
+    return null;
+  }
 }
 
 class DMZJUserRequestHandler extends RequestHandler{
