@@ -1,11 +1,14 @@
 import 'dart:math';
 
 import 'package:dcomic/generated/l10n.dart';
+import 'package:dcomic/providers/version_provider.dart';
 import 'package:dcomic/view/components/list_card.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:fluttericon/font_awesome_icons.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher_string.dart' as url_string_launcher;
 
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
@@ -101,15 +104,19 @@ class _AboutPageState extends State<AboutPage> {
                 color: Theme.of(context).colorScheme.primaryContainer,
                 children: [
                   ListTile(
-                    leading: const Padding(padding:EdgeInsets.all(10),child: Icon(Icons.system_update)),
-                    title: const Text('Check For Update'),
-                    subtitle: const Text('v2.0.0'),
+                    leading: const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: Icon(Icons.system_update)),
+                    title: Text(S.of(context).AboutPageCheckForUpdate),
+                    subtitle: Text(Provider.of<VersionProvider>(context).currentVersion),
                     onTap: () {},
                   ),
                   ListTile(
-                    leading: const Padding(padding:EdgeInsets.all(10),child: Icon(FontAwesome5.git_alt)),
-                    title: const Text('Update Channel'),
-                    subtitle: const Text('Develop'),
+                    leading: const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: Icon(FontAwesome5.git_alt)),
+                    title: Text(S.of(context).AboutPageUpdateChannel),
+                    subtitle: Text(S.of(context).AboutPageUpdateChannelModes(Provider.of<VersionProvider>(context).channel.name)),
                     onTap: () {},
                   ),
                 ],
@@ -120,17 +127,23 @@ class _AboutPageState extends State<AboutPage> {
                 color: Theme.of(context).colorScheme.secondaryContainer,
                 children: [
                   ListTile(
-                    leading: const Padding(padding:EdgeInsets.all(10),child: Icon(FontAwesome5.github_alt)),
-                    title: const Text('Github'),
-                    subtitle:
-                        const Text('https://github.com/hanerx/DComicReborn'),
-                    onTap: () {},
+                    leading: const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: Icon(FontAwesome5.github_alt)),
+                    title: Text(S.of(context).AboutPageGithub),
+                    subtitle: Text(S.of(context).AboutPageGithubUrl),
+                    onTap: () async{
+                      if(await url_string_launcher.canLaunchUrlString(S.of(context).AboutPageGithubUrl)){
+                        url_string_launcher.launchUrlString(S.of(context).AboutPageGithubUrl);
+                      }
+                    },
                   ),
                   ListTile(
-                    leading: const Padding(padding:EdgeInsets.all(10),child:Icon(FontAwesome5.clipboard_list)),
-                    title: const Text('Change Log'),
-                    subtitle:
-                    const Text('Change Log For Each Version'),
+                    leading: const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: Icon(FontAwesome5.clipboard_list)),
+                    title: Text(S.of(context).AboutPageChangeLog),
+                    subtitle: Text(S.of(context).AboutPageChangeLogSubtitle),
                     onTap: () {},
                   ),
                 ],
@@ -141,11 +154,22 @@ class _AboutPageState extends State<AboutPage> {
                 color: Theme.of(context).colorScheme.tertiaryContainer,
                 children: [
                   ListTile(
-                    leading: const Padding(padding:EdgeInsets.all(10),child: Icon(FontAwesome5.app_store)),
-                    title: const Text('About'),
-                    subtitle:
-                    const Text('About DComicReborn'),
-                    onTap: () {},
+                    leading: const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: Icon(FontAwesome5.app_store)),
+                    title: Text(S.of(context).AboutPageAbout),
+                    subtitle: Text(S.of(context).AboutPageAboutSubtitle),
+                    onTap: () {
+                      showAboutDialog(
+                          context: context,
+                          applicationVersion:
+                              Provider.of<VersionProvider>(context,listen: false)
+                                  .currentVersion,
+                          children: [
+                            Text(
+                                S.of(context).AboutPageAboutDialogueDescription)
+                          ]);
+                    },
                   ),
                 ],
               ),

@@ -370,6 +370,112 @@ class S {
     );
   }
 
+  /// `Check For Update`
+  String get AboutPageCheckForUpdate {
+    return Intl.message(
+      'Check For Update',
+      name: 'AboutPageCheckForUpdate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Update Channel`
+  String get AboutPageUpdateChannel {
+    return Intl.message(
+      'Update Channel',
+      name: 'AboutPageUpdateChannel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{modes, select, release{Release} beta{Beta} develop{Develop} other{Unknown}}`
+  String AboutPageUpdateChannelModes(Object modes) {
+    return Intl.select(
+      modes,
+      {
+        'release': 'Release',
+        'beta': 'Beta',
+        'develop': 'Develop',
+        'other': 'Unknown',
+      },
+      name: 'AboutPageUpdateChannelModes',
+      desc: '',
+      args: [modes],
+    );
+  }
+
+  /// `Github`
+  String get AboutPageGithub {
+    return Intl.message(
+      'Github',
+      name: 'AboutPageGithub',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `https://github.com/hanerx/DComicReborn`
+  String get AboutPageGithubUrl {
+    return Intl.message(
+      'https://github.com/hanerx/DComicReborn',
+      name: 'AboutPageGithubUrl',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Change Log`
+  String get AboutPageChangeLog {
+    return Intl.message(
+      'Change Log',
+      name: 'AboutPageChangeLog',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Change Log For Each Version`
+  String get AboutPageChangeLogSubtitle {
+    return Intl.message(
+      'Change Log For Each Version',
+      name: 'AboutPageChangeLogSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `About`
+  String get AboutPageAbout {
+    return Intl.message(
+      'About',
+      name: 'AboutPageAbout',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `About DComicReborn`
+  String get AboutPageAboutSubtitle {
+    return Intl.message(
+      'About DComicReborn',
+      name: 'AboutPageAboutSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `DComic 00Q[T], reborn of the DComic.`
+  String get AboutPageAboutDialogueDescription {
+    return Intl.message(
+      'DComic 00Q[T], reborn of the DComic.',
+      name: 'AboutPageAboutDialogueDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Author: `
   String get ComicDetailPageAuthor {
     return Intl.message(

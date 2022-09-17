@@ -9,6 +9,7 @@ import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
+import 'package:dcomic/view/drawer_page/favorite_page.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -73,6 +74,45 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
   @override
   Future<List<HomepageCardEntity>> getHomepageCard() async {
     List<HomepageCardEntity> data = [];
+    if (parent.accountModel!.isLogin) {
+      var subscribeResponse = await RequestHandlers.dmzjv3requestHandler
+          .getMainPageSubscribe(parent.accountModel!.uid!);
+      try {
+        if ((subscribeResponse.statusCode == 200 ||
+            subscribeResponse.statusCode == 304)) {
+          List<GridItemEntity> children = [];
+          for (var rawItem in subscribeResponse.data['data']['data']) {
+            children.add(GridItemEntity(
+                rawItem['title'],
+                rawItem['sub_title'],
+                ImageEntity(ImageType.network, rawItem['cover'],
+                    imageHeaders: {"referer": "https://i.dmzj.com"}),
+                (context) {
+              Provider.of<NavigatorProvider>(context, listen: false)
+                  .getNavigator(context, NavigatorType.defaultNavigator)
+                  ?.push(MaterialPageRoute(
+                      builder: (context) => ComicDetailPage(
+                            title: rawItem['title'],
+                            comicId: rawItem['id'].toString(),
+                            comicSourceModel: parent,
+                          ),
+                      settings: const RouteSettings(name: 'ComicDetailPage')));
+            }));
+          }
+          data.add(HomepageCardEntity(
+              subscribeResponse.data['data']['title'], Icons.arrow_forward_ios,
+              (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => const FavoritePage(),
+                    settings: const RouteSettings(name: 'FavoritePage')));
+          }, children));
+        }
+      } catch (e, s) {
+        logger.e('$e', e, s);
+      }
+    }
     Response response =
         await RequestHandlers.dmzjv3requestHandler.getMainPageRecommendNew();
     try {
@@ -88,7 +128,19 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
                 rawItem['sub_title'],
                 ImageEntity(ImageType.network, rawItem['cover'],
                     imageHeaders: {"referer": "https://i.dmzj.com"}),
-                (context) {}));
+                (context) {
+                  if(rawData['category_id']==47){
+                    Provider.of<NavigatorProvider>(context, listen: false)
+                        .getNavigator(context, NavigatorType.defaultNavigator)
+                        ?.push(MaterialPageRoute(
+                        builder: (context) => ComicDetailPage(
+                          title: rawItem['title'],
+                          comicId: rawItem['obj_id'].toString(),
+                          comicSourceModel: parent,
+                        ),
+                        settings: const RouteSettings(name: 'ComicDetailPage')));
+                  }
+                }));
           }
           data.add(HomepageCardEntity(
               rawData['title'], null, (context) {}, children));

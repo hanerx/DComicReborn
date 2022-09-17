@@ -20,23 +20,48 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'en';
 
-  static String m0(nickname) => "Nickname: ${nickname}";
+  static String m0(modes) => "${Intl.select(modes, {
+            'release': 'Release',
+            'beta': 'Beta',
+            'develop': 'Develop',
+            'other': 'Unknown',
+          })}";
 
-  static String m1(userId) => "UID: ${userId}";
+  static String m1(nickname) => "Nickname: ${nickname}";
 
-  static String m2(username) => "Username: ${username}";
+  static String m2(userId) => "UID: ${userId}";
 
-  static String m3(uploadTime, chapterId) =>
+  static String m3(username) => "Username: ${username}";
+
+  static String m4(uploadTime, chapterId) =>
       "Upload Time: ${uploadTime} ChapterID: ${chapterId}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
+        "AboutPageAbout": MessageLookupByLibrary.simpleMessage("About"),
+        "AboutPageAboutDialogueDescription":
+            MessageLookupByLibrary.simpleMessage(
+                "DComic 00Q[T], reborn of the DComic."),
+        "AboutPageAboutSubtitle":
+            MessageLookupByLibrary.simpleMessage("About DComicReborn"),
+        "AboutPageChangeLog":
+            MessageLookupByLibrary.simpleMessage("Change Log"),
+        "AboutPageChangeLogSubtitle":
+            MessageLookupByLibrary.simpleMessage("Change Log For Each Version"),
+        "AboutPageCheckForUpdate":
+            MessageLookupByLibrary.simpleMessage("Check For Update"),
+        "AboutPageGithub": MessageLookupByLibrary.simpleMessage("Github"),
+        "AboutPageGithubUrl": MessageLookupByLibrary.simpleMessage(
+            "https://github.com/hanerx/DComicReborn"),
+        "AboutPageUpdateChannel":
+            MessageLookupByLibrary.simpleMessage("Update Channel"),
+        "AboutPageUpdateChannelModes": m0,
         "AboutSettings": MessageLookupByLibrary.simpleMessage("About"),
         "AboutSettingsDescription":
             MessageLookupByLibrary.simpleMessage("About DComic"),
-        "AccountManagePageSubtitleNickname": m0,
-        "AccountManagePageSubtitleUID": m1,
-        "AccountManagePageSubtitleUsername": m2,
+        "AccountManagePageSubtitleNickname": m1,
+        "AccountManagePageSubtitleUID": m2,
+        "AccountManagePageSubtitleUsername": m3,
         "AccountSettings":
             MessageLookupByLibrary.simpleMessage("Account Settings"),
         "AccountSettingsDescription": MessageLookupByLibrary.simpleMessage(
@@ -48,7 +73,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Bind ComicID: "),
         "ComicDetailPageCategory":
             MessageLookupByLibrary.simpleMessage("Category: "),
-        "ComicDetailPageChapterEntitySubtitle": m3,
+        "ComicDetailPageChapterEntitySubtitle": m4,
         "ComicDetailPageGridMode": MessageLookupByLibrary.simpleMessage("Grid"),
         "ComicDetailPageListMode": MessageLookupByLibrary.simpleMessage("List"),
         "ComicDetailPageOriginalComicId":

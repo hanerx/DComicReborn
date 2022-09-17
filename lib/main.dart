@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dcomic/providers/version_provider.dart';
 import 'package:dcomic/view/homepage/category_page.dart';
 import 'package:dcomic/view/homepage/latest_page.dart';
 import 'package:dcomic/view/homepage/rank_page.dart';
@@ -58,6 +59,10 @@ class App extends StatelessWidget {
         ),
         ChangeNotifierProvider<ComicSourceProvider>(
           create: (_) => ComicSourceProvider(),
+          lazy: false,
+        ),
+        ChangeNotifierProvider<VersionProvider>(
+          create: (_) => VersionProvider(),
           lazy: false,
         )
       ],

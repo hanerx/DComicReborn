@@ -479,12 +479,13 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
               onPressed: () {
                 var detailModel=Provider.of<ComicDetailPageController>(context, listen: false)
                     .detailModel!;
+                var chapters=Provider.of<ComicDetailPageController>(context, listen: false).reverse?data.reversed.toList():data;
                 Provider.of<NavigatorProvider>(context, listen: false)
                     .getNavigator(context, NavigatorType.defaultNavigator)
                     ?.push(MaterialPageRoute(
                         builder: (context) => ComicViewerPage(
                             detailModel:detailModel,
-                            chapters: data,
+                            chapters: chapters,
                             chapterId: data[index].chapterId),
                         settings:
                             const RouteSettings(name: 'ComicViewerPage')));
@@ -512,12 +513,13 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
           onTap: () {
             var detailModel=Provider.of<ComicDetailPageController>(context, listen: false)
                 .detailModel!;
+            var chapters=Provider.of<ComicDetailPageController>(context, listen: false).reverse?data.reversed.toList():data;
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(
                 builder: (context) => ComicViewerPage(
                     detailModel: detailModel,
-                    chapters: data,
+                    chapters: chapters,
                     chapterId: data[index].chapterId),
                 settings:
                 const RouteSettings(name: 'ComicViewerPage')));

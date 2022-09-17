@@ -38,6 +38,22 @@
   "DebugPageNetworkCheck": "Network Check",
   "DebugPageNetworkCheckDescription": "Just check network by ping baidu.com, maybe change to more useful page in future.",
 
+  "AboutPageCheckForUpdate": "Check For Update",
+  "AboutPageUpdateChannel": "Update Channel",
+  "AboutPageUpdateChannelModes": "{modes, select, release{Release} beta{Beta} develop{Develop} other{Unknown}}",
+  "@AboutPageUpdateChannelModes": {
+    "placeholders": {
+      "modes": {}
+    }
+  },
+  "AboutPageGithub": "Github",
+  "AboutPageGithubUrl": "https://github.com/hanerx/DComicReborn",
+  "AboutPageChangeLog": "Change Log",
+  "AboutPageChangeLogSubtitle": "Change Log For Each Version",
+  "AboutPageAbout": "About",
+  "AboutPageAboutSubtitle": "About DComicReborn",
+  "AboutPageAboutDialogueDescription": "DComic 00Q[T], reborn of the DComic.",
+
   "ComicDetailPageAuthor": "Author: ",
   "ComicDetailPageCategory": "Category: ",
   "ComicDetailPageOriginalComicId": "Origin ComicID: ",
