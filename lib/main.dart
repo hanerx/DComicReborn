@@ -1,14 +1,28 @@
 import 'dart:async';
 
+import 'package:dcomic/providers/version_provider.dart';
+import 'package:dcomic/view/homepage/category_page.dart';
+import 'package:dcomic/view/homepage/latest_page.dart';
+import 'package:dcomic/view/homepage/rank_page.dart';
+import 'package:firebase_core/firebase_core.dart';
+
+import 'firebase_options.dart';
 import 'package:dcomic/generated/l10n.dart';
+import 'package:dcomic/providers/config_provider.dart';
+import 'package:dcomic/providers/navigator_provider.dart';
+import 'package:dcomic/providers/source_provider.dart';
+import 'package:dcomic/utils/theme_utils.dart';
+import 'package:dcomic/view/components/left_drawer.dart';
+import 'package:dcomic/view/homepage/homepage.dart';
+import 'package:easy_refresh/easy_refresh.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_adaptive_ui/flutter_adaptive_ui.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'firebase_options.dart';
+import 'package:provider/provider.dart';
 
 Future<void> main() async {
   runZonedGuarded<Future<void>>(() async {
@@ -19,8 +33,12 @@ Future<void> main() async {
     // The following lines are the same as previously explained in "Handling uncaught errors"
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
 
+    // Set Easy Refresh
+    EasyRefresh.defaultHeaderBuilder = () => const ClassicHeader();
+    EasyRefresh.defaultFooterBuilder = () => const ClassicFooter();
+
     runApp(const App());
-  }, (error, stack) => FirebaseCrashlytics.instance.recordError(error, stack));
+  }, (error, stack) => FirebaseCrashlytics.instance.recordError(error, stack,fatal: true));
 }
 
 class App extends StatelessWidget {
@@ -29,105 +47,216 @@ class App extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'DComic',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      supportedLocales: S.delegate.supportedLocales,
-      localizationsDelegates: const [
-        //此处
-        S.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        DefaultCupertinoLocalizations.delegate,
-        //TODO 这个不知道干嘛的，反正先不用他
-        // ChineseCupertinoLocalizations.delegate,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ConfigProvider>(
+          create: (_) => ConfigProvider(),
+          lazy: false,
+        ),
+        ChangeNotifierProvider<NavigatorProvider>(
+          create: (_) => NavigatorProvider(context),
+          lazy: false,
+        ),
+        ChangeNotifierProvider<ComicSourceProvider>(
+          create: (_) => ComicSourceProvider(),
+          lazy: false,
+        ),
+        ChangeNotifierProvider<VersionProvider>(
+          create: (_) => VersionProvider(),
+          lazy: false,
+        )
       ],
-      home: const MyHomePage(),
+      builder: (context, child) => Breakpoint(
+          breakpointData: const BreakpointData(),
+          child: MaterialApp(
+              title: 'DComic',
+              theme: ThemeModel.light,
+              darkTheme: ThemeModel.dark,
+              supportedLocales: S.delegate.supportedLocales,
+              localizationsDelegates: const [
+                //此处
+                S.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                DefaultCupertinoLocalizations.delegate,
+                //TODO 这个不知道干嘛的，反正先不用他
+                // ChineseCupertinoLocalizations.delegate,
+              ],
+              home: const MainFramework())),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+class MainFramework extends StatefulWidget {
+  const MainFramework({Key? key}) : super(key: key);
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MainFramework> createState() => _MainFrameworkState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
+class _MainFrameworkState extends State<MainFramework> {
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(S.of(context).AppName),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+    return ChangeNotifierProvider<AppBarProvider>(
+      create: (_) => AppBarProvider(context),
+      builder: (context, child) => AdaptiveBuilder(
+        defaultBuilder: (context, screen) {
+          return DefaultTabController(
+            length: 4,
+            child: Scaffold(
+              appBar: AppBar(
+                title: Text(S.of(context).AppName),
+                actions: [
+                  IconButton(onPressed: (){}, icon: const Icon(Icons.search))
+                ],
+                bottom: TabBar(
+                  tabs: [
+                    Tab(
+                      text: S.of(context).MainPageHome,
+                    ),
+                    Tab(
+                      text: S.of(context).MainPageCategory,
+                    ),
+                    Tab(
+                      text: S.of(context).MainPageRank,
+                    ),
+                    Tab(
+                      text: S.of(context).MainPageLatest,
+                    )
+                  ],
+                ),
+              ),
+              drawer: LeftDrawer(),
+              body: const TabBarView(
+                children: [
+                  HomePage(),
+                  CategoryPage(),
+                  RankPage(),
+                  LatestPage()
+                ],
+              ),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
+          );
+        },
+        layoutDelegate: const AdaptiveLayoutDelegateWithMinimallScreenType(
+          // handset: (context, screen) => DefaultTabController(
+          //   length: 4,
+          //   child: Scaffold(
+          //     appBar: AppBar(
+          //       title: Text(S.of(context).AppName),
+          //       bottom: TabBar(
+          //         tabs: [
+          //           Tab(
+          //             text: S.of(context).MainPageHome,
+          //           ),
+          //           Tab(
+          //             text: S.of(context).MainPageCategory,
+          //           ),
+          //           Tab(
+          //             text: S.of(context).MainPageRank,
+          //           ),
+          //           Tab(
+          //             text: S.of(context).MainPageLatest,
+          //           )
+          //         ],
+          //       ),
+          //     ),
+          //     drawer: LeftDrawer(),
+          //     body: TabBarView(
+          //       children: [
+          //         const HomePage(),
+          //         const CategoryPage(),
+          //         Container(
+          //           color: Colors.green,
+          //         ),
+          //         Container(
+          //           color: Colors.blue,
+          //         )
+          //       ],
+          //     ),
+          //   ),
+          // ),
+          // Todo: 后面再写
+          // tablet: (context, screen) => Scaffold(
+          //       appBar: Provider.of<AppBarProvider>(context).currentAppBar,
+          //       drawer: LeftDrawer(),
+          //       body: Navigator(
+          //         key: Provider.of<NavigatorProvider>(context).largeNavigator,
+          //         initialRoute: '',
+          //         onGenerateRoute: (val) => PageRouteBuilder(
+          //             pageBuilder: (BuildContext nContext,
+          //                     Animation<double> animation,
+          //                     Animation<double> secondaryAnimation) =>
+          //                 Row(
+          //                   children: [
+          //                     Expanded(
+          //                         child: Navigator(
+          //                       key: Provider.of<NavigatorProvider>(context)
+          //                           .homeNavigator,
+          //                       initialRoute: '',
+          //                       onGenerateRoute: (val) => PageRouteBuilder(
+          //                           pageBuilder: (BuildContext nContext,
+          //                                   Animation<double> animation,
+          //                                   Animation<double>
+          //                                       secondaryAnimation) =>
+          //                               HomePage()),
+          //                     )),
+          //                     Expanded(
+          //                         child: Navigator(
+          //                       key: Provider.of<NavigatorProvider>(context)
+          //                           .rightNavigator,
+          //                       initialRoute: '',
+          //                       onGenerateRoute: (val) => PageRouteBuilder(
+          //                           pageBuilder: (BuildContext nContext,
+          //                                   Animation<double> animation,
+          //                                   Animation<double>
+          //                                       secondaryAnimation) =>
+          //                               Container(
+          //                                 color: Colors.orange,
+          //                               )),
+          //                     ))
+          //                   ],
+          //                 )),
+          //       ),
+          //     ),
+          // desktop: (context, screen) => Scaffold(
+          //       appBar: AppBar(
+          //         title: Text(S.of(context).AppName),
+          //       ),
+          //       body: Navigator(
+          //         key: Provider.of<NavigatorProvider>(context).largeNavigator,
+          //         initialRoute: '',
+          //         onGenerateRoute: (val) => PageRouteBuilder(
+          //             pageBuilder: (BuildContext nContext,
+          //                     Animation<double> animation,
+          //                     Animation<double> secondaryAnimation) =>
+          //                 Row(
+          //                   children: [
+          //                     Expanded(child: LeftDrawer()),
+          //                     Expanded(
+          //                       flex: 2,
+          //                         child: Navigator(
+          //                       key: Provider.of<NavigatorProvider>(context)
+          //                           .homeNavigator,
+          //                       initialRoute: '',
+          //                       onGenerateRoute: (val) => PageRouteBuilder(
+          //                           pageBuilder: (BuildContext nContext,
+          //                                   Animation<double> animation,
+          //                                   Animation<double>
+          //                                       secondaryAnimation) =>
+          //                               HomePage()),
+          //                     )),
+          //                     Expanded(
+          //                       flex: 2,
+          //                         child: Container(
+          //                       color: Colors.orange,
+          //                     ))
+          //                   ],
+          //                 )),
+          //       ),
+          //     )
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }

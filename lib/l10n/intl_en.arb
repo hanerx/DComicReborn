@@ -1,4 +1,97 @@
 {
   "@@locale" : "en",
-  "AppName": "DComic"
+  "AppName": "DComic",
+  "DrawerEmail": "DComic 00Q[T]",
+  "UnknownScreen": "Your Screen Size is not support, please connect author.",
+
+  "MainPageHome": "Home",
+  "MainPageCategory": "Category",
+  "MainPageRank": "Rank",
+  "MainPageLatest": "Latest",
+
+  "ImageTypeNotSupport": "Unknown Image Type",
+  "Loading": "Loading...",
+  "Empty":"No more Information",
+  "RequireLogin": "This Page Needs User Info, Please Login",
+  "JumpToLogin": "Jump To Login Page",
+
+  "DrawerFavorite": "Favorite",
+  "DrawerHistory": "History",
+  "DrawerDownloads": "Downloads",
+  "DrawerSetting": "Setting",
+
+  "ReaderSettings": "Reader Settings",
+  "ReaderSettingsDescription": "Settings About Comic Reader",
+  "SourceSettings": "Source Settings",
+  "SourceSettingsDescription": "Manage Comic Source",
+  "AccountSettings": "Account Settings",
+  "AccountSettingsDescription": "Manage All Comic Source With Account",
+  "AboutSettings": "About",
+  "AboutSettingsDescription": "About DComic",
+  "DownloadSettings": "Download Settings",
+  "DownloadSettingsDescription": "Manage Local File Settings",
+  "DebugSettings": "Debug Settings",
+  "DebugSettingsDescription": "Debug Settings (Some may not work)",
+  "ExperimentalSettings": "Experimental Settings",
+  "ExperimentalSettingsDescription": "DComic 00Q[T] Trans-Arm, Quantum Burst!",
+
+  "DebugPageNetworkCheck": "Network Check",
+  "DebugPageNetworkCheckDescription": "Just check network by ping baidu.com, maybe change to more useful page in future.",
+
+  "AboutPageCheckForUpdate": "Check For Update",
+  "AboutPageUpdateChannel": "Update Channel",
+  "AboutPageUpdateChannelModes": "{modes, select, release{Release} beta{Beta} develop{Develop} other{Unknown}}",
+  "@AboutPageUpdateChannelModes": {
+    "placeholders": {
+      "modes": {}
+    }
+  },
+  "AboutPageGithub": "Github",
+  "AboutPageGithubUrl": "https://github.com/hanerx/DComicReborn",
+  "AboutPageChangeLog": "Change Log",
+  "AboutPageChangeLogSubtitle": "Change Log For Each Version",
+  "AboutPageAbout": "About",
+  "AboutPageAboutSubtitle": "About DComicReborn",
+  "AboutPageAboutDialogueDescription": "DComic 00Q[T], reborn of the DComic.",
+
+  "ComicDetailPageAuthor": "Author: ",
+  "ComicDetailPageCategory": "Category: ",
+  "ComicDetailPageOriginalComicId": "Origin ComicID: ",
+  "ComicDetailPageBindComicId": "Bind ComicID: ",
+  "ComicDetailPageGridMode": "Grid",
+  "ComicDetailPageListMode": "List",
+  "ComicDetailPageChapterEntitySubtitle": "Upload Time: {uploadTime} ChapterID: {chapterId}",
+  "@ComicDetailPageChapterEntitySubtitle": {
+    "placeholders": {
+      "uploadTime": {},
+      "chapterId": {}
+    }
+  },
+  "ComicDetailPagePositiveMode": "Positive",
+  "ComicDetailPageReverseMode": "Reverse",
+
+  "AccountManagePageSubtitleNickname": "Nickname: {nickname}",
+  "@AccountManagePageSubtitleNickname": {
+    "placeholders": {
+      "nickname": {
+        "example": "Unknown"
+      }
+    }
+  },
+  "AccountManagePageSubtitleUID": "UID: {userId}",
+  "@AccountManagePageSubtitleUID": {
+    "placeholders": {
+      "userId": {
+        "example": "Unknown"
+      }
+    }
+  },
+  "AccountManagePageSubtitleUsername": "Username: {username}",
+  "@AccountManagePageSubtitleUsername": {
+    "placeholders": {
+      "username": {
+        "example": "Unknown"
+      }
+    }
+  }
 }
