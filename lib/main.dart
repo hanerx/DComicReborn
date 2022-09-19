@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dcomic/providers/comic_veiwer_config_provider.dart';
 import 'package:dcomic/providers/version_provider.dart';
 import 'package:dcomic/view/homepage/category_page.dart';
 import 'package:dcomic/view/homepage/latest_page.dart';
@@ -63,6 +64,10 @@ class App extends StatelessWidget {
         ),
         ChangeNotifierProvider<VersionProvider>(
           create: (_) => VersionProvider(),
+          lazy: false,
+        ),
+        ChangeNotifierProvider<ComicViewerConfigProvider>(
+          create: (_) => ComicViewerConfigProvider(),
           lazy: false,
         )
       ],

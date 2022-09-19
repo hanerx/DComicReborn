@@ -8,6 +8,10 @@ class ComicViewerPageController extends BaseProvider{
   BaseComicChapterEntityModel? currentChapter;
   BaseComicChapterDetailModel? chapterDetailModel;
 
+  // viewer参数
+  int _currentPage=0;
+  bool _showToolBar=false;
+
   ComicViewerPageController(this.detailModel,this.chapters,this.initChapterId){
     if(chapters.indexWhere((element) => element.chapterId==initChapterId)>=0){
       currentChapter=chapters[chapters.indexWhere((element) => element.chapterId==initChapterId)];
@@ -24,6 +28,7 @@ class ComicViewerPageController extends BaseProvider{
       currentChapter=preChapter;
     }
     chapterDetailModel=await detailModel.getChapter(currentChapter!.chapterId);
+    _currentPage=0;
     notifyListeners();
   }
 
@@ -32,6 +37,23 @@ class ComicViewerPageController extends BaseProvider{
       currentChapter=nextChapter;
     }
     chapterDetailModel=await detailModel.getChapter(currentChapter!.chapterId);
+    _currentPage=0;
     notifyListeners();
   }
+
+  int get currentPage => _currentPage;
+
+  set currentPage(int value) {
+    _currentPage = value;
+    notifyListeners();
+  }
+
+  bool get showToolBar => _showToolBar;
+
+  set showToolBar(bool value) {
+    _showToolBar = value;
+    notifyListeners();
+  }
+
+  String get title=>chapterDetailModel==null?"title":chapterDetailModel!.title;
 }
