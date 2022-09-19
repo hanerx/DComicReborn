@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -28,10 +25,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
@@ -49,6 +43,17 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyCeklr2Hx95ZLBDrsSxiuxyic4rkM3tHiY',
+    appId: '1:522563222655:web:47800d23aa3e724343d34a',
+    messagingSenderId: '522563222655',
+    projectId: 'dcomic-93209',
+    authDomain: 'dcomic-93209.firebaseapp.com',
+    databaseURL: 'https://dcomic-93209-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'dcomic-93209.appspot.com',
+    measurementId: 'G-EGQX728QH5',
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyB8rCCOBN1x2sC5VBnAEE_EhOBiCaC518A',
     appId: '1:522563222655:android:7c2bf6e418303bf243d34a',
@@ -59,6 +64,17 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyDzVZW34AMDmTRo4bfUSEoB_r9KWYm9aVg',
+    appId: '1:522563222655:ios:1da9bfe1c6049b0a43d34a',
+    messagingSenderId: '522563222655',
+    projectId: 'dcomic-93209',
+    databaseURL: 'https://dcomic-93209-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'dcomic-93209.appspot.com',
+    iosClientId: '522563222655-mrva14d6a637isfb57mn6e2apaelc45s.apps.googleusercontent.com',
+    iosBundleId: 'top.hanerx.dcomic',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyDzVZW34AMDmTRo4bfUSEoB_r9KWYm9aVg',
     appId: '1:522563222655:ios:1da9bfe1c6049b0a43d34a',
     messagingSenderId: '522563222655',

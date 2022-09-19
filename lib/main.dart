@@ -5,8 +5,9 @@ import 'package:dcomic/view/homepage/category_page.dart';
 import 'package:dcomic/view/homepage/latest_page.dart';
 import 'package:dcomic/view/homepage/rank_page.dart';
 import 'package:firebase_core/firebase_core.dart';
-
 import 'firebase_options.dart';
+
+
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
