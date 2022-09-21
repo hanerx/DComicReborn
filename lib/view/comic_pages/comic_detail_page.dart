@@ -47,6 +47,25 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
           onPressed: () {},
           child: const Icon(Icons.play_arrow),
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+        bottomNavigationBar: BottomAppBar(
+          color: Theme.of(context).colorScheme.primary,
+          shape: CircularNotchedRectangle(),
+          child: IconTheme(
+              data:
+                  IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+              child: Row(
+                children: [
+                  IconButton(
+                      onPressed: () {}, icon: Icon(Icons.file_download_outlined)),
+                  IconButton(
+                      onPressed: () {}, icon: Icon(Icons.message_outlined)),
+                  IconButton(
+                      onPressed: () {}, icon: Icon(Icons.share)),
+                  Spacer()
+                ],
+              )),
+        ),
         body: Container(
             color: Theme.of(context).colorScheme.surfaceVariant,
             child: ExtendedNestedScrollView(
@@ -61,10 +80,6 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                     elevation: 0,
                     expandedHeight: 300,
                     pinned: true,
-                    actions: [
-                      IconButton(
-                          onPressed: () {}, icon: const Icon(Icons.share))
-                    ],
                     flexibleSpace: FlexibleSpaceBar(
                       title: Text(
                         Provider.of<ComicDetailPageController>(context).title,
@@ -477,14 +492,20 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
           padding: const EdgeInsets.all(3),
           child: OutlinedButton(
               onPressed: () {
-                var detailModel=Provider.of<ComicDetailPageController>(context, listen: false)
+                var detailModel = Provider.of<ComicDetailPageController>(
+                        context,
+                        listen: false)
                     .detailModel!;
-                var chapters=Provider.of<ComicDetailPageController>(context, listen: false).reverse?data.reversed.toList():data;
+                var chapters = Provider.of<ComicDetailPageController>(context,
+                            listen: false)
+                        .reverse
+                    ? data.reversed.toList()
+                    : data;
                 Provider.of<NavigatorProvider>(context, listen: false)
                     .getNavigator(context, NavigatorType.defaultNavigator)
                     ?.push(MaterialPageRoute(
                         builder: (context) => ComicViewerPage(
-                            detailModel:detailModel,
+                            detailModel: detailModel,
                             chapters: chapters,
                             chapterId: data[index].chapterId),
                         settings:
@@ -511,18 +532,22 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                   [formatDate.yyyy, '-', formatDate.mm, '-', formatDate.dd]),
               data[index].chapterId)),
           onTap: () {
-            var detailModel=Provider.of<ComicDetailPageController>(context, listen: false)
-                .detailModel!;
-            var chapters=Provider.of<ComicDetailPageController>(context, listen: false).reverse?data.reversed.toList():data;
+            var detailModel =
+                Provider.of<ComicDetailPageController>(context, listen: false)
+                    .detailModel!;
+            var chapters =
+                Provider.of<ComicDetailPageController>(context, listen: false)
+                        .reverse
+                    ? data.reversed.toList()
+                    : data;
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(
-                builder: (context) => ComicViewerPage(
-                    detailModel: detailModel,
-                    chapters: chapters,
-                    chapterId: data[index].chapterId),
-                settings:
-                const RouteSettings(name: 'ComicViewerPage')));
+                    builder: (context) => ComicViewerPage(
+                        detailModel: detailModel,
+                        chapters: chapters,
+                        chapterId: data[index].chapterId),
+                    settings: const RouteSettings(name: 'ComicViewerPage')));
           },
         ),
       );

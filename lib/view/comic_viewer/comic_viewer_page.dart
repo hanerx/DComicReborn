@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dcomic/providers/comic_veiwer_config_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/page_controllers/comic_viewer_page_controller.dart';
@@ -35,122 +37,63 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
       create: (_) => ComicViewerPageController(
           widget.detailModel, widget.chapters, widget.chapterId),
       builder: (context, child) => Scaffold(
+          endDrawer: _buildDrawer(context),
           body: Container(
-        color: Colors.black,
-        child: EasyRefresh(
-          controller: _easyRefreshController,
-          // noMoreRefresh:
-          //     Provider.of<ComicViewerPageController>(context).preChapter == null,
-          // noMoreLoad:
-          //     Provider.of<ComicViewerPageController>(context).nextChapter == null,
-          header: BezierHeader(
-              triggerOffset: 50,
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              showBalls: true,
-              spinWidget: SpinKitDualRing(
-                size: 32,
-                color: Theme.of(context).colorScheme.onPrimary,
-              )),
-          footer: BezierFooter(
-              triggerOffset: 50,
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              showBalls: true,
-              spinWidget: SpinKitDualRing(
-                size: 32,
-                color: Theme.of(context).colorScheme.onPrimary,
-              )),
-          refreshOnStart: true,
-          onRefresh: () async {
-            await Provider.of<ComicViewerPageController>(context, listen: false)
-                .refresh();
-            _pageController.animateToPage(0,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeIn);
-          },
-          onLoad: () async {
-            await Provider.of<ComicViewerPageController>(context, listen: false)
-                .load();
-            _pageController.animateToPage(0,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeIn);
-          },
-          child: Stack(
-            children: [
-              _buildHorizontalViewer(context),
-              _buildPrePageButton(context),
-              _buildShowButton(context),
-              _buildNextPageButton(context),
-              _buildAppBar(context),
-              _buildToolBar(context)
-            ],
-          ),
-        ),
-      )),
+            color: Colors.black,
+            child: EasyRefresh(
+              controller: _easyRefreshController,
+              // noMoreRefresh:
+              //     Provider.of<ComicViewerPageController>(context).preChapter == null,
+              // noMoreLoad:
+              //     Provider.of<ComicViewerPageController>(context).nextChapter == null,
+              header: BezierHeader(
+                  triggerOffset: 50,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  showBalls: true,
+                  spinWidget: SpinKitDualRing(
+                    size: 32,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  )),
+              footer: BezierFooter(
+                  triggerOffset: 50,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  showBalls: true,
+                  spinWidget: SpinKitDualRing(
+                    size: 32,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  )),
+              refreshOnStart: true,
+              onRefresh: () async {
+                await Provider.of<ComicViewerPageController>(context,
+                        listen: false)
+                    .refresh();
+                _pageController.animateToPage(0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeIn);
+              },
+              onLoad: () async {
+                await Provider.of<ComicViewerPageController>(context,
+                        listen: false)
+                    .load();
+                _pageController.animateToPage(0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeIn);
+              },
+              child: Stack(
+                children: [
+                  _buildHorizontalViewer(context),
+                  _buildPrePageButton(context),
+                  _buildShowButton(context),
+                  _buildNextPageButton(context),
+                  _buildAppBar(context),
+                  _buildToolBar(context)
+                ],
+              ),
+            ),
+          )),
     );
-    //Expanded(
-    //                                     child: OutlinedButton(
-    //                                   onPressed: () {},
-    //                                   child: Icon(Icons.arrow_left),
-    //                                   style: ButtonStyle(
-    //                                       side: MaterialStatePropertyAll(
-    //                                           BorderSide(color: Colors.white)),
-    //                                       visualDensity:
-    //                                           VisualDensity(horizontal: -4)),
-    //                                 )),
-    //                                 Expanded(
-    //                                   child: OutlinedButton(
-    //                                     onPressed: () {},
-    //                                     child: Icon(Icons.message_outlined),
-    //                                     style: ButtonStyle(
-    //                                         side: MaterialStatePropertyAll(
-    //                                             BorderSide(color: Colors.white)),
-    //                                         visualDensity:
-    //                                             VisualDensity(horizontal: -4)),
-    //                                   ),
-    //                                 ),
-    //                                 Expanded(
-    //                                     child: OutlinedButton(
-    //                                   onPressed: () {},
-    //                                   child: Icon(Icons.list_alt),
-    //                                   style: ButtonStyle(
-    //                                       side: MaterialStatePropertyAll(
-    //                                           BorderSide(color: Colors.white)),
-    //                                       visualDensity:
-    //                                           VisualDensity(horizontal: -4)),
-    //                                 )),
-    //                                 Expanded(
-    //                                   child: OutlinedButton(
-    //                                     onPressed: () {
-    //                                       showModalBottomSheet(
-    //                                           barrierColor: Colors.black87,
-    //                                           backgroundColor: Colors.transparent,
-    //                                           context: context,
-    //                                           builder: (context) => Card(
-    //                                                 child: SizedBox(
-    //                                                   height: 300,
-    //                                                 ),
-    //                                               ));
-    //                                     },
-    //                                     child: Icon(Icons.settings),
-    //                                     style: ButtonStyle(
-    //                                         side: MaterialStatePropertyAll(
-    //                                             BorderSide(color: Colors.white)),
-    //                                         visualDensity:
-    //                                             VisualDensity(horizontal: -4)),
-    //                                   ),
-    //                                 ),
-    //                                 Expanded(
-    //                                   child: OutlinedButton(
-    //                                     onPressed: () {},
-    //                                     child: Icon(Icons.arrow_right),
-    //                                     style: ButtonStyle(
-    //
-    //                                         visualDensity:
-    //                                             VisualDensity(horizontal: -4)),
-    //                                   ),
-    //                                 )
   }
 
   Widget _buildHorizontalViewer(BuildContext context) {
@@ -327,21 +270,36 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                       _easyRefreshController.callRefresh();
                     },
                     icon: Icons.keyboard_double_arrow_left),
+                Builder(
+                  builder: (context) => ExpandCardButton(
+                      onTap: () {
+                        Provider.of<ComicViewerPageController>(context,
+                                listen: false)
+                            .endDrawerPage = 0;
+                        Scaffold.of(context).openEndDrawer();
+                      },
+                      icon: Icons.message_outlined),
+                ),
+                Builder(
+                    builder: (context) => ExpandCardButton(
+                        onTap: () {
+                          Provider.of<ComicViewerPageController>(context,
+                                  listen: false)
+                              .endDrawerPage = 1;
+                          Scaffold.of(context).openEndDrawer();
+                        },
+                        icon: Icons.list_alt)),
                 ExpandCardButton(
                     onTap: () {
                       showModalBottomSheet(
                           backgroundColor: Colors.transparent,
                           context: context,
-                          builder: (context) => SizedBox(height: 300,child: Card(),));
+                          builder: (context) => SizedBox(
+                                height: 300,
+                                child: Card(),
+                              ));
                     },
-                    icon: Icons.message_outlined),
-                ExpandCardButton(onTap: () {}, icon: Icons.list_alt),
-                ExpandCardButton(onTap: () {
-                  showModalBottomSheet(
-                      backgroundColor: Colors.transparent,
-                      context: context,
-                      builder: (context) => SizedBox(height: 300,child: Card(),));
-                }, icon: Icons.settings),
+                    icon: Icons.settings),
                 ExpandCardButton(
                     onTap: () {
                       _easyRefreshController.callLoad();
@@ -386,6 +344,74 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
               ))
             ],
           )),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      width: MediaQuery.of(context).size.width * 0.9,
+      backgroundColor: Colors.transparent,
+      child: SafeArea(
+        child: Card(
+          child: SizedBox.expand(
+            child: DefaultTabController(
+              initialIndex:
+                  Provider.of<ComicViewerPageController>(context).endDrawerPage,
+              length: 2,
+              child: Column(
+                children: [
+                  TabBar(
+                    tabs: [
+                      Tab(
+                        child: Row(
+                          children: [
+                            Icon(Icons.message_outlined),
+                            Expanded(
+                                child:
+                                    Text("test", textAlign: TextAlign.center))
+                          ],
+                        ),
+                      ),
+                      Tab(
+                          child: Row(
+                        children: [
+                          Icon(Icons.list_alt),
+                          Expanded(
+                              child: Text("test", textAlign: TextAlign.center))
+                        ],
+                      ))
+                    ],
+                    labelColor: Theme.of(context).colorScheme.primary,
+                    indicatorColor: Theme.of(context).colorScheme.primary,
+                  ),
+                  Expanded(
+                      child: TabBarView(
+                    children: [
+                      SizedBox.expand(
+                        child: Wrap(
+                          children: [
+                            for (int i = 0; i < 10; i++)
+                              Padding(
+                                  padding: const EdgeInsets.only(left: 5),
+                                  child: ActionChip(
+                                    onPressed: (){},
+                                    label: Text(" $i"),
+                                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                      visualDensity: const VisualDensity(vertical: -1)
+                                  ),
+                              )
+                          ],
+                        ),
+                      ),
+                      SizedBox.expand()
+                    ],
+                  ))
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
