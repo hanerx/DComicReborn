@@ -13,6 +13,13 @@ class ComicViewerPageController extends BaseProvider{
   bool _showToolBar=false;
   int _endDrawerPage=0;
 
+  // comment
+  List<ChapterCommentEntity> _comments=[];
+
+  List<ChapterCommentEntity> get comments => _comments;
+
+  int get maxLikes=>_comments.isNotEmpty?_comments.first.likes>100?_comments.first.likes:100:0;
+
   ComicViewerPageController(this.detailModel,this.chapters,this.initChapterId){
     if(chapters.indexWhere((element) => element.chapterId==initChapterId)>=0){
       currentChapter=chapters[chapters.indexWhere((element) => element.chapterId==initChapterId)];
@@ -30,6 +37,7 @@ class ComicViewerPageController extends BaseProvider{
     }
     chapterDetailModel=await detailModel.getChapter(currentChapter!.chapterId);
     _currentPage=0;
+    await loadComment();
     notifyListeners();
   }
 
@@ -39,6 +47,22 @@ class ComicViewerPageController extends BaseProvider{
     }
     chapterDetailModel=await detailModel.getChapter(currentChapter!.chapterId);
     _currentPage=0;
+    await loadComment();
+    notifyListeners();
+  }
+
+  Future<void> loadChapter(BaseComicChapterEntityModel chapter)async{
+    currentChapter=chapter;
+    chapterDetailModel=await detailModel.getChapter(currentChapter!.chapterId);
+    _currentPage=0;
+    await loadComment();
+    notifyListeners();
+  }
+
+  Future<void> loadComment()async{
+    if(chapterDetailModel!=null){
+      _comments=await chapterDetailModel!.getChapterComments();
+    }
     notifyListeners();
   }
 

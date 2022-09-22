@@ -93,5 +93,8 @@
         "example": "Unknown"
       }
     }
-  }
+  },
+
+  "ComicViewerPageComments": "Comments",
+  "ComicViewerPageDirectory": "Directory"
 }

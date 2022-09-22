@@ -1,5 +1,5 @@
-import 'dart:math';
 
+import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/comic_veiwer_config_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/page_controllers/comic_viewer_page_controller.dart';
@@ -11,6 +11,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:provider/provider.dart';
+import 'package:date_format/date_format.dart' as formatDate;
 
 class ComicViewerPage extends StatefulWidget {
   final BaseComicDetailModel detailModel;
@@ -294,7 +295,7 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                       showModalBottomSheet(
                           backgroundColor: Colors.transparent,
                           context: context,
-                          builder: (context) => SizedBox(
+                          builder: (context) => const SizedBox(
                                 height: 300,
                                 child: Card(),
                               ));
@@ -367,19 +368,19 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                       Tab(
                         child: Row(
                           children: [
-                            Icon(Icons.message_outlined),
+                            const Icon(Icons.message_outlined),
                             Expanded(
                                 child:
-                                    Text("test", textAlign: TextAlign.center))
+                                    Text(S.of(context).ComicViewerPageComments, textAlign: TextAlign.center))
                           ],
                         ),
                       ),
                       Tab(
                           child: Row(
                         children: [
-                          Icon(Icons.list_alt),
+                          const Icon(Icons.list_alt),
                           Expanded(
-                              child: Text("test", textAlign: TextAlign.center))
+                              child: Text(S.of(context).ComicViewerPageDirectory, textAlign: TextAlign.center))
                         ],
                       ))
                     ],
@@ -390,22 +391,110 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                       child: TabBarView(
                     children: [
                       SizedBox.expand(
-                        child: Wrap(
-                          children: [
-                            for (int i = 0; i < 10; i++)
-                              Padding(
-                                  padding: const EdgeInsets.only(left: 5),
-                                  child: ActionChip(
-                                    onPressed: (){},
-                                    label: Text(" $i"),
-                                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                      visualDensity: const VisualDensity(vertical: -1)
-                                  ),
-                              )
-                          ],
+                        child: EasyRefresh(
+                          onRefresh: () async {
+                            await Provider.of<ComicViewerPageController>(
+                                    context,
+                                    listen: false)
+                                .loadComment();
+                          },
+                          child: SizedBox.expand(
+                            child: SingleChildScrollView(child: Wrap(
+                              children: [
+                                for (var item
+                                in Provider.of<ComicViewerPageController>(
+                                    context)
+                                    .comments)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 5),
+                                    child: ActionChip(
+                                        onPressed: () {},
+                                        avatar: CircleAvatar(
+                                          child: Text(
+                                            "${Provider.of<ComicViewerPageController>(context).maxLikes > 100 ? (item.likes / Provider.of<ComicViewerPageController>(context).maxLikes * 100).toInt() : item.likes}",
+                                            style: const TextStyle(fontSize: 13),
+                                        ),),
+                                        label: Text(item.comment),
+                                        backgroundColor: Color.lerp(
+                                            Theme.of(context)
+                                                .colorScheme
+                                                .primaryContainer,
+                                            Theme.of(context)
+                                                .colorScheme
+                                                .errorContainer,
+                                            item.likes /
+                                                Provider.of<ComicViewerPageController>(
+                                                    context)
+                                                    .maxLikes),
+                                        visualDensity:
+                                        const VisualDensity(vertical: -1)),
+                                  )
+                              ],
+                            ),),
+                          )
                         ),
                       ),
-                      SizedBox.expand()
+                      SizedBox.expand(
+                        child: ListView.builder(
+                          padding: EdgeInsets.zero,
+                          itemCount:
+                              Provider.of<ComicViewerPageController>(context)
+                                  .chapters
+                                  .reversed
+                                  .toList()
+                                  .length,
+                          itemBuilder: (context, index) => ListTile(
+                            selected: Provider.of<ComicViewerPageController>(
+                                        context)
+                                    .currentChapter ==
+                                Provider.of<ComicViewerPageController>(context)
+                                    .chapters
+                                    .reversed
+                                    .toList()[index],
+                            title: Text(
+                                Provider.of<ComicViewerPageController>(context)
+                                    .chapters
+                                    .reversed
+                                    .toList()[index]
+                                    .title),
+                            subtitle: Text(S
+                                .of(context)
+                                .ComicDetailPageChapterEntitySubtitle(
+                                    formatDate.formatDate(
+                                        Provider.of<ComicViewerPageController>(
+                                                context)
+                                            .chapters
+                                            .reversed
+                                            .toList()[index]
+                                            .uploadTime,
+                                        [
+                                          formatDate.yyyy,
+                                          '-',
+                                          formatDate.mm,
+                                          '-',
+                                          formatDate.dd
+                                        ]),
+                                    Provider.of<ComicViewerPageController>(
+                                            context)
+                                        .chapters
+                                        .reversed
+                                        .toList()[index]
+                                        .chapterId)),
+                            onTap: () {
+                              Provider.of<ComicViewerPageController>(context,
+                                      listen: false)
+                                  .loadChapter(
+                                      Provider.of<ComicViewerPageController>(
+                                              context,
+                                              listen: false)
+                                          .chapters
+                                          .reversed
+                                          .toList()[index]);
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ),
+                      )
                     ],
                   ))
                 ],

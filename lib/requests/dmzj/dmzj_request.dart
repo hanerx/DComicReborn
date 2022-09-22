@@ -45,7 +45,7 @@ class DMZJV3RequestHandler extends RequestHandler {
   }
 
   // 获取每章吐槽
-  Future<Response> getViewpoint(String comicId, String chapterId) {
+  Future<Response> getChapterComments(String comicId, String chapterId) {
     return dio.get('/viewPoint/0/$comicId/$chapterId.json');
   }
 

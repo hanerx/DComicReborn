@@ -370,6 +370,25 @@ class DMZJV4ComicChapterDetailModel extends BaseComicChapterDetailModel {
 
   @override
   String get title => rawData.title;
+
+  @override
+  Future<List<ChapterCommentEntity>> getChapterComments() async{
+    List<ChapterCommentEntity> data=[];
+    try {
+      var response= await RequestHandlers
+          .dmzjv3requestHandler
+          .getChapterComments(parent.comicId,chapterId);
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        response.data.sort((a, b) => int.parse(b['num'].toString()).compareTo(a['num']));
+        for(var item in response.data){
+          data.add(ChapterCommentEntity(item['id'].toString(), item['content'], item['num']));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', e, s);
+    }
+    return data;
+  }
 }
 
 class DMZJComicAccountModel extends BaseComicAccountModel {

@@ -82,6 +82,10 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Positive"),
         "ComicDetailPageReverseMode":
             MessageLookupByLibrary.simpleMessage("Reverse"),
+        "ComicViewerPageComments":
+            MessageLookupByLibrary.simpleMessage("Comments"),
+        "ComicViewerPageDirectory":
+            MessageLookupByLibrary.simpleMessage("Directory"),
         "DebugPageNetworkCheck":
             MessageLookupByLibrary.simpleMessage("Network Check"),
         "DebugPageNetworkCheckDescription": MessageLookupByLibrary.simpleMessage(

@@ -596,6 +596,26 @@ class S {
       args: [username],
     );
   }
+
+  /// `Comments`
+  String get ComicViewerPageComments {
+    return Intl.message(
+      'Comments',
+      name: 'ComicViewerPageComments',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Directory`
+  String get ComicViewerPageDirectory {
+    return Intl.message(
+      'Directory',
+      name: 'ComicViewerPageDirectory',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

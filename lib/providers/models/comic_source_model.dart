@@ -111,7 +111,7 @@ abstract class BaseComicChapterDetailModel extends BaseModel {
 
   String get chapterId;
 
-
+  Future<List<ChapterCommentEntity>> getChapterComments();
 }
 
 abstract class BaseComicAccountModel extends BaseModel {
@@ -160,6 +160,14 @@ abstract class BaseComicHomepageModel extends BaseModel {
 
   /// 获取更新列表数据
   Future<List<ListItemEntity>> getLatestList({int page = 0});
+}
+
+class ChapterCommentEntity{
+  final String comment;
+  final int likes;
+  final String commentId;
+
+  ChapterCommentEntity(this.commentId,this.comment, this.likes);
 }
 
 class CarouselEntity {
