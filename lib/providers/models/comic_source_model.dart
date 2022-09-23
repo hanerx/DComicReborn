@@ -76,6 +76,8 @@ abstract class BaseComicDetailModel extends BaseModel {
   List<CategoryEntity> get categories;
 
   Future<BaseComicChapterDetailModel?> getChapter(String chapterId);
+
+  Future<List<ComicCommentEntity>> getComments({int page=0});
 }
 
 abstract class BaseComicChapterEntityModel extends BaseModel {
@@ -168,6 +170,16 @@ class ChapterCommentEntity{
   final String commentId;
 
   ChapterCommentEntity(this.commentId,this.comment, this.likes);
+}
+
+class ComicCommentEntity{
+  final ImageEntity avatar;
+  final String comment;
+  final String commentId;
+  final String nickname;
+  final int likes;
+
+  ComicCommentEntity(this.avatar, this.comment, this.commentId, this.nickname, this.likes);
 }
 
 class CarouselEntity {

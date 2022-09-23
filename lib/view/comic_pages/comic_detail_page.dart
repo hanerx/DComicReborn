@@ -4,7 +4,9 @@ import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/page_controllers/comic_detail_page_controller.dart';
 import 'package:dcomic/providers/source_provider.dart';
+import 'package:dcomic/utils/custom_theme.dart';
 import 'package:dcomic/view/comic_viewer/comic_viewer_page.dart';
+import 'package:dcomic/view/components/comment_card.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:direct_select_flutter/direct_select_container.dart';
 import 'package:direct_select_flutter/direct_select_item.dart';
@@ -50,22 +52,28 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
         floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
         bottomNavigationBar: BottomAppBar(
           color: Theme.of(context).colorScheme.primary,
-          shape: CircularNotchedRectangle(),
+          shape: const CircularNotchedRectangle(),
           child: IconTheme(
-              data:
-                  IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+              data: Theme.of(context)
+                  .iconTheme
+                  .copyWith(color: CustomTheme.of(context).foregroundColor),
               child: Row(
                 children: [
                   IconButton(
-                      onPressed: () {}, icon: Icon(Icons.file_download_outlined)),
-                  IconButton(
-                      onPressed: () {}, icon: Icon(Icons.message_outlined)),
-                  IconButton(
-                      onPressed: () {}, icon: Icon(Icons.share)),
+                      onPressed: () {},
+                      icon: Icon(Icons.file_download_outlined)),
+                  Builder(
+                      builder: (context) => IconButton(
+                          onPressed: () {
+                            Scaffold.of(context).openEndDrawer();
+                          },
+                          icon: Icon(Icons.message_outlined))),
+                  IconButton(onPressed: () {}, icon: Icon(Icons.share)),
                   Spacer()
                 ],
               )),
         ),
+        endDrawer: _buildEndDrawer(context),
         body: Container(
             color: Theme.of(context).colorScheme.surfaceVariant,
             child: ExtendedNestedScrollView(
@@ -607,5 +615,82 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       ));
     }
     return data;
+  }
+
+  Widget _buildEndDrawer(BuildContext context){
+    return Drawer(
+      width: MediaQuery.of(context).size.width * 0.9,
+      backgroundColor: Colors.transparent,
+      child: Card(
+        child: SizedBox.expand(
+          child: Column(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(3),
+                    topRight: Radius.circular(3)),
+                child: Container(
+                  height: MediaQuery.of(context).padding.top - 4,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+              Container(
+                color: Theme.of(context).primaryColor,
+                child: IconTheme(
+                  data: Theme.of(context).iconTheme.copyWith(
+                      color: CustomTheme.of(context).foregroundColor),
+                  child: DefaultTextStyle(
+                    style: Theme.of(context).textTheme.bodyText2!.copyWith(
+                        color: CustomTheme.of(context).foregroundColor),
+                    child: Row(
+                      children: [
+                        const BackButton(),
+                        Expanded(child: Text(S.of(context).ComicDetailPageComments))
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                  child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(3),
+                          bottomRight: Radius.circular(3)),
+                      child: EasyRefresh(
+                        header: const ClassicHeader(safeArea: false),
+                        refreshOnStart: true,
+                        onRefresh: () async{
+                          await Provider.of<ComicDetailPageController>(context,listen: false).refreshComment();
+                        },
+                        onLoad: ()async{
+                          await Provider.of<ComicDetailPageController>(context,listen: false).loadComment();
+                        },
+                        child: Container(
+                          color:
+                          Theme.of(context).colorScheme.surfaceVariant,
+                          child: ListView.builder(
+                            padding: EdgeInsets.zero,
+                              itemCount:
+                              Provider.of<ComicDetailPageController>(
+                                  context)
+                                  .comments
+                                  .length,
+                              itemBuilder: (context, index) {
+                                var item =
+                                Provider.of<ComicDetailPageController>(
+                                    context)
+                                    .comments[index];
+                                return CommentCard(
+                                    avatar: item.avatar,
+                                    nickname: item.nickname,
+                                    comment: item.comment);
+                              }),
+                        ),
+                      )))
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -11,12 +11,16 @@ class DComicImage extends StatelessWidget {
   final TextOverflow? errorMessageOverflow;
   final BoxFit? fit;
   final Color? customErrorMessageColor;
+  final bool showErrorMessage;
+  final double errorLogoSize;
 
   const DComicImage(this.imageEntity,
       {super.key,
       this.errorMessageOverflow,
       this.fit,
-      this.customErrorMessageColor});
+      this.customErrorMessageColor,
+      this.showErrorMessage = true,
+      this.errorLogoSize = 60});
 
   @override
   Widget build(BuildContext context) {
@@ -52,22 +56,32 @@ class DComicImage extends StatelessWidget {
     return Center(
       child: Column(
         children: [
-          const Expanded(child: SizedBox()),
-          Icon(
-            Icons.broken_image,
-            size: 60,
-            color: customErrorMessageColor ?? Theme.of(context).disabledColor,
-          ),
-          Text(
-            errorMessage,
-            style: TextStyle(
+              const Expanded(child: SizedBox()),
+              Icon(
+                Icons.broken_image,
+                size: errorLogoSize,
                 color:
                     customErrorMessageColor ?? Theme.of(context).disabledColor,
-                overflow: errorMessageOverflow),
-          ),
-          const Expanded(child: SizedBox()),
-        ],
+              ),
+            ] +
+            _showErrorMessage(context, errorMessage),
       ),
     );
+  }
+
+  List<Widget> _showErrorMessage(BuildContext context, String errorMessage) {
+    if (showErrorMessage) {
+      return [
+        Text(
+          errorMessage,
+          style: TextStyle(
+              color: customErrorMessageColor ?? Theme.of(context).disabledColor,
+              overflow: errorMessageOverflow),
+        ),
+        const Expanded(child: SizedBox())
+      ];
+    } else {
+      return [const Expanded(child: SizedBox())];
+    }
   }
 }

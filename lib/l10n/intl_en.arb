@@ -96,5 +96,7 @@
   },
 
   "ComicViewerPageComments": "Comments",
-  "ComicViewerPageDirectory": "Directory"
+  "ComicViewerPageDirectory": "Directory",
+
+  "ComicDetailPageComments": "Comments"
 }

@@ -245,10 +245,21 @@ class DMZJV4RequestHandler extends RequestHandler {
   }
 }
 
-class DMZJUserRequestHandler extends RequestHandler{
+class DMZJUserRequestHandler extends RequestHandler {
   DMZJUserRequestHandler() : super('https://user.muwai.com');
-  
-  Future<Response> loginV2(String username,String password)async {
-    return dio.post('/loginV2/m_confirm',data: FormData.fromMap({"passwd": password, "nickname": username}));
+
+  Future<Response> loginV2(String username, String password) async {
+    return dio.post('/loginV2/m_confirm',
+        data: FormData.fromMap({"passwd": password, "nickname": username}));
+  }
+}
+
+class DMZJCommentRequestHandler extends RequestHandler {
+  DMZJCommentRequestHandler() : super('https://v3comment.muwai.com');
+
+  Future<Response> getComments(String comicId, int page,
+      {int limit = 30, int type = 4}) {
+    return dio
+        .get('/v1/$type/latest/$comicId?limit=$limit&page_index=${page + 1}');
   }
 }

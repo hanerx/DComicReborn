@@ -129,18 +129,19 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
                 ImageEntity(ImageType.network, rawItem['cover'],
                     imageHeaders: {"referer": "https://i.dmzj.com"}),
                 (context) {
-                  if(rawData['category_id']==47){
-                    Provider.of<NavigatorProvider>(context, listen: false)
-                        .getNavigator(context, NavigatorType.defaultNavigator)
-                        ?.push(MaterialPageRoute(
+              if (rawData['category_id'] == 47) {
+                Provider.of<NavigatorProvider>(context, listen: false)
+                    .getNavigator(context, NavigatorType.defaultNavigator)
+                    ?.push(MaterialPageRoute(
                         builder: (context) => ComicDetailPage(
-                          title: rawItem['title'],
-                          comicId: rawItem['obj_id'].toString(),
-                          comicSourceModel: parent,
-                        ),
-                        settings: const RouteSettings(name: 'ComicDetailPage')));
-                  }
-                }));
+                              title: rawItem['title'],
+                              comicId: rawItem['obj_id'].toString(),
+                              comicSourceModel: parent,
+                            ),
+                        settings:
+                            const RouteSettings(name: 'ComicDetailPage')));
+              }
+            }));
           }
           data.add(HomepageCardEntity(
               rawData['title'], null, (context) {}, children));
@@ -351,6 +352,30 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
   List<CategoryEntity> get categories => rawData.types
       .map((e) => CategoryEntity(e.tagName, e.tagId.toString()))
       .toList();
+
+  @override
+  Future<List<ComicCommentEntity>> getComments({int page = 0}) async {
+    List<ComicCommentEntity> data = [];
+    var response = await RequestHandlers.dmzjCommentRequestHandler
+        .getComments(comicId, page);
+    try {
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        for (String key in response.data['commentIds']) {
+          var commentKey = key.split(',').first;
+          var item = response.data['comments'][commentKey];
+          data.add(ComicCommentEntity(
+              ImageEntity(ImageType.network, item['avatar_url'],imageHeaders: {"referer": "https://i.dmzj.com"}),
+              item['content'],
+              item['id'].toString(),
+              item['nickname'],
+              int.parse(item['like_amount'].toString())));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', e, s);
+    }
+    return data;
+  }
 }
 
 class DMZJV4ComicChapterDetailModel extends BaseComicChapterDetailModel {
@@ -372,16 +397,17 @@ class DMZJV4ComicChapterDetailModel extends BaseComicChapterDetailModel {
   String get title => rawData.title;
 
   @override
-  Future<List<ChapterCommentEntity>> getChapterComments() async{
-    List<ChapterCommentEntity> data=[];
+  Future<List<ChapterCommentEntity>> getChapterComments() async {
+    List<ChapterCommentEntity> data = [];
     try {
-      var response= await RequestHandlers
-          .dmzjv3requestHandler
-          .getChapterComments(parent.comicId,chapterId);
+      var response = await RequestHandlers.dmzjv3requestHandler
+          .getChapterComments(parent.comicId, chapterId);
       if ((response.statusCode == 200 || response.statusCode == 304)) {
-        response.data.sort((a, b) => int.parse(b['num'].toString()).compareTo(a['num']));
-        for(var item in response.data){
-          data.add(ChapterCommentEntity(item['id'].toString(), item['content'], item['num']));
+        response.data
+            .sort((a, b) => int.parse(b['num'].toString()).compareTo(a['num']));
+        for (var item in response.data) {
+          data.add(ChapterCommentEntity(
+              item['id'].toString(), item['content'], item['num']));
         }
       }
     } catch (e, s) {

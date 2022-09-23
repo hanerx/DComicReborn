@@ -16,6 +16,11 @@ class ComicDetailPageController extends BaseProvider {
 
   bool get isLoading => _isLoading;
 
+  List<ComicCommentEntity> _comments=[];
+  int _commentPage=0;
+
+  List<ComicCommentEntity> get comments => _comments;
+
   ComicDetailPageController(this.comicSourceModel);
 
   Future<void> refresh(
@@ -32,6 +37,22 @@ class ComicDetailPageController extends BaseProvider {
     await detailModel?.init();
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<void> refreshComment() async{
+    if(detailModel!=null){
+      _commentPage=0;
+      _comments=await detailModel!.getComments(page: _commentPage);
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadComment() async{
+    if(detailModel!=null){
+      _commentPage++;
+      _comments+=await detailModel!.getComments(page: _commentPage);
+      notifyListeners();
+    }
   }
 
   String get title => detailModel == null ? "" : detailModel!.title;

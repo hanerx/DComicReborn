@@ -74,6 +74,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "ComicDetailPageCategory":
             MessageLookupByLibrary.simpleMessage("Category: "),
         "ComicDetailPageChapterEntitySubtitle": m4,
+        "ComicDetailPageComments":
+            MessageLookupByLibrary.simpleMessage("Comments"),
         "ComicDetailPageGridMode": MessageLookupByLibrary.simpleMessage("Grid"),
         "ComicDetailPageListMode": MessageLookupByLibrary.simpleMessage("List"),
         "ComicDetailPageOriginalComicId":

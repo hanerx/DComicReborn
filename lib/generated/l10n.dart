@@ -616,6 +616,16 @@ class S {
       args: [],
     );
   }
+
+  /// `Comments`
+  String get ComicDetailPageComments {
+    return Intl.message(
+      'Comments',
+      name: 'ComicDetailPageComments',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
