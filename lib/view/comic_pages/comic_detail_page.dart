@@ -580,7 +580,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       data.add(Padding(
         padding: const EdgeInsets.only(left: 5),
         child: ActionChip(
-            onPressed: () {},
+            onPressed: item.onTap==null?null:() {item.onTap!(context);},
             label: Text(
               item.title,
             ),
@@ -607,7 +607,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       data.add(Padding(
         padding: const EdgeInsets.only(left: 5),
         child: ActionChip(
-            onPressed: () {},
+            onPressed: item.onTap==null?null:() {item.onTap!(context);},
             label: Text(
               item.title,
             ),

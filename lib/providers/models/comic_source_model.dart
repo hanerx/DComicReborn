@@ -47,8 +47,9 @@ abstract class BaseComicSourceModel extends BaseModel {
 class CategoryEntity{
   final String title;
   final String categoryId;
+  final void Function(BuildContext context)? onTap;
 
-  CategoryEntity(this.title, this.categoryId);
+  CategoryEntity(this.title, this.categoryId, this.onTap);
 }
 
 abstract class BaseComicDetailModel extends BaseModel {

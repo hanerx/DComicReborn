@@ -285,10 +285,11 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
     List<ListItemEntity> data = [];
     Response response = await RequestHandlers.dmzjv3requestHandler
         .getCategoryDetail(int.parse(categoryId),
-            page: page, type: TimeOrRankEnum.values.indexOf(categoryFilter['TimeOrRank']));
+            page: page,
+            type: TimeOrRankEnum.values.indexOf(categoryFilter['TimeOrRank']));
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
-        for(var rawItem in response.data){
+        for (var rawItem in response.data) {
           data.add(ListItemEntity(
               rawItem['title'],
               ImageEntity(ImageType.network, rawItem['cover'],
@@ -299,17 +300,23 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
                 Icons.history_edu: date_format.formatDate(
                     DateTime.fromMicrosecondsSinceEpoch(
                         rawItem['last_updatetime'] * 1000000),
-                    [date_format.yyyy, '-', date_format.mm, '-', date_format.dd])
+                    [
+                      date_format.yyyy,
+                      '-',
+                      date_format.mm,
+                      '-',
+                      date_format.dd
+                    ])
               }, (context) {
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(
-                builder: (context) => ComicDetailPage(
-                  title: rawItem['title'],
-                  comicId: rawItem['id'].toString(),
-                  comicSourceModel: parent,
-                ),
-                settings: const RouteSettings(name: 'ComicDetailPage')));
+                    builder: (context) => ComicDetailPage(
+                          title: rawItem['title'],
+                          comicId: rawItem['id'].toString(),
+                          comicSourceModel: parent,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
           }));
         }
       }
@@ -436,12 +443,34 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
 
   @override
   List<CategoryEntity> get authors => rawData.authors
-      .map((e) => CategoryEntity(e.tagName, e.tagId.toString()))
+      .map((e) => CategoryEntity(e.tagName, e.tagId.toString(), (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicCategoryDetailPage(
+                          categoryId: e.tagId.toString(),
+                          sourceModel: parent,
+                          categoryTitle: e.tagName,
+                        ),
+                    settings:
+                        const RouteSettings(name: 'ComicCategoryDetailPage')));
+          }))
       .toList();
 
   @override
   List<CategoryEntity> get categories => rawData.types
-      .map((e) => CategoryEntity(e.tagName, e.tagId.toString()))
+      .map((e) => CategoryEntity(e.tagName, e.tagId.toString(), (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicCategoryDetailPage(
+                          categoryId: e.tagId.toString(),
+                          sourceModel: parent,
+                          categoryTitle: e.tagName,
+                        ),
+                    settings:
+                        const RouteSettings(name: 'ComicCategoryDetailPage')));
+          }))
       .toList();
 
   @override
