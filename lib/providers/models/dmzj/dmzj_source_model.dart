@@ -1,13 +1,15 @@
 import 'dart:convert';
 
-import 'package:date_format/date_format.dart';
+import 'package:date_format/date_format.dart' as date_format;
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/entity/comic_history.dart';
+import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/protobuf/comic.pb.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/utils/image_utils.dart';
+import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
 import 'package:dcomic/view/drawer_page/favorite_page.dart';
 import 'package:dio/dio.dart';
@@ -187,8 +189,18 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
               rawData['title'],
               null,
               ImageEntity(ImageType.network, rawData['cover'],
-                  imageHeaders: {"referer": "https://i.dmzj.com"}),
-              (context) {}));
+                  imageHeaders: {"referer": "https://i.dmzj.com"}), (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicCategoryDetailPage(
+                          categoryId: rawData['tag_id'].toString(),
+                          sourceModel: parent,
+                          categoryTitle: rawData['title'],
+                        ),
+                    settings:
+                        const RouteSettings(name: 'ComicCategoryDetailPage')));
+          }));
         }
       }
     } catch (e, s) {
@@ -210,10 +222,10 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
           {
             Icons.supervisor_account_rounded: rawListItem.authors,
             Icons.apps: rawListItem.types,
-            Icons.history_edu: formatDate(
+            Icons.history_edu: date_format.formatDate(
                 DateTime.fromMicrosecondsSinceEpoch(
                     rawListItem.lastUpdatetime.toInt() * 1000000),
-                [yyyy, '-', mm, '-', dd])
+                [date_format.yyyy, '-', date_format.mm, '-', date_format.dd])
           }, (context) {
         Provider.of<NavigatorProvider>(context, listen: false)
             .getNavigator(context, NavigatorType.defaultNavigator)
@@ -242,10 +254,10 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
           {
             Icons.supervisor_account_rounded: rawListItem.authors,
             Icons.apps: rawListItem.types,
-            Icons.history_edu: formatDate(
+            Icons.history_edu: date_format.formatDate(
                 DateTime.fromMicrosecondsSinceEpoch(
                     rawListItem.lastUpdatetime.toInt() * 1000000),
-                [yyyy, '-', mm, '-', dd])
+                [date_format.yyyy, '-', date_format.mm, '-', date_format.dd])
           }, (context) {
         Provider.of<NavigatorProvider>(context, listen: false)
             .getNavigator(context, NavigatorType.defaultNavigator)
@@ -260,6 +272,85 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
     }
     return data;
   }
+
+  @override
+  // TODO: implement categoryFilter
+  List<FilterEntity> get categoryFilter => [TimeOrRankFilterEntity()];
+
+  @override
+  Future<List<ListItemEntity>> getCategoryDetailList(
+      {required String categoryId,
+      required Map<String, dynamic> categoryFilter,
+      int page = 0}) async {
+    List<ListItemEntity> data = [];
+    Response response = await RequestHandlers.dmzjv3requestHandler
+        .getCategoryDetail(int.parse(categoryId),
+            page: page, type: TimeOrRankEnum.values.indexOf(categoryFilter['TimeOrRank']));
+    try {
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        for(var rawItem in response.data){
+          data.add(ListItemEntity(
+              rawItem['title'],
+              ImageEntity(ImageType.network, rawItem['cover'],
+                  imageHeaders: {"referer": "https://i.dmzj.com"}),
+              {
+                Icons.supervisor_account_rounded: rawItem['authors'],
+                Icons.apps: rawItem['types'],
+                Icons.history_edu: date_format.formatDate(
+                    DateTime.fromMicrosecondsSinceEpoch(
+                        rawItem['last_updatetime'] * 1000000),
+                    [date_format.yyyy, '-', date_format.mm, '-', date_format.dd])
+              }, (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                builder: (context) => ComicDetailPage(
+                  title: rawItem['title'],
+                  comicId: rawItem['id'].toString(),
+                  comicSourceModel: parent,
+                ),
+                settings: const RouteSettings(name: 'ComicDetailPage')));
+          }));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', e, s);
+    }
+    return data;
+  }
+}
+
+enum TimeOrRankEnum { ranking, latestUpdate }
+
+class TimeOrRankFilterEntity extends FilterEntity {
+  @override
+  String get filterName => 'TimeOrRank';
+
+  @override
+  String getLocalizedFilterName(BuildContext context) {
+    return S.of(context).TimeOrRankFilterEntityName;
+  }
+
+  @override
+  Map<String, dynamic> getLocalizedMappingChoice(BuildContext context) {
+    Map<String, dynamic> data = {};
+    for (var item in TimeOrRankEnum.values) {
+      data[S.of(context).TimeOrRankFilterEntityModes(item.name)] = item;
+    }
+    return data;
+  }
+
+  @override
+  get initValue => TimeOrRankEnum.ranking;
+
+  @override
+  String getLocalizedStringByValue(BuildContext context, value) {
+    return S.of(context).TimeOrRankFilterEntityModes(
+        TimeOrRankEnum.values[TimeOrRankEnum.values.indexOf(value)].name);
+  }
+
+  @override
+  IconData get filterIcon => FontAwesome5.sort_amount_down;
 }
 
 class DMZJV4ComicDetailModel extends BaseComicDetailModel {
@@ -364,7 +455,8 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
           var commentKey = key.split(',').first;
           var item = response.data['comments'][commentKey];
           data.add(ComicCommentEntity(
-              ImageEntity(ImageType.network, item['avatar_url'],imageHeaders: {"referer": "https://i.dmzj.com"}),
+              ImageEntity(ImageType.network, item['avatar_url'],
+                  imageHeaders: {"referer": "https://i.dmzj.com"}),
               item['content'],
               item['id'].toString(),
               item['nickname'],

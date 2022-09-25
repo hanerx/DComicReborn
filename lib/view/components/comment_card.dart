@@ -26,7 +26,7 @@ class CommentCard extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(5),
             child: DComicImage(avatar,
-                errorMessageOverflow: TextOverflow.ellipsis,showErrorMessage: false,errorLogoSize: 48,),
+                errorMessageOverflow: TextOverflow.ellipsis,showErrorMessage: false,errorLogoSize: 48,fit: BoxFit.cover,),
           ),
         ),
         title: Text(nickname),

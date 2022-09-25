@@ -98,5 +98,8 @@
   "ComicViewerPageComments": "Comments",
   "ComicViewerPageDirectory": "Directory",
 
-  "ComicDetailPageComments": "Comments"
+  "ComicDetailPageComments": "Comments",
+
+  "TimeOrRankFilterEntityName": "SortType",
+  "TimeOrRankFilterEntityModes": "{modes, select, ranking{Ranking} latestUpdate{Latest Update} other{Unknown}}"
 }

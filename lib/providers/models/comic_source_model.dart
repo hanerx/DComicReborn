@@ -2,7 +2,6 @@ import 'package:dcomic/database/entity/comic_history.dart';
 import 'package:dcomic/providers/models/base_model.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/utils/image_utils.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class ComicSourceEntity {
@@ -162,6 +161,25 @@ abstract class BaseComicHomepageModel extends BaseModel {
 
   /// 获取更新列表数据
   Future<List<ListItemEntity>> getLatestList({int page = 0});
+
+  /// category的filter
+  List<FilterEntity> get categoryFilter;
+
+  Future<List<ListItemEntity>> getCategoryDetailList({required String categoryId,required Map<String,dynamic> categoryFilter,int page = 0});
+}
+
+abstract class FilterEntity{
+  String getLocalizedFilterName(BuildContext context);
+
+  IconData get filterIcon;
+
+  String get filterName;
+
+  dynamic get initValue;
+
+  Map<String,dynamic> getLocalizedMappingChoice(BuildContext context);
+
+  String getLocalizedStringByValue(BuildContext context,dynamic value);
 }
 
 class ChapterCommentEntity{

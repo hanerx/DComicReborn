@@ -36,6 +36,12 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m4(uploadTime, chapterId) =>
       "Upload Time: ${uploadTime} ChapterID: ${chapterId}";
 
+  static String m5(modes) => "${Intl.select(modes, {
+            'ranking': 'Ranking',
+            'latestUpdate': 'Latest Update',
+            'other': 'Unknown',
+          })}";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
         "AboutPageAbout": MessageLookupByLibrary.simpleMessage("About"),
@@ -128,6 +134,9 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Source Settings"),
         "SourceSettingsDescription":
             MessageLookupByLibrary.simpleMessage("Manage Comic Source"),
+        "TimeOrRankFilterEntityModes": m5,
+        "TimeOrRankFilterEntityName":
+            MessageLookupByLibrary.simpleMessage("SortType"),
         "UnknownScreen": MessageLookupByLibrary.simpleMessage(
             "Your Screen Size is not support, please connect author.")
       };

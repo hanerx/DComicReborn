@@ -88,6 +88,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                     elevation: 0,
                     expandedHeight: 300,
                     pinned: true,
+                    actions: const [Spacer()],
                     flexibleSpace: FlexibleSpaceBar(
                       title: Text(
                         Provider.of<ComicDetailPageController>(context).title,

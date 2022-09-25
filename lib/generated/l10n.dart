@@ -626,6 +626,31 @@ class S {
       args: [],
     );
   }
+
+  /// `SortType`
+  String get TimeOrRankFilterEntityName {
+    return Intl.message(
+      'SortType',
+      name: 'TimeOrRankFilterEntityName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{modes, select, ranking{Ranking} latestUpdate{Latest Update} other{Unknown}}`
+  String TimeOrRankFilterEntityModes(Object modes) {
+    return Intl.select(
+      modes,
+      {
+        'ranking': 'Ranking',
+        'latestUpdate': 'Latest Update',
+        'other': 'Unknown',
+      },
+      name: 'TimeOrRankFilterEntityModes',
+      desc: '',
+      args: [modes],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
