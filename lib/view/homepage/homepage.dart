@@ -1,13 +1,10 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/page_controllers/comic_homepage_controller.dart';
-import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/components/carousel_item.dart';
-import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:dcomic/view/components/grid_card.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -65,7 +62,7 @@ class _HomePageState extends State<HomePage> {
         }
         var entity = Provider.of<ComicHomepageController>(context)
             .homepageCarousels[index];
-        return CarouselItem(title:entity.title,cover:entity.cover);
+        return CarouselItem(title:entity.title,cover:entity.cover,onTap: entity.onTap,);
       },
     );
   }

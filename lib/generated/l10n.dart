@@ -370,6 +370,26 @@ class S {
     );
   }
 
+  /// `Try Crash`
+  String get DebugPageTryCrash {
+    return Intl.message(
+      'Try Crash',
+      name: 'DebugPageTryCrash',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Try call a crash to test firebase collection method.`
+  String get DebugPageTryCrashDescription {
+    return Intl.message(
+      'Try call a crash to test firebase collection method.',
+      name: 'DebugPageTryCrashDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Check For Update`
   String get AboutPageCheckForUpdate {
     return Intl.message(

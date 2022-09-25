@@ -6,15 +6,16 @@ import 'package:flutter/material.dart';
 class CarouselItem extends StatelessWidget {
   final String title;
   final ImageEntity cover;
+  final void Function(BuildContext context)? onTap;
 
-  const CarouselItem({super.key, required this.title, required this.cover});
+  const CarouselItem({super.key, required this.title, required this.cover, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 3, 4, 0),
       child: InkWell(
-        onTap: () {},
+        onTap: onTap==null?null:(){onTap!(context);},
         child: Center(
           child: Stack(
             children: [

@@ -22,7 +22,7 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
 
   @override
   ComicSourceEntity get type => ComicSourceEntity("大妈之家", "dmzj",
-      hasHomepage: true, hasAccountSupport: true);
+      hasHomepage: true, hasAccountSupport: true,hasComment: true);
 
   @override
   Future<BaseComicDetailModel?> getComicDetail(
@@ -131,7 +131,7 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
                 ImageEntity(ImageType.network, rawItem['cover'],
                     imageHeaders: {"referer": "https://i.dmzj.com"}),
                 (context) {
-              if (rawData['category_id'] == 47) {
+              if (rawItem['type'] == 1) {
                 Provider.of<NavigatorProvider>(context, listen: false)
                     .getNavigator(context, NavigatorType.defaultNavigator)
                     ?.push(MaterialPageRoute(
@@ -168,7 +168,20 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
               ImageEntity(ImageType.network, rawItem['cover'],
                   imageHeaders: {"referer": "https://i.dmzj.com"}),
               rawItem['title'],
-              (context) {}));
+              (context) {
+                if (rawItem['type'] == 1) {
+                  Provider.of<NavigatorProvider>(context, listen: false)
+                      .getNavigator(context, NavigatorType.defaultNavigator)
+                      ?.push(MaterialPageRoute(
+                      builder: (context) => ComicDetailPage(
+                        title: rawItem['title'],
+                        comicId: rawItem['obj_id'].toString(),
+                        comicSourceModel: parent,
+                      ),
+                      settings:
+                      const RouteSettings(name: 'ComicDetailPage')));
+                }
+              }));
         }
       }
     } catch (e, s) {

@@ -98,6 +98,9 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Network Check"),
         "DebugPageNetworkCheckDescription": MessageLookupByLibrary.simpleMessage(
             "Just check network by ping baidu.com, maybe change to more useful page in future."),
+        "DebugPageTryCrash": MessageLookupByLibrary.simpleMessage("Try Crash"),
+        "DebugPageTryCrashDescription": MessageLookupByLibrary.simpleMessage(
+            "Try call a crash to test firebase collection method."),
         "DebugSettings": MessageLookupByLibrary.simpleMessage("Debug Settings"),
         "DebugSettingsDescription": MessageLookupByLibrary.simpleMessage(
             "Debug Settings (Some may not work)"),
