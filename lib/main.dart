@@ -84,8 +84,6 @@ class App extends StatelessWidget {
                 GlobalMaterialLocalizations.delegate,
                 GlobalWidgetsLocalizations.delegate,
                 DefaultCupertinoLocalizations.delegate,
-                //TODO 这个不知道干嘛的，反正先不用他
-                // ChineseCupertinoLocalizations.delegate,
               ],
               home: const MainFramework())),
     );

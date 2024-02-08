@@ -69,8 +69,11 @@ class _$DComicDatabase extends DComicDatabase {
 
   ModelConfigDao? _modelConfigDaoInstance;
 
-  Future<sqflite.Database> open(String path, List<Migration> migrations,
-      [Callback? callback]) async {
+  Future<sqflite.Database> open(
+    String path,
+    List<Migration> migrations, [
+    Callback? callback,
+  ]) async {
     final databaseOptions = sqflite.OpenDatabaseOptions(
       version: 3,
       onConfigure: (database) async {
@@ -126,8 +129,10 @@ class _$DComicDatabase extends DComicDatabase {
 }
 
 class _$ConfigDao extends ConfigDao {
-  _$ConfigDao(this.database, this.changeListener)
-      : _queryAdapter = QueryAdapter(database),
+  _$ConfigDao(
+    this.database,
+    this.changeListener,
+  )   : _queryAdapter = QueryAdapter(database),
         _configEntityInsertionAdapter = InsertionAdapter(
             database,
             'ConfigEntity',
@@ -185,8 +190,10 @@ class _$ConfigDao extends ConfigDao {
 }
 
 class _$ComicHistoryDao extends ComicHistoryDao {
-  _$ComicHistoryDao(this.database, this.changeListener)
-      : _queryAdapter = QueryAdapter(database),
+  _$ComicHistoryDao(
+    this.database,
+    this.changeListener,
+  )   : _queryAdapter = QueryAdapter(database),
         _comicHistoryEntityInsertionAdapter = InsertionAdapter(
             database,
             'ComicHistoryEntity',
@@ -296,8 +303,10 @@ class _$ComicHistoryDao extends ComicHistoryDao {
 }
 
 class _$CookieDao extends CookieDao {
-  _$CookieDao(this.database, this.changeListener)
-      : _queryAdapter = QueryAdapter(database),
+  _$CookieDao(
+    this.database,
+    this.changeListener,
+  )   : _queryAdapter = QueryAdapter(database),
         _cookieEntityInsertionAdapter = InsertionAdapter(
             database,
             'CookieEntity',
@@ -361,8 +370,10 @@ class _$CookieDao extends CookieDao {
 }
 
 class _$ModelConfigDao extends ModelConfigDao {
-  _$ModelConfigDao(this.database, this.changeListener)
-      : _queryAdapter = QueryAdapter(database),
+  _$ModelConfigDao(
+    this.database,
+    this.changeListener,
+  )   : _queryAdapter = QueryAdapter(database),
         _modelConfigEntityInsertionAdapter = InsertionAdapter(
             database,
             'ModelConfigEntity',
@@ -405,7 +416,9 @@ class _$ModelConfigDao extends ModelConfigDao {
 
   @override
   Future<ModelConfigEntity?> getConfigByKeyAndModel(
-      String key, String sourceModel) async {
+    String key,
+    String sourceModel,
+  ) async {
     return _queryAdapter.query(
         'SELECT * FROM ModelConfigEntity WHERE key = ?1 AND sourceModel = ?2 LIMIT 1',
         mapper: (Map<String, Object?> row) => ModelConfigEntity(row['id'] as int?, row['key'] as String, row['value'] as String?, row['sourceModel'] as String?),

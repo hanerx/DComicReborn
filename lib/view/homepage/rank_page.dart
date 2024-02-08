@@ -28,7 +28,7 @@ class _RankPageState extends State<RankPage> {
             await Provider.of<ComicRankPageController>(context, listen: false)
                 .load(context);
           },
-          noMoreLoad: !Provider.of<ComicRankPageController>(context).canLoad,
+          // noMoreLoad: !Provider.of<ComicRankPageController>(context).canLoad,
           child: Container(
             height: double.infinity,
             color: Theme.of(context).colorScheme.surfaceVariant,
