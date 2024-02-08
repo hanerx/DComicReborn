@@ -26,7 +26,7 @@ class _LatestPageState extends State<LatestPage> {
             await Provider.of<ComicLatestPageController>(context, listen: false)
                 .load(context);
           },
-          noMoreLoad: !Provider.of<ComicLatestPageController>(context).canLoad,
+          // noMoreLoad: !Provider.of<ComicLatestPageController>(context).canLoad,
           child: Container(
             height: double.infinity,
             color: Theme.of(context).colorScheme.surfaceVariant,

@@ -34,7 +34,7 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
         return DMZJV4ComicDetailModel(rawData, this);
       }
     } catch (e, s) {
-      logger.e('$e', e, s);
+      logger.e('$e', error: e, stackTrace: s);
       rethrow;
     }
     return null;
@@ -112,7 +112,7 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
           }, children));
         }
       } catch (e, s) {
-        logger.e('$e', e, s);
+        logger.e('$e', error: e, stackTrace: s);
       }
     }
     Response response =
@@ -150,7 +150,7 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
         }
       }
     } catch (e, s) {
-      logger.e('$e', e, s);
+      logger.e('$e', error: e, stackTrace: s);
     }
     return data;
   }
@@ -185,7 +185,7 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
         }
       }
     } catch (e, s) {
-      logger.e('$e', e, s);
+      logger.e('$e', error: e, stackTrace: s);
     }
     return data;
   }
@@ -217,7 +217,7 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
         }
       }
     } catch (e, s) {
-      logger.e('$e', e, s);
+      logger.e('$e', error: e, stackTrace: s);
     }
     return data;
   }
@@ -334,7 +334,7 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
         }
       }
     } catch (e, s) {
-      logger.e('$e', e, s);
+      logger.e('$e', error: e, stackTrace: s);
     }
     return data;
   }
@@ -420,7 +420,7 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
         return DMZJV4ComicChapterDetailModel(rawData, this);
       }
     } catch (e, s) {
-      logger.e('$e', e, s);
+      logger.e('$e', error: e, stackTrace: s);
       rethrow;
     }
     return null;
@@ -506,7 +506,7 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
         }
       }
     } catch (e, s) {
-      logger.e('$e', e, s);
+      logger.e('$e', error: e, stackTrace: s);
     }
     return data;
   }
@@ -545,7 +545,7 @@ class DMZJV4ComicChapterDetailModel extends BaseComicChapterDetailModel {
         }
       }
     } catch (e, s) {
-      logger.e('$e', e, s);
+      logger.e('$e', error: e, stackTrace: s);
     }
     return data;
   }
@@ -646,7 +646,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                             }
                           }
                         } catch (e, s) {
-                          logger.e(e, e, s);
+                          logger.e(e, error: e, stackTrace: s);
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: Text(S.of(context).CommonLoginLoginFailed(e)),
                           ));
@@ -721,7 +721,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
         }
       }
     } catch (e, s) {
-      logger.e(e, e, s);
+      logger.e(e, error: e, stackTrace: s);
       rethrow;
     }
     return false;
@@ -765,7 +765,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
         _avatar = ImageEntity(ImageType.network, response.data['cover'],
             imageHeaders: {"referer": "https://i.dmzj.com"});
       } catch (e, s) {
-        logger.e(e, e, s);
+        logger.e(e, error: e, stackTrace: s);
         _isLogin = false;
       }
     } else {
@@ -801,7 +801,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
         return response.data['code'] == 0;
       }
     } catch (e, s) {
-      logger.e(e, e, s);
+      logger.e(e, error: e, stackTrace: s);
     }
     return false;
   }
@@ -818,7 +818,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
         return true;
       }
     } catch (e, s) {
-      logger.e(e, e, s);
+      logger.e(e, error: e, stackTrace: s);
     }
     return false;
   }
@@ -835,7 +835,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
         return true;
       }
     } catch (e, s) {
-      logger.e(e, e, s);
+      logger.e(e, error: e, stackTrace: s);
     }
     return false;
   }
@@ -866,7 +866,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
         }
       }
     } catch (e, s) {
-      logger.e(e, e, s);
+      logger.e(e, error: e, stackTrace: s);
     }
     return data;
   }

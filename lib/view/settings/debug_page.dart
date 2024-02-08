@@ -2,7 +2,6 @@ import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/utils/firbaselogoutput.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:logger/logger.dart';
@@ -51,7 +50,7 @@ class _DebugPageState extends State<DebugPage> {
                 dynamic x=0;
                 String y=x;
               }catch(e,s){
-                logger.e(e,e,s);
+                logger.e(e,error: e,stackTrace: s);
               }
             },
           )
