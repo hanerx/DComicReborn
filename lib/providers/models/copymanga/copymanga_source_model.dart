@@ -11,7 +11,7 @@ import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:provider/provider.dart';
 
 class CopyMangaComicSourceModel extends BaseComicSourceModel {
-  CopyMangaAccountModel _accountModel = CopyMangaAccountModel();
+  final CopyMangaAccountModel _accountModel = CopyMangaAccountModel();
 
   @override
   ComicSourceEntity get type =>
@@ -148,7 +148,7 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                             }
                           }
                         } catch (e, s) {
-                          logger.e(e, e, s);
+                          logger.e(e, error: e, stackTrace: s);
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content:
                                 Text(S.of(context).CommonLoginLoginFailed(e)),

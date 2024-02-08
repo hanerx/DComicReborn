@@ -1,7 +1,6 @@
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/base_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_adaptive_ui/flutter_adaptive_ui.dart';
 
 enum NavigatorType { defaultNavigator, home, right, large }
 
@@ -16,9 +15,6 @@ class NavigatorProvider extends BaseProvider {
 
   NavigatorState? getNavigator(
       BuildContext context, NavigatorType navigatorType) {
-    if (Screen.fromContext(context).isHandset) {
-      return Navigator.of(context);
-    }
     switch (navigatorType) {
       case NavigatorType.defaultNavigator:
         return Navigator.of(context);
@@ -56,9 +52,6 @@ class AppBarProvider extends BaseProvider {
   }
 
   AppBar? addAppBar(BuildContext context, AppBar? appBar, String stackName) {
-    if (Screen.fromContext(context).isHandset) {
-      return appBar;
-    }
     if(!stack.contains(stackName)){
       _appBarList.add(appBar);
       stack.add(stackName);

@@ -24,7 +24,7 @@ class CopyMangaRequestHandler extends RequestHandler{
   }
 
   Future<Response> getChapters(String comicId, String groupName,
-      {int limit: 100, int page: 0}) {
+      {int limit = 100, int page = 0}) {
     return dio.get(
         '/api/v3/comic/$comicId/group/$groupName/chapters?limit=$limit&offset=$page');
   }
@@ -38,7 +38,7 @@ class CopyMangaRequestHandler extends RequestHandler{
         }));
   }
 
-  Future<Response> search(String keyword, {int page: 0}) {
+  Future<Response> search(String keyword, {int page = 0}) {
     return dio.get(
         '/api/v3/search/comic?platform=1&q=$keyword&limit=20&offset=$page&q_type=&_update=true');
   }
@@ -60,7 +60,7 @@ class CopyMangaRequestHandler extends RequestHandler{
     return dio.post('/api/v3/logout', options: await setHeader());
   }
 
-  Future<Response> getSubscribe({int page: 0, int limit: 21}) async {
+  Future<Response> getSubscribe({int page = 0, int limit = 21}) async {
     return dio.get(
         '/api/v3/member/collect/comics?free_type=1&limit=$limit&offset=${page * limit}&_update=true&ordering=-datetime_modifier',
         options: await setHeader());
@@ -87,16 +87,16 @@ class CopyMangaRequestHandler extends RequestHandler{
   }
 
   Future<Response> getTagList(
-      {bool popular: true,
-        int page: 0,
-        int limit: 21,
+      {bool popular = true,
+        int page = 0,
+        int limit = 21,
         String? categoryId,
         String? authorId}) {
     return dio.get(
         '/api/v3/comics?free_type=1&limit=$limit&offset=$page${categoryId == null ? '' : '&theme=$categoryId'}${authorId == null ? '' : '&author=$authorId'}&ordering=${popular ? '-popular' : '-datetime_updated'}&_update=true');
   }
 
-  Future<Response> getSubjectList({int page: 0, int limit: 20}) {
+  Future<Response> getSubjectList({int page = 0, int limit = 20}) {
     return dio
         .get('/api/v3/topics?type=1&limit=$limit&offset=$page&_update=true');
   }
@@ -106,7 +106,7 @@ class CopyMangaRequestHandler extends RequestHandler{
   }
 
   Future<Response> getSubjectDetailContent(String subjectId,
-      {int page: 0, limit: 30}) {
+      {int page = 0, limit = 30}) {
     return dio.get(
         'https://api.copymanga.com/api/v3/topic/$subjectId/contents?limit=$limit&offset=${page * limit}');
   }

@@ -53,6 +53,22 @@ class _DebugPageState extends State<DebugPage> {
                 logger.e(e,error: e,stackTrace: s);
               }
             },
+          ),
+          ListTile(
+            leading: const Icon(FontAwesome5.bug),
+            title: Text(S.of(context).DebugPageTryCrash),
+            subtitle: Text(S.of(context).DebugPageTryCrashDescription),
+            onTap: () async{
+              Logger logger = Logger(
+                  printer: PrettyPrinter(noBoxingByDefault: true,methodCount:2),
+                  filter: ProductionFilter(),
+                  output: CrashConsoleOutput());
+              var databaseInstance = await DatabaseInstance.instance;
+              var configList = await databaseInstance.modelConfigDao.getAllConfig();
+              for (var element in configList) {
+                print(element);
+              }
+            },
           )
         ],
       ),

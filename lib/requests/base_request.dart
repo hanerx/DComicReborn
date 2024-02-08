@@ -70,7 +70,7 @@ class RequestHandler {
     return true;
   }
 
-  Future<int> ping({String path: '/'}) async {
+  Future<int> ping({String path = '/'}) async {
     DateTime now = DateTime.now();
     try {
       await dio.get(path);

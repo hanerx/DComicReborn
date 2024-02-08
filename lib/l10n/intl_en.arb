@@ -39,6 +39,8 @@
   "DebugPageNetworkCheckDescription": "Just check network by ping baidu.com, maybe change to more useful page in future.",
   "DebugPageTryCrash": "Try Crash",
   "DebugPageTryCrashDescription": "Try call a crash to test firebase collection method.",
+  "DebugPagePrintModelDatabase": "Try Print All Database Content",
+  "DebugPagePrintModelDatabaseDescription": "Try Print All Database Content to Log",
 
   "AboutPageCheckForUpdate": "Check For Update",
   "AboutPageUpdateChannel": "Update Channel",
