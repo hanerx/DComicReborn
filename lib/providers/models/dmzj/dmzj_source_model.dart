@@ -197,7 +197,7 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
         await RequestHandlers.dmzjv3requestHandler.getCategory();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
-        for (var rawData in response.data['data']) {
+        for (var rawData in response.data) {
           data.add(GridItemEntity(
               rawData['title'],
               null,
@@ -522,7 +522,7 @@ class DMZJV4ComicChapterDetailModel extends BaseComicChapterDetailModel {
   String get chapterId => rawData.chapterId.toString();
 
   @override
-  List<ImageEntity> get pages => rawData.rawPages
+  List<ImageEntity> get pages => rawData.smallPages
       .map((e) => ImageEntity(ImageType.network, e,
           imageHeaders: {"referer": "https://i.dmzj.com"}))
       .toList();
@@ -564,7 +564,6 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
   DMZJComicAccountModel();
 
   @override
-  // TODO: implement avatar
   ImageEntity? get avatar => _avatar;
 
   @override
@@ -588,7 +587,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                     children: [
                       Center(
                         child: Text(
-                          "DMZJ",
+                          S.of(context).DMZJTitle,
                           style: Theme.of(context).textTheme.headlineMedium,
                         ),
                       ),
@@ -602,23 +601,23 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                                   controller: usernameController,
                                   decoration: InputDecoration(
                                       isDense: true,
-                                      border: OutlineInputBorder(gapPadding: 1),
-                                      labelText: '用户名',
-                                      prefixIcon: Icon(Icons.account_circle),
-                                      hintText: '昵称/手机号/邮箱'),
+                                      border: const OutlineInputBorder(gapPadding: 1),
+                                      labelText: S.of(context).DMZJLoginUsername,
+                                      prefixIcon: const Icon(Icons.account_circle),
+                                      hintText: S.of(context).DMZJLoginUsernameHint),
                                 ),
                               ),
                               Padding(
-                                padding: EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.only(bottom: 10),
                                 child: TextFormField(
                                   controller: passwordController,
                                   obscureText: true,
                                   decoration: InputDecoration(
                                       isDense: true,
-                                      border: OutlineInputBorder(gapPadding: 1),
-                                      labelText: '密码',
-                                      prefixIcon: Icon(Icons.lock),
-                                      hintText: '大妈之家登录密码'),
+                                      border: const OutlineInputBorder(gapPadding: 1),
+                                      labelText: S.of(context).DMZJLoginPassword,
+                                      prefixIcon: const Icon(Icons.lock),
+                                      hintText: S.of(context).DMZJLoginPasswordHint),
                                 ),
                               )
                             ],
@@ -649,21 +648,21 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                         } catch (e, s) {
                           logger.e(e, e, s);
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text('登录失败: $e'),
+                            content: Text(S.of(context).CommonLoginLoginFailed(e)),
                           ));
                         }
                       },
                       icon: const Icon(FontAwesome5.arrow_right),
-                      label: Text("登录"),
+                      label: Text(S.of(context).CommonLoginLogin),
                       style: ButtonStyle(
                           shape:
-                              MaterialStateProperty.all(RoundedRectangleBorder(
+                              MaterialStateProperty.all(const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(3),
                             bottomLeft: Radius.circular(3),
                           ))),
                           padding: MaterialStateProperty.all(
-                              EdgeInsets.only(top: 10, left: 10, bottom: 10))),
+                              const EdgeInsets.only(top: 10, left: 10, bottom: 10))),
                     ))
               ],
             ),
@@ -677,18 +676,18 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                     child: ElevatedButton.icon(
                       onPressed: () {},
                       icon: const Icon(FontAwesome5.qq),
-                      label: Text("QQ登录"),
+                      label: Text(S.of(context).DMZJLoginQQLogin),
                       style: ButtonStyle(
                           backgroundColor:
                               MaterialStateProperty.all(Colors.cyan),
                           shape:
-                              MaterialStateProperty.all(RoundedRectangleBorder(
+                              MaterialStateProperty.all(const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(3),
                             bottomLeft: Radius.circular(3),
                           ))),
                           padding: MaterialStateProperty.all(
-                              EdgeInsets.only(top: 10, left: 10, bottom: 10))),
+                              const EdgeInsets.only(top: 10, left: 10, bottom: 10))),
                     ))
               ],
             )

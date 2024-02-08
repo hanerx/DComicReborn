@@ -671,6 +671,126 @@ class S {
       args: [modes],
     );
   }
+
+  /// `Username`
+  String get DMZJLoginUsername {
+    return Intl.message(
+      'Username',
+      name: 'DMZJLoginUsername',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Email/Username/PhoneNumber`
+  String get DMZJLoginUsernameHint {
+    return Intl.message(
+      'Email/Username/PhoneNumber',
+      name: 'DMZJLoginUsernameHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password`
+  String get DMZJLoginPassword {
+    return Intl.message(
+      'Password',
+      name: 'DMZJLoginPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your DMZJ Password!`
+  String get DMZJLoginPasswordHint {
+    return Intl.message(
+      'Your DMZJ Password!',
+      name: 'DMZJLoginPasswordHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `DMZJ`
+  String get DMZJTitle {
+    return Intl.message(
+      'DMZJ',
+      name: 'DMZJTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `QQ Login`
+  String get DMZJLoginQQLogin {
+    return Intl.message(
+      'QQ Login',
+      name: 'DMZJLoginQQLogin',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Login`
+  String get CommonLoginLogin {
+    return Intl.message(
+      'Login',
+      name: 'CommonLoginLogin',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Logout`
+  String get CommonLoginLogout {
+    return Intl.message(
+      'Logout',
+      name: 'CommonLoginLogout',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Login Failed, Failed Reason: {Reason}.`
+  String CommonLoginLoginFailed(Object Reason) {
+    return Intl.message(
+      'Login Failed, Failed Reason: $Reason.',
+      name: 'CommonLoginLoginFailed',
+      desc: '',
+      args: [Reason],
+    );
+  }
+
+  /// `CopyManga`
+  String get CopyMangaTitle {
+    return Intl.message(
+      'CopyManga',
+      name: 'CopyMangaTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your CopyManga Password!`
+  String get CopyMangaLoginPasswordHint {
+    return Intl.message(
+      'Your CopyManga Password!',
+      name: 'CopyMangaLoginPasswordHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Username`
+  String get CopyMangaLoginUsernameHint {
+    return Intl.message(
+      'Username',
+      name: 'CopyMangaLoginUsernameHint',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

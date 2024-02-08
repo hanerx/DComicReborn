@@ -103,5 +103,28 @@
   "ComicDetailPageComments": "Comments",
 
   "TimeOrRankFilterEntityName": "SortType",
-  "TimeOrRankFilterEntityModes": "{modes, select, ranking{Ranking} latestUpdate{Latest Update} other{Unknown}}"
+  "TimeOrRankFilterEntityModes": "{modes, select, ranking{Ranking} latestUpdate{Latest Update} other{Unknown}}",
+
+  "DMZJLoginUsername": "Username",
+  "DMZJLoginUsernameHint": "Email/Username/PhoneNumber",
+  "DMZJLoginPassword": "Password",
+  "DMZJLoginPasswordHint": "Your DMZJ Password!",
+  "DMZJTitle": "DMZJ",
+  "DMZJLoginQQLogin": "QQ Login",
+
+
+  "CommonLoginLogin": "Login",
+  "CommonLoginLogout": "Logout",
+  "CommonLoginLoginFailed": "Login Failed, Failed Reason: {Reason}.",
+    "@CommonLoginLoginFailed": {
+        "placeholders": {
+        "Reason": {
+            "example": "Unknown"
+        }
+        }
+    },
+
+  "CopyMangaTitle": "CopyManga",
+  "CopyMangaLoginPasswordHint": "Your CopyManga Password!",
+  "CopyMangaLoginUsernameHint": "Username"
 }

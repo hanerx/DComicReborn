@@ -36,7 +36,9 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m4(uploadTime, chapterId) =>
       "Upload Time: ${uploadTime} ChapterID: ${chapterId}";
 
-  static String m5(modes) => "${Intl.select(modes, {
+  static String m5(Reason) => "Login Failed, Failed Reason: ${Reason}.";
+
+  static String m6(modes) => "${Intl.select(modes, {
             'ranking': 'Ranking',
             'latestUpdate': 'Latest Update',
             'other': 'Unknown',
@@ -94,6 +96,22 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Comments"),
         "ComicViewerPageDirectory":
             MessageLookupByLibrary.simpleMessage("Directory"),
+        "CommonLoginLogin": MessageLookupByLibrary.simpleMessage("Login"),
+        "CommonLoginLoginFailed": m5,
+        "CommonLoginLogout": MessageLookupByLibrary.simpleMessage("Logout"),
+        "CopyMangaLoginPasswordHint":
+            MessageLookupByLibrary.simpleMessage("Your CopyManga Password!"),
+        "CopyMangaLoginUsernameHint":
+            MessageLookupByLibrary.simpleMessage("Username"),
+        "CopyMangaTitle": MessageLookupByLibrary.simpleMessage("CopyManga"),
+        "DMZJLoginPassword": MessageLookupByLibrary.simpleMessage("Password"),
+        "DMZJLoginPasswordHint":
+            MessageLookupByLibrary.simpleMessage("Your DMZJ Password!"),
+        "DMZJLoginQQLogin": MessageLookupByLibrary.simpleMessage("QQ Login"),
+        "DMZJLoginUsername": MessageLookupByLibrary.simpleMessage("Username"),
+        "DMZJLoginUsernameHint":
+            MessageLookupByLibrary.simpleMessage("Email/Username/PhoneNumber"),
+        "DMZJTitle": MessageLookupByLibrary.simpleMessage("DMZJ"),
         "DebugPageNetworkCheck":
             MessageLookupByLibrary.simpleMessage("Network Check"),
         "DebugPageNetworkCheckDescription": MessageLookupByLibrary.simpleMessage(
@@ -137,7 +155,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Source Settings"),
         "SourceSettingsDescription":
             MessageLookupByLibrary.simpleMessage("Manage Comic Source"),
-        "TimeOrRankFilterEntityModes": m5,
+        "TimeOrRankFilterEntityModes": m6,
         "TimeOrRankFilterEntityName":
             MessageLookupByLibrary.simpleMessage("SortType"),
         "UnknownScreen": MessageLookupByLibrary.simpleMessage(
