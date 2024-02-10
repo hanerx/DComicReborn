@@ -1,8 +1,9 @@
 import 'package:dcomic/database/entity/comic_history.dart';
+import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/base_model.dart';
-import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttericon/font_awesome5_icons.dart';
 
 class ComicSourceEntity {
   final String sourceName;
@@ -166,7 +167,7 @@ abstract class BaseComicHomepageModel extends BaseModel {
   /// category的filter
   List<FilterEntity> get categoryFilter;
 
-  Future<List<ListItemEntity>> getCategoryDetailList({required String categoryId,required Map<String,dynamic> categoryFilter,int page = 0});
+  Future<List<ListItemEntity>> getCategoryDetailList({required String categoryId,required Map<String,dynamic> categoryFilter,int page = 0, int categoryType = 0});
 }
 
 abstract class FilterEntity{
@@ -182,6 +183,40 @@ abstract class FilterEntity{
 
   String getLocalizedStringByValue(BuildContext context,dynamic value);
 }
+
+enum TimeOrRankEnum { ranking, latestUpdate }
+
+class TimeOrRankFilterEntity extends FilterEntity {
+  @override
+  String get filterName => 'TimeOrRank';
+
+  @override
+  String getLocalizedFilterName(BuildContext context) {
+    return S.of(context).TimeOrRankFilterEntityName;
+  }
+
+  @override
+  Map<String, dynamic> getLocalizedMappingChoice(BuildContext context) {
+    Map<String, dynamic> data = {};
+    for (var item in TimeOrRankEnum.values) {
+      data[S.of(context).TimeOrRankFilterEntityModes(item.name)] = item;
+    }
+    return data;
+  }
+
+  @override
+  get initValue => TimeOrRankEnum.ranking;
+
+  @override
+  String getLocalizedStringByValue(BuildContext context, value) {
+    return S.of(context).TimeOrRankFilterEntityModes(
+        TimeOrRankEnum.values[TimeOrRankEnum.values.indexOf(value)].name);
+  }
+
+  @override
+  IconData get filterIcon => FontAwesome5.sort_amount_down;
+}
+
 
 class ChapterCommentEntity{
   final String comment;

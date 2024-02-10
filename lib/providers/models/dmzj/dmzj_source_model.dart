@@ -22,7 +22,7 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
 
   @override
   ComicSourceEntity get type => ComicSourceEntity("大妈之家", "dmzj",
-      hasHomepage: true, hasAccountSupport: true,hasComment: true);
+      hasHomepage: true, hasAccountSupport: true, hasComment: true);
 
   @override
   Future<BaseComicDetailModel?> getComicDetail(
@@ -63,7 +63,6 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
   BaseComicHomepageModel? get homepage => DMZJComicHomepageModel(this);
 
   @override
-  // TODO: implement accountModel
   BaseComicAccountModel? get accountModel => _accountModel;
 }
 
@@ -167,21 +166,19 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
           data.add(CarouselEntity(
               ImageEntity(ImageType.network, rawItem['cover'],
                   imageHeaders: {"referer": "https://i.dmzj.com"}),
-              rawItem['title'],
-              (context) {
-                if (rawItem['type'] == 1) {
-                  Provider.of<NavigatorProvider>(context, listen: false)
-                      .getNavigator(context, NavigatorType.defaultNavigator)
-                      ?.push(MaterialPageRoute(
+              rawItem['title'], (context) {
+            if (rawItem['type'] == 1) {
+              Provider.of<NavigatorProvider>(context, listen: false)
+                  .getNavigator(context, NavigatorType.defaultNavigator)
+                  ?.push(MaterialPageRoute(
                       builder: (context) => ComicDetailPage(
-                        title: rawItem['title'],
-                        comicId: rawItem['obj_id'].toString(),
-                        comicSourceModel: parent,
-                      ),
-                      settings:
-                      const RouteSettings(name: 'ComicDetailPage')));
-                }
-              }));
+                            title: rawItem['title'],
+                            comicId: rawItem['obj_id'].toString(),
+                            comicSourceModel: parent,
+                          ),
+                      settings: const RouteSettings(name: 'ComicDetailPage')));
+            }
+          }));
         }
       }
     } catch (e, s) {
@@ -198,9 +195,9 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         List result = [];
-        if(response.data is List){
+        if (response.data is List) {
           result = response.data;
-        }else{
+        } else {
           result = response.data['data'];
         }
         for (var rawData in result) {
@@ -293,20 +290,20 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
   }
 
   @override
-  // TODO: implement categoryFilter
   List<FilterEntity> get categoryFilter => [TimeOrRankFilterEntity()];
 
   @override
   Future<List<ListItemEntity>> getCategoryDetailList(
       {required String categoryId,
       required Map<String, dynamic> categoryFilter,
-      int page = 0}) async {
+      int page = 0, int categoryType = 0}) async {
     List<ListItemEntity> data = [];
-    Response response = await RequestHandlers.dmzjv3requestHandler
-        .getCategoryDetail(int.parse(categoryId),
-            page: page,
-            type: TimeOrRankEnum.values.indexOf(categoryFilter['TimeOrRank']));
     try {
+      Response response = await RequestHandlers.dmzjv3requestHandler
+          .getCategoryDetail(int.parse(categoryId),
+              page: page,
+              type:
+                  TimeOrRankEnum.values.indexOf(categoryFilter['TimeOrRank']));
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (var rawItem in response.data) {
           data.add(ListItemEntity(
@@ -341,42 +338,10 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
       }
     } catch (e, s) {
       logger.e('$e', error: e, stackTrace: s);
+      rethrow;
     }
     return data;
   }
-}
-
-enum TimeOrRankEnum { ranking, latestUpdate }
-
-class TimeOrRankFilterEntity extends FilterEntity {
-  @override
-  String get filterName => 'TimeOrRank';
-
-  @override
-  String getLocalizedFilterName(BuildContext context) {
-    return S.of(context).TimeOrRankFilterEntityName;
-  }
-
-  @override
-  Map<String, dynamic> getLocalizedMappingChoice(BuildContext context) {
-    Map<String, dynamic> data = {};
-    for (var item in TimeOrRankEnum.values) {
-      data[S.of(context).TimeOrRankFilterEntityModes(item.name)] = item;
-    }
-    return data;
-  }
-
-  @override
-  get initValue => TimeOrRankEnum.ranking;
-
-  @override
-  String getLocalizedStringByValue(BuildContext context, value) {
-    return S.of(context).TimeOrRankFilterEntityModes(
-        TimeOrRankEnum.values[TimeOrRankEnum.values.indexOf(value)].name);
-  }
-
-  @override
-  IconData get filterIcon => FontAwesome5.sort_amount_down;
 }
 
 class DMZJV4ComicDetailModel extends BaseComicDetailModel {
@@ -608,10 +573,14 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                                   controller: usernameController,
                                   decoration: InputDecoration(
                                       isDense: true,
-                                      border: const OutlineInputBorder(gapPadding: 1),
-                                      labelText: S.of(context).DMZJLoginUsername,
-                                      prefixIcon: const Icon(Icons.account_circle),
-                                      hintText: S.of(context).DMZJLoginUsernameHint),
+                                      border: const OutlineInputBorder(
+                                          gapPadding: 1),
+                                      labelText:
+                                          S.of(context).DMZJLoginUsername,
+                                      prefixIcon:
+                                          const Icon(Icons.account_circle),
+                                      hintText:
+                                          S.of(context).DMZJLoginUsernameHint),
                                 ),
                               ),
                               Padding(
@@ -621,10 +590,13 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                                   obscureText: true,
                                   decoration: InputDecoration(
                                       isDense: true,
-                                      border: const OutlineInputBorder(gapPadding: 1),
-                                      labelText: S.of(context).DMZJLoginPassword,
+                                      border: const OutlineInputBorder(
+                                          gapPadding: 1),
+                                      labelText:
+                                          S.of(context).DMZJLoginPassword,
                                       prefixIcon: const Icon(Icons.lock),
-                                      hintText: S.of(context).DMZJLoginPasswordHint),
+                                      hintText:
+                                          S.of(context).DMZJLoginPasswordHint),
                                 ),
                               )
                             ],
@@ -655,21 +627,23 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                         } catch (e, s) {
                           logger.e(e, error: e, stackTrace: s);
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text(S.of(context).CommonLoginLoginFailed(e)),
+                            content:
+                                Text(S.of(context).CommonLoginLoginFailed(e)),
                           ));
                         }
                       },
                       icon: const Icon(FontAwesome5.arrow_right),
                       label: Text(S.of(context).CommonLoginLogin),
                       style: ButtonStyle(
-                          shape:
-                              MaterialStateProperty.all(const RoundedRectangleBorder(
+                          shape: MaterialStateProperty.all(
+                              const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(3),
                             bottomLeft: Radius.circular(3),
                           ))),
                           padding: MaterialStateProperty.all(
-                              const EdgeInsets.only(top: 10, left: 10, bottom: 10))),
+                              const EdgeInsets.only(
+                                  top: 10, left: 10, bottom: 10))),
                     ))
               ],
             ),
@@ -687,14 +661,15 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                       style: ButtonStyle(
                           backgroundColor:
                               MaterialStateProperty.all(Colors.cyan),
-                          shape:
-                              MaterialStateProperty.all(const RoundedRectangleBorder(
+                          shape: MaterialStateProperty.all(
+                              const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(3),
                             bottomLeft: Radius.circular(3),
                           ))),
                           padding: MaterialStateProperty.all(
-                              const EdgeInsets.only(top: 10, left: 10, bottom: 10))),
+                              const EdgeInsets.only(
+                                  top: 10, left: 10, bottom: 10))),
                     ))
               ],
             )

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/entity/comic_history.dart';
 import 'package:dcomic/generated/l10n.dart';
@@ -7,6 +9,7 @@ import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
+import 'package:dio/src/response.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -16,8 +19,8 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
   final CopyMangaAccountModel _accountModel = CopyMangaAccountModel();
 
   @override
-  ComicSourceEntity get type =>
-      ComicSourceEntity("拷贝漫画", "copymanga", hasAccountSupport: true, hasHomepage: true, hasComment: true);
+  ComicSourceEntity get type => ComicSourceEntity("拷贝漫画", "copymanga",
+      hasAccountSupport: true, hasHomepage: true, hasComment: true);
 
   @override
   Future<BaseComicDetailModel?> getComicDetail(
@@ -71,7 +74,7 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
   BaseComicAccountModel? get accountModel => _accountModel;
 
   @override
-  BaseComicHomepageModel? get homepage => CopyMangaComicHomepageModel();
+  BaseComicHomepageModel? get homepage => CopyMangaComicHomepageModel(this);
 }
 
 class CopyMangaComicDetailModel extends BaseComicDetailModel {
@@ -79,7 +82,15 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
   final CopyMangaComicSourceModel parent;
   final Map groupsRawData;
 
+  bool _isSubscribe = false;
+
   CopyMangaComicDetailModel(this.rawData, this.parent, this.groupsRawData);
+
+  @override
+  Future<void> init() async {
+    super.init();
+    _isSubscribe = await parent.accountModel!.getIfSubscribed(comicId);
+  }
 
   @override
   List<CategoryEntity> get authors => rawData['author']
@@ -92,6 +103,7 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
                           categoryId: e['path_word'],
                           sourceModel: parent,
                           categoryTitle: e['name'],
+                          categoryType: 1,
                         ),
                     settings:
                         const RouteSettings(name: 'ComicCategoryDetailPage')));
@@ -188,6 +200,20 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
 
   @override
   String get title => rawData['name'];
+
+  @override
+  bool get subscribe => _isSubscribe;
+
+  @override
+  set subscribe(bool subscribe) {
+    if (subscribe) {
+      parent.accountModel!.subscribeComic(rawData['uuid']);
+    } else {
+      parent.accountModel!.unsubscribeComic(rawData['uuid']);
+    }
+    _isSubscribe = subscribe;
+    notifyListeners();
+  }
 }
 
 class CopyMangaComicChapterDetailModel extends BaseComicChapterDetailModel {
@@ -451,18 +477,32 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
   String? get nickname => _nickname;
 
   @override
-  Future<bool> subscribeComic(String comicId) {
-    // TODO: implement subscribeComic
-    throw UnimplementedError();
+  Future<bool> subscribeComic(String comicId) async {
+    try {
+      var response = await RequestHandlers.copyMangaRequestHandler
+          .addSubscribe(comicId, true);
+      return (response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['code'] == 200;
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+    }
+    return false;
   }
 
   @override
   String? get uid => _uid;
 
   @override
-  Future<bool> unsubscribeComic(String comicId) {
-    // TODO: implement unsubscribeComic
-    throw UnimplementedError();
+  Future<bool> unsubscribeComic(String comicId) async{
+    try {
+      var response = await RequestHandlers.copyMangaRequestHandler
+          .addSubscribe(comicId, false);
+      return (response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['code'] == 200;
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+    }
+    return false;
   }
 
   @override
@@ -483,7 +523,7 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
         _nickname = data['nickname'];
         _username = data['username'];
         _avatar = ImageEntity(ImageType.network, data['avatar'],
-            imageHeaders: {"Referer": "https://www.copymanga.site/"});
+            imageHeaders: {"Referer": "https://www.mangacopy.com/"});
       }
     }
     _isLoading = false;
@@ -497,46 +537,269 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
   bool get isLogin => _isLogin;
 }
 
+class CopyMangaComicHomepageModel extends BaseComicHomepageModel {
+  final CopyMangaComicSourceModel parent;
 
-class CopyMangaComicHomepageModel extends BaseComicHomepageModel{
-  @override
-  // TODO: implement categoryFilter
-  List<FilterEntity> get categoryFilter => throw UnimplementedError();
+  CopyMangaComicHomepageModel(this.parent);
 
   @override
-  Future<List<ListItemEntity>> getCategoryDetailList({required String categoryId, required Map<String, dynamic> categoryFilter, int page = 0}) {
-    // TODO: implement getCategoryDetailList
-    throw UnimplementedError();
+  List<FilterEntity> get categoryFilter => [TimeOrRankFilterEntity()];
+
+  @override
+  Future<List<ListItemEntity>> getCategoryDetailList(
+      {required String categoryId,
+      required Map<String, dynamic> categoryFilter,
+      int page = 0,
+      int categoryType = 0}) async {
+    List<ListItemEntity> data = [];
+    try {
+      var order = categoryFilter['TimeOrRank'] == 'latestUpdate'
+          ? '-datetime_updated'
+          : '-popular';
+      Response response;
+      if (categoryType == 0) {
+        response = await RequestHandlers.copyMangaRequestHandler
+            .getCategoryDetailList(theme: categoryId, page: page, order: order);
+      } else {
+        response = await RequestHandlers.copyMangaRequestHandler
+            .getAuthorDetailList(author: categoryId, page: page, order: order);
+      }
+      if ((response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['code'] == 200) {
+        for (var item in response.data['results']['list']) {
+          data.add(ListItemEntity(
+              item['name'], ImageEntity(ImageType.network, item['cover']), {
+            Icons.supervisor_account_rounded:
+                item['author'].map((e) => e['name']).toList().join('/'),
+            FontAwesome5.fire: item['popular'].toString(),
+            Icons.history_edu: item['datetime_updated']
+          }, (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicDetailPage(
+                          title: item['name'],
+                          comicId: item['path_word'],
+                          comicSourceModel: parent,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
+          }));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+      rethrow;
+    }
+    return data;
   }
 
   @override
-  Future<List<GridItemEntity>> getCategoryList() {
-    // TODO: implement getCategoryList
-    throw UnimplementedError();
+  Future<List<GridItemEntity>> getCategoryList() async {
+    List<GridItemEntity> data = [];
+    try {
+      var response =
+          await RequestHandlers.copyMangaRequestHandler.getCategory();
+      if ((response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['code'] == 200) {
+        for (var item in response.data['results']['list']) {
+          var cover = item['logo'];
+          var randomFallbackCover = [
+            'https://cdn-icons-png.flaticon.com/512/3938/3938619.png',
+            'https://cdn-icons-png.flaticon.com/512/2281/2281829.png',
+            'https://cdn-icons-png.flaticon.com/512/5190/5190321.png',
+            'https://cdn-icons-png.flaticon.com/512/9824/9824322.png'
+          ];
+          cover ??= randomFallbackCover[Random().nextInt(4)];
+          data.add(GridItemEntity(item['name'], item['count'].toString(),
+              ImageEntity(ImageType.network, cover), (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicCategoryDetailPage(
+                          categoryId: item['path_word'],
+                          sourceModel: parent,
+                          categoryTitle: item['name'],
+                        ),
+                    settings:
+                        const RouteSettings(name: 'ComicCategoryDetailPage')));
+          }));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+      rethrow;
+    }
+    return data;
   }
 
   @override
-  Future<List<HomepageCardEntity>> getHomepageCard() {
-    // TODO: implement getHomepageCard
-    throw UnimplementedError();
+  Future<List<HomepageCardEntity>> getHomepageCard() async {
+    List<HomepageCardEntity> data = [];
+    try {
+      var response =
+          await RequestHandlers.copyMangaRequestHandler.getHomepage();
+      if ((response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['code'] == 200) {
+        var result = response.data['results'];
+        makeHomepageCardForComic(
+            'recComics', '推荐漫画', Icons.recommend, result, data);
+        makeHomepageCardForComic('rankDayComics', '每日推荐',
+            Icons.calendar_today_outlined, result, data);
+        makeHomepageCardForComic('rankWeekComics', '每周推荐',
+            Icons.calendar_view_week_outlined, result, data);
+        makeHomepageCardForComic('rankMonthComics', '每月推荐',
+            Icons.calendar_month_outlined, result, data);
+        makeHomepageCardForComic(
+            'hotComics', '热门漫画', FontAwesome5.fire, result, data);
+        makeHomepageCardForComic(
+            'newComics', '上新漫画', Icons.new_label, result, data);
+        List comicRawData = result['finishComics']['list'];
+        List<GridItemEntity> comicChildren = [];
+        for (var comicRawData in comicRawData) {
+          comicChildren.add(GridItemEntity(
+              comicRawData['name'],
+              comicRawData['theme'].map((e) => e['name']).toList().join('/'),
+              ImageEntity(ImageType.network, comicRawData['cover']), (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicDetailPage(
+                          title: comicRawData['name'],
+                          comicId: comicRawData['path_word'],
+                          comicSourceModel: parent,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
+          }));
+        }
+        data.add(HomepageCardEntity(
+            '完结漫画', Icons.check_box, (context) {}, comicChildren));
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+      rethrow;
+    }
+    return data;
+  }
+
+  void makeHomepageCardForComic(String cardName, String cardTitle,
+      IconData? icon, Map result, List<HomepageCardEntity> data) {
+    List comicRawData;
+    if (result[cardName] is List) {
+      comicRawData = result[cardName];
+    } else {
+      comicRawData = result[cardName]['list'];
+    }
+    List<GridItemEntity> comicChildren = [];
+    for (var item in comicRawData) {
+      var comicRawData = item['comic'];
+      comicChildren.add(GridItemEntity(
+          comicRawData['name'],
+          comicRawData['theme'].map((e) => e['name']).toList().join('/'),
+          ImageEntity(ImageType.network, comicRawData['cover']), (context) {
+        Provider.of<NavigatorProvider>(context, listen: false)
+            .getNavigator(context, NavigatorType.defaultNavigator)
+            ?.push(MaterialPageRoute(
+                builder: (context) => ComicDetailPage(
+                      title: comicRawData['name'],
+                      comicId: comicRawData['path_word'],
+                      comicSourceModel: parent,
+                    ),
+                settings: const RouteSettings(name: 'ComicDetailPage')));
+      }));
+    }
+    data.add(HomepageCardEntity(cardTitle, icon, (context) {}, comicChildren));
   }
 
   @override
-  Future<List<CarouselEntity>> getHomepageCarousel() {
-    // TODO: implement getHomepageCarousel
-    throw UnimplementedError();
+  Future<List<CarouselEntity>> getHomepageCarousel() async {
+    List<CarouselEntity> data = [];
+    try {
+      var response =
+          await RequestHandlers.copyMangaRequestHandler.getHomepage();
+      if ((response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['code'] == 200) {
+        var rawData = response.data['results']['banners'];
+        for (var item in rawData) {
+          data.add(CarouselEntity(ImageEntity(ImageType.network, item['cover']),
+              item['brief'], (context) {}));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+      rethrow;
+    }
+    return data;
   }
 
   @override
-  Future<List<ListItemEntity>> getLatestList({int page = 0}) {
-    // TODO: implement getLatestList
-    throw UnimplementedError();
+  Future<List<ListItemEntity>> getLatestList({int page = 0}) async {
+    List<ListItemEntity> data = [];
+    try {
+      Response response = await RequestHandlers.copyMangaRequestHandler
+          .getLatestList(page: page);
+      if ((response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['code'] == 200) {
+        for (var item in response.data['results']['list']) {
+          var comicRawData = item['comic'];
+          data.add(ListItemEntity(comicRawData['name'],
+              ImageEntity(ImageType.network, comicRawData['cover']), {
+            Icons.supervisor_account_rounded:
+                comicRawData['author'].map((e) => e['name']).toList().join('/'),
+            Icons.book_outlined: comicRawData['last_chapter_name'],
+            Icons.history_edu: comicRawData['datetime_updated']
+          }, (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicDetailPage(
+                          title: comicRawData['name'],
+                          comicId: comicRawData['path_word'],
+                          comicSourceModel: parent,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
+          }));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+      rethrow;
+    }
+    return data;
   }
 
   @override
-  Future<List<ListItemEntity>> getRankingList({int page = 0}) {
-    // TODO: implement getRankingList
-    throw UnimplementedError();
+  Future<List<ListItemEntity>> getRankingList({int page = 0}) async {
+    List<ListItemEntity> data = [];
+    try {
+      Response response =
+          await RequestHandlers.copyMangaRequestHandler.getRankList(page: page);
+      if ((response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['code'] == 200) {
+        for (var item in response.data['results']['list']) {
+          var comicRawData = item['comic'];
+          data.add(ListItemEntity(comicRawData['name'],
+              ImageEntity(ImageType.network, comicRawData['cover']), {
+            Icons.supervisor_account_rounded:
+                comicRawData['author'].map((e) => e['name']).toList().join('/'),
+            FontAwesome5.fire: item['popular'].toString(),
+            Icons.arrow_circle_up: item['rise_num'].toString()
+          }, (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicDetailPage(
+                          title: comicRawData['name'],
+                          comicId: comicRawData['path_word'],
+                          comicSourceModel: parent,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
+          }));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+      rethrow;
+    }
+    return data;
   }
-
 }

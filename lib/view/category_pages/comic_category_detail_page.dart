@@ -9,20 +9,27 @@ class ComicCategoryDetailPage extends StatefulWidget {
   final String categoryId;
   final BaseComicSourceModel sourceModel;
   final String categoryTitle;
+  final int categoryType;
 
-  const ComicCategoryDetailPage({super.key, required this.categoryId, required this.sourceModel, required this.categoryTitle});
+  const ComicCategoryDetailPage(
+      {super.key,
+      required this.categoryId,
+      required this.sourceModel,
+      required this.categoryTitle,
+      this.categoryType = 0});
 
   @override
   State<StatefulWidget> createState() => _ComicCategoryDetailPageState();
 }
 
 class _ComicCategoryDetailPageState extends State<ComicCategoryDetailPage> {
-  final EasyRefreshController _controller=EasyRefreshController();
+  final EasyRefreshController _controller = EasyRefreshController();
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => ComicCategoryDetailPageController(widget.sourceModel,widget.categoryId),
+      create: (_) => ComicCategoryDetailPageController(
+          widget.sourceModel, widget.categoryId, categoryType:widget.categoryType),
       builder: (context, child) => Scaffold(
         appBar: AppBar(
           elevation: 0,
@@ -34,7 +41,10 @@ class _ComicCategoryDetailPageState extends State<ComicCategoryDetailPage> {
             Card(
               elevation: 0,
               margin: const EdgeInsets.only(bottom: 5),
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomRight: Radius.circular(10),bottomLeft: Radius.circular(10))),
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                      bottomRight: Radius.circular(10),
+                      bottomLeft: Radius.circular(10))),
               child: ChipTheme(
                   data: ChipThemeData(
                       backgroundColor:
@@ -46,42 +56,56 @@ class _ComicCategoryDetailPageState extends State<ComicCategoryDetailPage> {
             ),
             Expanded(
                 child: EasyRefresh(
-                  controller: _controller,
-                    onRefresh: () async{
-                      await Provider.of<ComicCategoryDetailPageController>(context,listen: false).refresh();
+                    controller: _controller,
+                    onRefresh: () async {
+                      await Provider.of<ComicCategoryDetailPageController>(
+                              context,
+                              listen: false)
+                          .refresh();
                     },
-                    onLoad: ()async{
-                      await Provider.of<ComicCategoryDetailPageController>(context,listen: false).load();
+                    onLoad: () async {
+                      await Provider.of<ComicCategoryDetailPageController>(
+                              context,
+                              listen: false)
+                          .load();
                     },
                     refreshOnStart: true,
-                    child: SizedBox.expand(child: GridView.builder(
-                      shrinkWrap: true,
-                      gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 1, childAspectRatio: 3 / 1),
-                      itemCount: Provider.of<ComicCategoryDetailPageController>(context)
-                          .data
-                          .length,
-                      itemBuilder: (context, index) {
-                        var entity = Provider.of<ComicCategoryDetailPageController>(context)
-                            .data[index];
-                        return CardListItem(
-                          cover: entity.cover,
-                          title: entity.title,
-                          details: entity.details,
-                          onTap: entity.onTap,
-                        );
-                      },
-                    ),)))
+                    child: SizedBox.expand(
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 1, childAspectRatio: 3 / 1),
+                        itemCount:
+                            Provider.of<ComicCategoryDetailPageController>(
+                                    context)
+                                .data
+                                .length,
+                        itemBuilder: (context, index) {
+                          var entity =
+                              Provider.of<ComicCategoryDetailPageController>(
+                                      context)
+                                  .data[index];
+                          return CardListItem(
+                            cover: entity.cover,
+                            title: entity.title,
+                            details: entity.details,
+                            onTap: entity.onTap,
+                          );
+                        },
+                      ),
+                    )))
           ],
         ),
       ),
     );
   }
-  
-  List<Widget> _buildFilter(BuildContext context){
-    List<Widget> data=[];
-    for(var item in Provider.of<ComicCategoryDetailPageController>(context).homepageModel.categoryFilter){
+
+  List<Widget> _buildFilter(BuildContext context) {
+    List<Widget> data = [];
+    for (var item in Provider.of<ComicCategoryDetailPageController>(context)
+        .homepageModel
+        .categoryFilter) {
       data.add(Padding(
         padding: const EdgeInsets.fromLTRB(10, 1, 1, 1),
         child: PopupMenuButton(
@@ -90,30 +114,37 @@ class _ComicCategoryDetailPageState extends State<ComicCategoryDetailPage> {
             borderRadius: BorderRadius.circular(10),
           ),
           itemBuilder: (context) => [
-            for(var menuItem in item.getLocalizedMappingChoice(context).entries)
-            PopupMenuItem(
-                height: 10,
-                value: menuItem.value,
-                child: Chip(
-                  visualDensity: const VisualDensity(vertical: -4),
-                  label: Text(menuItem.key),
-                ))
+            for (var menuItem
+                in item.getLocalizedMappingChoice(context).entries)
+              PopupMenuItem(
+                  height: 10,
+                  value: menuItem.value,
+                  child: Chip(
+                    visualDensity: const VisualDensity(vertical: -4),
+                    label: Text(menuItem.key),
+                  ))
           ],
           child: Chip(
-            side: BorderSide(
-                color:
-                Theme.of(context).colorScheme.surfaceTint),
+            side: BorderSide(color: Theme.of(context).colorScheme.surfaceTint),
             visualDensity: const VisualDensity(vertical: -3),
-            avatar: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.primaryContainer,child: Icon(item.filterIcon),),
+            avatar: CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              child: Icon(item.filterIcon),
+            ),
             label: Row(
               children: [
-                Text(item.getLocalizedStringByValue(context, Provider.of<ComicCategoryDetailPageController>(context).filter[item.filterName])),
+                Text(item.getLocalizedStringByValue(
+                    context,
+                    Provider.of<ComicCategoryDetailPageController>(context)
+                        .filter[item.filterName])),
                 const Icon(Icons.arrow_drop_down)
               ],
             ),
           ),
-          onSelected: (object){
-            Provider.of<ComicCategoryDetailPageController>(context,listen: false).setFilterValue(item.filterName, object);
+          onSelected: (object) {
+            Provider.of<ComicCategoryDetailPageController>(context,
+                    listen: false)
+                .setFilterValue(item.filterName, object);
             _controller.callRefresh();
           },
         ),

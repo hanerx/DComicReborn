@@ -7,7 +7,7 @@ import 'package:dio/dio.dart';
 
 class CopyMangaRequestHandler extends RequestHandler {
   CopyMangaRequestHandler()
-      : super('https://api.copymanga.site/', useCookie: false);
+      : super('https://api.mangacopy.com/', useCookie: false);
 
   Future<Options> setHeader([Map<String, dynamic>? headers]) async {
     headers ??= {};
@@ -78,6 +78,34 @@ class CopyMangaRequestHandler extends RequestHandler {
         options: await setHeader());
   }
 
+  Future<Response> getCategoryDetailList(
+      {required String theme,
+      int page = 0,
+      int limit = 21,
+      String order = '-datetime_modifier'}) async {
+    return dio.get(
+        '/api/v3/comics?free_type=1&theme=$theme&limit=$limit&offset=${page * limit}&_update=true&ordering=$order');
+  }
+
+  Future<Response> getAuthorDetailList(
+      {required String author,
+      int page = 0,
+      int limit = 21,
+      String order = '-datetime_modifier'}) async {
+    return dio.get(
+        '/api/v3/comics?free_type=1&author=$author&limit=$limit&offset=${page * limit}&ordering=$order');
+  }
+
+  Future<Response> getRankList(
+      {String dateType = 'day', int limit = 21, int page = 0}) {
+    return dio.get(
+        '/api/v3/ranks?type=1&date_type=$dateType&limit=$limit&offset=${limit * page}');
+  }
+
+  Future<Response> getLatestList({int limit = 21, int page = 0}) {
+    return dio.get('/api/v3/update/newest?limit=$limit&offset=${limit * page}');
+  }
+
   Future<Response> getUserInfo() async {
     return dio.get('/api/v3/member/info', options: await setHeader());
   }
@@ -124,7 +152,8 @@ class CopyMangaRequestHandler extends RequestHandler {
   }
 
   Future<Response> getCategory() {
-    return dio.get('/api/v3/h5/filterIndex/comic/tags?type=1');
+    return dio.get(
+        '/api/v3/theme/comic/count?free_type=1&limit=500&offset=0&_update=true');
   }
 
   Future<Response> getChapterComments(String chapterId,
