@@ -255,7 +255,7 @@ class DMZJUserRequestHandler extends RequestHandler {
 }
 
 class DMZJCommentRequestHandler extends RequestHandler {
-  DMZJCommentRequestHandler() : super('https://v3comment.dmzj.com');
+  DMZJCommentRequestHandler() : super('https://v3comment.idmzj.com');
 
   Future<Response> getComments(String comicId, int page,
       {int limit = 30, int type = 4}) {
