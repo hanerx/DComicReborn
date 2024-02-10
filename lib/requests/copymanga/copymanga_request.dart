@@ -5,18 +5,28 @@ import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dio/dio.dart';
 
-class CopyMangaRequestHandler extends RequestHandler{
-  CopyMangaRequestHandler() : super('https://api.copymanga.site/',useCookie:false);
+class CopyMangaRequestHandler extends RequestHandler {
+  CopyMangaRequestHandler()
+      : super('https://api.copymanga.site/', useCookie: false);
 
   Future<Options> setHeader([Map<String, dynamic>? headers]) async {
     headers ??= {};
-    if ((await (await DatabaseInstance.instance).modelConfigDao.getConfigByKeyAndModel('isLogin', 'copymanga'))?.get<bool>()) {
-      String token =
-          (await (await DatabaseInstance.instance).modelConfigDao.getConfigByKeyAndModel('token', 'copymanga'))?.value ?? '';
+    if ((await (await DatabaseInstance.instance)
+            .modelConfigDao
+            .getConfigByKeyAndModel('isLogin', 'copymanga'))
+        ?.get<bool>()) {
+      String token = (await (await DatabaseInstance.instance)
+                  .modelConfigDao
+                  .getConfigByKeyAndModel('token', 'copymanga'))
+              ?.value ??
+          '';
       headers['authorization'] = 'Token $token';
     }
-    headers['region']=(await (await DatabaseInstance.instance).modelConfigDao.getConfigByKeyAndModel('login', 'copymanga'))?.value ?? '0';
-    headers['Platform'] = '1';
+    headers['region'] = (await (await DatabaseInstance.instance)
+                .modelConfigDao
+                .getConfigByKeyAndModel('login', 'copymanga'))
+            ?.value ??
+        '0';
     return Options(headers: headers);
   }
 
@@ -25,9 +35,10 @@ class CopyMangaRequestHandler extends RequestHandler{
   }
 
   Future<Response> getChapters(String comicId, String groupName,
-      {int limit = 100, int page = 0}) async{
+      {int limit = 100, int page = 0}) async {
     return dio.get(
-        '/api/v3/comic/$comicId/group/$groupName/chapters?limit=$limit&offset=$page', options: await setHeader());
+        '/api/v3/comic/$comicId/group/$groupName/chapters?limit=$limit&offset=$page',
+        options: await setHeader({'Platform': '1'}));
   }
 
   Future<Response> getComic(String comicId, String chapterId) async {
@@ -35,7 +46,7 @@ class CopyMangaRequestHandler extends RequestHandler{
         '/api/v3/comic/$comicId/chapter/$chapterId?platform=1&_update=true',
         options: await setHeader({
           'User-Agent':
-          'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.134 Safari/537.36'
+              'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.134 Safari/537.36'
         }));
   }
 
@@ -89,10 +100,10 @@ class CopyMangaRequestHandler extends RequestHandler{
 
   Future<Response> getTagList(
       {bool popular = true,
-        int page = 0,
-        int limit = 21,
-        String? categoryId,
-        String? authorId}) {
+      int page = 0,
+      int limit = 21,
+      String? categoryId,
+      String? authorId}) {
     return dio.get(
         '/api/v3/comics?free_type=1&limit=$limit&offset=$page${categoryId == null ? '' : '&theme=$categoryId'}${authorId == null ? '' : '&author=$authorId'}&ordering=${popular ? '-popular' : '-datetime_updated'}&_update=true');
   }
@@ -109,10 +120,23 @@ class CopyMangaRequestHandler extends RequestHandler{
   Future<Response> getSubjectDetailContent(String subjectId,
       {int page = 0, limit = 30}) {
     return dio.get(
-        'https://api.copymanga.com/api/v3/topic/$subjectId/contents?limit=$limit&offset=${page * limit}');
+        '/api/v3/topic/$subjectId/contents?limit=$limit&offset=${page * limit}');
   }
 
   Future<Response> getCategory() {
     return dio.get('/api/v3/h5/filterIndex/comic/tags?type=1');
+  }
+
+  Future<Response> getChapterComments(String chapterId,
+      {int limit = 50, int page = 0}) {
+    return dio
+        .get('/api/v3/roasts?chapter_id=$chapterId&limit=$limit&offset=$page');
+  }
+
+  Future<Response> getComments(String comicId,
+      {int limit = 20, int page = 0}) async {
+    return dio.get(
+        '/api/v3/comments?comic_id=$comicId&limit=$limit&offset=$page',
+        options: await setHeader({'Platform': '1'}));
   }
 }

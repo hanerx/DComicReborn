@@ -197,7 +197,7 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
         await RequestHandlers.dmzjv3requestHandler.getCategory();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
-        for (var rawData in response.data) {
+        for (var rawData in response.data['data']) {
           data.add(GridItemEntity(
               rawData['title'],
               null,
@@ -507,6 +507,7 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
       }
     } catch (e, s) {
       logger.e('$e', error: e, stackTrace: s);
+      rethrow;
     }
     return data;
   }

@@ -105,7 +105,7 @@ class DMZJV3RequestHandler extends RequestHandler {
   // 获取分类详情
   Future<Response> getCategoryDetail(
       int categoryId, {int date=0, int tag=0, int type=0, int page=0}) {
-    return dio.get('/classify/$categoryId-$date-$tag/$type/$page.json');
+    return dio.get('/classify/$categoryId/$type/$page.json');
   }
 
   // 获取小说分类列表

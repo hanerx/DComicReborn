@@ -137,15 +137,44 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
   String get description => rawData['brief'];
 
   @override
-  Future<BaseComicChapterDetailModel?> getChapter(String chapterId) {
-    // TODO: implement getChapter
-    throw UnimplementedError();
+  Future<BaseComicChapterDetailModel?> getChapter(String chapterId) async {
+    try {
+      var response = await RequestHandlers.copyMangaRequestHandler
+          .getComic(comicId, chapterId);
+      if ((response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['code'] == 200) {
+        var rawData = response.data['results']['chapter'];
+        return CopyMangaComicChapterDetailModel(rawData);
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+      rethrow;
+    }
+    return null;
   }
 
   @override
-  Future<List<ComicCommentEntity>> getComments({int page = 0}) {
-    // TODO: implement getComments
-    throw UnimplementedError();
+  Future<List<ComicCommentEntity>> getComments({int page = 0}) async {
+    List<ComicCommentEntity> result = [];
+    try {
+      var response = await RequestHandlers.copyMangaRequestHandler
+          .getComments(rawData['uuid'], page: page);
+      if ((response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['code'] == 200) {
+        for (var item in response.data['results']['list']) {
+          result.add(ComicCommentEntity(
+              ImageEntity(ImageType.network, item['user_avatar']),
+              item['comment'],
+              item['id'].toString(),
+              item['user_name'],
+              item['count']));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+      rethrow;
+    }
+    return result;
   }
 
   @override
@@ -153,6 +182,41 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
 
   @override
   String get status => rawData['status']['display'];
+
+  @override
+  String get title => rawData['name'];
+}
+
+class CopyMangaComicChapterDetailModel extends BaseComicChapterDetailModel {
+  final Map rawData;
+
+  CopyMangaComicChapterDetailModel(this.rawData);
+
+  @override
+  String get chapterId => rawData['uuid'];
+
+  @override
+  Future<List<ChapterCommentEntity>> getChapterComments() async {
+    List<ChapterCommentEntity> data = [];
+    try {
+      var response = await RequestHandlers.copyMangaRequestHandler
+          .getChapterComments(chapterId);
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        for (var item in response.data['results']['list']) {
+          data.add(
+              ChapterCommentEntity(item['id'].toString(), item['comment'], 1));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+    }
+    return data;
+  }
+
+  @override
+  List<ImageEntity> get pages => rawData['contents']
+      .map<ImageEntity>((e) => ImageEntity(ImageType.network, e['url']))
+      .toList();
 
   @override
   String get title => rawData['name'];
