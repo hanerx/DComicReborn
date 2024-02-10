@@ -420,7 +420,7 @@ class _$ModelConfigDao extends ModelConfigDao {
     String sourceModel,
   ) async {
     return _queryAdapter.query(
-        'SELECT * FROM ModelConfigEntity WHERE key = ?1 AND sourceModel = ?2 LIMIT 1',
+        'SELECT * FROM ModelConfigEntity WHERE `key` = ?1 AND `sourceModel` = ?2 LIMIT 1',
         mapper: (Map<String, Object?> row) => ModelConfigEntity(row['id'] as int?, row['key'] as String, row['value'] as String?, row['sourceModel'] as String?),
         arguments: [key, sourceModel]);
   }

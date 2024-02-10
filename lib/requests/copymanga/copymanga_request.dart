@@ -16,6 +16,7 @@ class CopyMangaRequestHandler extends RequestHandler{
       headers['authorization'] = 'Token $token';
     }
     headers['region']=(await (await DatabaseInstance.instance).modelConfigDao.getConfigByKeyAndModel('login', 'copymanga'))?.value ?? '0';
+    headers['Platform'] = '1';
     return Options(headers: headers);
   }
 
@@ -24,9 +25,9 @@ class CopyMangaRequestHandler extends RequestHandler{
   }
 
   Future<Response> getChapters(String comicId, String groupName,
-      {int limit = 100, int page = 0}) {
+      {int limit = 100, int page = 0}) async{
     return dio.get(
-        '/api/v3/comic/$comicId/group/$groupName/chapters?limit=$limit&offset=$page');
+        '/api/v3/comic/$comicId/group/$groupName/chapters?limit=$limit&offset=$page', options: await setHeader());
   }
 
   Future<Response> getComic(String comicId, String chapterId) async {

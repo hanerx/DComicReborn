@@ -68,6 +68,7 @@ class _DebugPageState extends State<DebugPage> {
               for (var element in configList) {
                 print(element);
               }
+              print(await databaseInstance.modelConfigDao.getConfigByKeyAndModel("uid", "dmzj"));
             },
           )
         ],

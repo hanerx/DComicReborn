@@ -5,6 +5,8 @@ import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/utils/image_utils.dart';
+import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
+import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -18,9 +20,32 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
       ComicSourceEntity("拷贝漫画", "copymanga", hasAccountSupport: true);
 
   @override
-  Future<BaseComicDetailModel?> getComicDetail(String comicId, String title) {
-    // TODO: implement getComicDetail
-    throw UnimplementedError();
+  Future<BaseComicDetailModel?> getComicDetail(
+      String comicId, String title) async {
+    try {
+      var response =
+          await RequestHandlers.copyMangaRequestHandler.getComicDetail(comicId);
+      if ((response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['code'] == 200) {
+        var data = response.data['results']['comic'];
+        var groups = response.data['results']['groups'];
+        var groupsRawData = {};
+        for (var item in groups.values) {
+          var chapterResponse = await RequestHandlers.copyMangaRequestHandler
+              .getChapters(comicId, item['path_word'], limit: item['count']);
+          if ((chapterResponse.statusCode == 200 ||
+                  chapterResponse.statusCode == 304) &&
+              chapterResponse.data['code'] == 200) {
+            groupsRawData[item] = chapterResponse.data['results']['list'];
+          }
+        }
+        return CopyMangaComicDetailModel(data, this, groupsRawData);
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+      rethrow;
+    }
+    return null;
   }
 
   @override
@@ -44,6 +69,93 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
 
   @override
   BaseComicAccountModel? get accountModel => _accountModel;
+}
+
+class CopyMangaComicDetailModel extends BaseComicDetailModel {
+  final Map rawData;
+  final CopyMangaComicSourceModel parent;
+  final Map groupsRawData;
+
+  CopyMangaComicDetailModel(this.rawData, this.parent, this.groupsRawData);
+
+  @override
+  List<CategoryEntity> get authors => rawData['author']
+      .map<CategoryEntity>((e) =>
+          CategoryEntity(e['name'], e['path_word'], (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicCategoryDetailPage(
+                          categoryId: e['path_word'],
+                          sourceModel: parent,
+                          categoryTitle: e['name'],
+                        ),
+                    settings:
+                        const RouteSettings(name: 'ComicCategoryDetailPage')));
+          }))
+      .toList();
+
+  @override
+  List<CategoryEntity> get categories => rawData['theme']
+      .map<CategoryEntity>((e) =>
+          CategoryEntity(e['name'], e['path_word'], (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicCategoryDetailPage(
+                          categoryId: e['path_word'],
+                          sourceModel: parent,
+                          categoryTitle: e['name'],
+                        ),
+                    settings:
+                        const RouteSettings(name: 'ComicCategoryDetailPage')));
+          }))
+      .toList();
+
+  @override
+  Map<String, List<BaseComicChapterEntityModel>> get chapters {
+    Map<String, List<BaseComicChapterEntityModel>> result = {};
+    for (var item in groupsRawData.entries) {
+      var key = item.key;
+      var value = item.value;
+      result[key['name']] = value
+          .map<BaseComicChapterEntityModel>((e) =>
+              DefaultComicChapterEntityModel(
+                  e['name'], e['uuid'], DateTime.parse(e['datetime_created'])))
+          .toList();
+    }
+    return result;
+  }
+
+  @override
+  String get comicId => rawData['path_word'];
+
+  @override
+  ImageEntity get cover => ImageEntity(ImageType.network, rawData['cover']);
+
+  @override
+  String get description => rawData['brief'];
+
+  @override
+  Future<BaseComicChapterDetailModel?> getChapter(String chapterId) {
+    // TODO: implement getChapter
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<ComicCommentEntity>> getComments({int page = 0}) {
+    // TODO: implement getComments
+    throw UnimplementedError();
+  }
+
+  @override
+  DateTime get lastUpdate => DateTime.parse(rawData['datetime_updated']);
+
+  @override
+  String get status => rawData['status']['display'];
+
+  @override
+  String get title => rawData['name'];
 }
 
 class CopyMangaAccountModel extends BaseComicAccountModel {
@@ -183,9 +295,38 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
   }
 
   @override
-  Future<List<GridItemEntity>> getSubscribeComics({int page = 0}) {
-    // TODO: implement getSubscribeComics
-    throw UnimplementedError();
+  Future<List<GridItemEntity>> getSubscribeComics({int page = 0}) async {
+    List<GridItemEntity> data = [];
+    try {
+      var response = await RequestHandlers.copyMangaRequestHandler
+          .getSubscribe(page: page);
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        List list = response.data['results']['list'];
+        List comicRawList = list.map<Map>((e) => e['comic']).toList();
+        for (var rawData in comicRawList) {
+          data.add(GridItemEntity(
+              rawData['name'],
+              rawData['last_chapter_name'],
+              ImageEntity(
+                ImageType.network,
+                rawData['cover'],
+              ), (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicDetailPage(
+                          title: rawData['name'],
+                          comicId: rawData['path_word'].toString(),
+                          comicSourceModel: parent,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
+          }));
+        }
+      }
+    } catch (e, s) {
+      logger.e(e, error: e, stackTrace: s);
+    }
+    return data;
   }
 
   @override
@@ -220,8 +361,8 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
   }
 
   @override
-  Future<bool> logout()async {
-    _isLogin=false;
+  Future<bool> logout() async {
+    _isLogin = false;
     await RequestHandlers.copyMangaRequestHandler.logout();
     notifyListeners();
     return true;
@@ -249,24 +390,24 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
   String? get username => _username;
 
   @override
-  Future<void> init() async{
+  Future<void> init() async {
     var databaseInstance = await DatabaseInstance.instance;
     var databaseIsLogin = (await databaseInstance.modelConfigDao
         .getOrCreateConfigByKey('isLogin', parent!.type.sourceId));
     _isLogin = databaseIsLogin.get<bool>() ?? false;
-    if(_isLogin){
-      var response=await RequestHandlers.copyMangaRequestHandler.getUserInfo();
-      if(response.statusCode==200){
-        var data=response.data['results'];
-        _uid=data['user_id'];
-        _nickname=data['nickname'];
-        _username=data['username'];
-        _avatar = ImageEntity(ImageType.network,
-            data['avatar'],
+    if (_isLogin) {
+      var response =
+          await RequestHandlers.copyMangaRequestHandler.getUserInfo();
+      if (response.statusCode == 200) {
+        var data = response.data['results'];
+        _uid = data['user_id'];
+        _nickname = data['nickname'];
+        _username = data['username'];
+        _avatar = ImageEntity(ImageType.network, data['avatar'],
             imageHeaders: {"Referer": "https://www.copymanga.site/"});
       }
     }
-    _isLoading=false;
+    _isLoading = false;
     notifyListeners();
   }
 

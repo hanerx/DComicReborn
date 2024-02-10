@@ -390,6 +390,26 @@ class S {
     );
   }
 
+  /// `Try Print All Database Content`
+  String get DebugPagePrintModelDatabase {
+    return Intl.message(
+      'Try Print All Database Content',
+      name: 'DebugPagePrintModelDatabase',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Try Print All Database Content to Log`
+  String get DebugPagePrintModelDatabaseDescription {
+    return Intl.message(
+      'Try Print All Database Content to Log',
+      name: 'DebugPagePrintModelDatabaseDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Check For Update`
   String get AboutPageCheckForUpdate {
     return Intl.message(
