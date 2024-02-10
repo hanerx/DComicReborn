@@ -55,9 +55,9 @@ class _DebugPageState extends State<DebugPage> {
             },
           ),
           ListTile(
-            leading: const Icon(FontAwesome5.bug),
-            title: Text(S.of(context).DebugPageTryCrash),
-            subtitle: Text(S.of(context).DebugPageTryCrashDescription),
+            leading: const Icon(FontAwesome5.database),
+            title: Text(S.of(context).DebugPagePrintModelDatabase),
+            subtitle: Text(S.of(context).DebugPagePrintModelDatabaseDescription),
             onTap: () async{
               Logger logger = Logger(
                   printer: PrettyPrinter(noBoxingByDefault: true,methodCount:2),

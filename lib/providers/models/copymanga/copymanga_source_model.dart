@@ -17,7 +17,7 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
 
   @override
   ComicSourceEntity get type =>
-      ComicSourceEntity("拷贝漫画", "copymanga", hasAccountSupport: true);
+      ComicSourceEntity("拷贝漫画", "copymanga", hasAccountSupport: true, hasHomepage: true, hasComment: true);
 
   @override
   Future<BaseComicDetailModel?> getComicDetail(
@@ -69,6 +69,9 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
 
   @override
   BaseComicAccountModel? get accountModel => _accountModel;
+
+  @override
+  BaseComicHomepageModel? get homepage => CopyMangaComicHomepageModel();
 }
 
 class CopyMangaComicDetailModel extends BaseComicDetailModel {
@@ -353,9 +356,21 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
   }
 
   @override
-  Future<bool> getIfSubscribed(String comicId) {
-    // TODO: implement getIfSubscribed
-    throw UnimplementedError();
+  Future<bool> getIfSubscribed(String comicId) async {
+    if (!isLogin) {
+      return false;
+    }
+    try {
+      var response =
+          await RequestHandlers.copyMangaRequestHandler.getIfSubscribe(comicId);
+      if ((response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['code'] == 200) {
+        return response.data['results']['collect'] != null;
+      }
+    } catch (e, s) {
+      logger.e(e, error: e, stackTrace: s);
+    }
+    return false;
   }
 
   @override
@@ -480,4 +495,48 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
 
   @override
   bool get isLogin => _isLogin;
+}
+
+
+class CopyMangaComicHomepageModel extends BaseComicHomepageModel{
+  @override
+  // TODO: implement categoryFilter
+  List<FilterEntity> get categoryFilter => throw UnimplementedError();
+
+  @override
+  Future<List<ListItemEntity>> getCategoryDetailList({required String categoryId, required Map<String, dynamic> categoryFilter, int page = 0}) {
+    // TODO: implement getCategoryDetailList
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<GridItemEntity>> getCategoryList() {
+    // TODO: implement getCategoryList
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<HomepageCardEntity>> getHomepageCard() {
+    // TODO: implement getHomepageCard
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<CarouselEntity>> getHomepageCarousel() {
+    // TODO: implement getHomepageCarousel
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<ListItemEntity>> getLatestList({int page = 0}) {
+    // TODO: implement getLatestList
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<ListItemEntity>> getRankingList({int page = 0}) {
+    // TODO: implement getRankingList
+    throw UnimplementedError();
+  }
+
 }

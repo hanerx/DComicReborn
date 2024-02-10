@@ -197,7 +197,13 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
         await RequestHandlers.dmzjv3requestHandler.getCategory();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
-        for (var rawData in response.data['data']) {
+        List result = [];
+        if(response.data is List){
+          result = response.data;
+        }else{
+          result = response.data['data'];
+        }
+        for (var rawData in result) {
           data.add(GridItemEntity(
               rawData['title'],
               null,
