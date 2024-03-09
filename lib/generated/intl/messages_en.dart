@@ -38,7 +38,11 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m5(Reason) => "Login Failed, Failed Reason: ${Reason}.";
 
-  static String m6(modes) => "${Intl.select(modes, {
+  static String m6(Reason) => "Fail Reason: ${Reason}";
+
+  static String m7(Ping) => "Ping: ${Ping} ms";
+
+  static String m8(modes) => "${Intl.select(modes, {
             'ranking': 'Ranking',
             'latestUpdate': 'Latest Update',
             'other': 'Unknown',
@@ -112,10 +116,18 @@ class MessageLookup extends MessageLookupByLibrary {
         "DMZJLoginUsernameHint":
             MessageLookupByLibrary.simpleMessage("Email/Username/PhoneNumber"),
         "DMZJTitle": MessageLookupByLibrary.simpleMessage("DMZJ"),
+        "DatabaseDebugPageTitle":
+            MessageLookupByLibrary.simpleMessage("Database Debug Page"),
         "DebugPageNetworkCheck":
             MessageLookupByLibrary.simpleMessage("Network Check"),
         "DebugPageNetworkCheckDescription": MessageLookupByLibrary.simpleMessage(
             "Just check network by ping baidu.com, maybe change to more useful page in future."),
+        "DebugPagePingFailedDescription": m6,
+        "DebugPagePingFailedTitle":
+            MessageLookupByLibrary.simpleMessage("Ping Failed!"),
+        "DebugPagePingSuccessDescription": m7,
+        "DebugPagePingSuccessTitle":
+            MessageLookupByLibrary.simpleMessage("Ping Success!"),
         "DebugPagePrintModelDatabase": MessageLookupByLibrary.simpleMessage(
             "Try Print All Database Content"),
         "DebugPagePrintModelDatabaseDescription":
@@ -146,6 +158,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "JumpToLogin":
             MessageLookupByLibrary.simpleMessage("Jump To Login Page"),
         "Loading": MessageLookupByLibrary.simpleMessage("Loading..."),
+        "LoginPageTitle": MessageLookupByLibrary.simpleMessage("Login"),
         "MainPageCategory": MessageLookupByLibrary.simpleMessage("Category"),
         "MainPageHome": MessageLookupByLibrary.simpleMessage("Home"),
         "MainPageLatest": MessageLookupByLibrary.simpleMessage("Latest"),
@@ -160,7 +173,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Source Settings"),
         "SourceSettingsDescription":
             MessageLookupByLibrary.simpleMessage("Manage Comic Source"),
-        "TimeOrRankFilterEntityModes": m6,
+        "TimeOrRankFilterEntityModes": m8,
         "TimeOrRankFilterEntityName":
             MessageLookupByLibrary.simpleMessage("SortType"),
         "UnknownScreen": MessageLookupByLibrary.simpleMessage(

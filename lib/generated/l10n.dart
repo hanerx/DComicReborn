@@ -410,6 +410,16 @@ class S {
     );
   }
 
+  /// `Database Debug Page`
+  String get DatabaseDebugPageTitle {
+    return Intl.message(
+      'Database Debug Page',
+      name: 'DatabaseDebugPageTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Check For Update`
   String get AboutPageCheckForUpdate {
     return Intl.message(
@@ -811,6 +821,56 @@ class S {
       args: [],
     );
   }
+
+  /// `Login`
+  String get LoginPageTitle {
+    return Intl.message(
+      'Login',
+      name: 'LoginPageTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ping Success!`
+  String get DebugPagePingSuccessTitle {
+    return Intl.message(
+      'Ping Success!',
+      name: 'DebugPagePingSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ping: {Ping} ms`
+  String DebugPagePingSuccessDescription(Object Ping) {
+    return Intl.message(
+      'Ping: $Ping ms',
+      name: 'DebugPagePingSuccessDescription',
+      desc: '',
+      args: [Ping],
+    );
+  }
+
+  /// `Ping Failed!`
+  String get DebugPagePingFailedTitle {
+    return Intl.message(
+      'Ping Failed!',
+      name: 'DebugPagePingFailedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Fail Reason: {Reason}`
+  String DebugPagePingFailedDescription(Object Reason) {
+    return Intl.message(
+      'Fail Reason: $Reason',
+      name: 'DebugPagePingFailedDescription',
+      desc: '',
+      args: [Reason],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
@@ -819,6 +879,7 @@ class AppLocalizationDelegate extends LocalizationsDelegate<S> {
   List<Locale> get supportedLocales {
     return const <Locale>[
       Locale.fromSubtags(languageCode: 'en'),
+      Locale.fromSubtags(languageCode: 'zh'),
     ];
   }
 

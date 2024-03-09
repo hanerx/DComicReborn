@@ -1,0 +1,134 @@
+{
+  "@@locale": "zh",
+  "AppName": "DComic",
+  "DrawerEmail": "DComic 00Q[T]",
+  "UnknownScreen": "不支持的屏幕分辨率，提issue去",
+
+  "MainPageHome": "主页",
+  "MainPageCategory": "分类",
+  "MainPageRank": "排行",
+  "MainPageLatest": "最近",
+
+  "ImageTypeNotSupport": "未知图片格式",
+  "Loading": "加载中...",
+  "Empty":"这是一个没数据的空界面",
+  "RequireLogin": "本界面需要用户数据，请先登录",
+  "JumpToLogin": "跳转至登录界面",
+
+  "DrawerFavorite": "收藏",
+  "DrawerHistory": "历史",
+  "DrawerDownloads": "下载",
+  "DrawerSetting": "设置",
+
+  "ReaderSettings": "阅读器设置",
+  "ReaderSettingsDescription": "漫画阅读器通用设置",
+  "SourceSettings": "漫画源设置",
+  "SourceSettingsDescription": "管理漫画源",
+  "AccountSettings": "账户设置",
+  "AccountSettingsDescription": "设置多账户漫画源",
+  "AboutSettings": "关于",
+  "AboutSettingsDescription": "关于 DComic",
+  "DownloadSettings": "下载设置",
+  "DownloadSettingsDescription": "管理本地文件设置",
+  "DebugSettings": "调试设置",
+  "DebugSettingsDescription": "作者的玩具箱，里面的东西大概率是坏的",
+  "ExperimentalSettings": "刹那！DComic 00Q[T]还没整备好，记住别开三红！",
+  "ExperimentalSettingsDescription": "了解，DComic 00Q[T] Trans-Arm, Quantum Burst!",
+
+  "DebugPageNetworkCheck": "网络检查",
+  "DebugPageNetworkCheckDescription": "暂时没用",
+  "DebugPageTryCrash": "伪造崩溃日志",
+  "DebugPageTryCrashDescription": "向firebase传输一个伪造的崩溃日志",
+  "DebugPagePrintModelDatabase": "本地数据库解析",
+  "DebugPagePrintModelDatabaseDescription": "尝试输出本地所有持久化数据（包括你的token，如果你不知道你在干啥就别点）",
+  "DatabaseDebugPageTitle": "本地数据库老巢",
+
+  "AboutPageCheckForUpdate": "检查更新",
+  "AboutPageUpdateChannel": "更新渠道",
+  "AboutPageUpdateChannelModes": "{modes, select, release{稳定版} beta{公测版} develop{开发版} other{未知}}",
+  "@AboutPageUpdateChannelModes": {
+    "placeholders": {
+      "modes": {}
+    }
+  },
+  "AboutPageGithub": "Github",
+  "AboutPageGithubUrl": "https://github.com/hanerx/DComicReborn",
+  "AboutPageChangeLog": "修改日志",
+  "AboutPageChangeLogSubtitle": "各版本的修改日志",
+  "AboutPageAbout": "关于",
+  "AboutPageAboutSubtitle": "关于 DComicReborn",
+  "AboutPageAboutDialogueDescription": "DComic 00Q[T]，使用了全新的Flutter3.0驱动的双核机",
+
+  "ComicDetailPageAuthor": "作者: ",
+  "ComicDetailPageCategory": "分类: ",
+  "ComicDetailPageOriginalComicId": "原始漫画ID: ",
+  "ComicDetailPageBindComicId": "绑定漫画ID: ",
+  "ComicDetailPageGridMode": "网格",
+  "ComicDetailPageListMode": "列表",
+  "ComicDetailPageChapterEntitySubtitle": "上传时间: {uploadTime} 章节ID: {chapterId}",
+  "@ComicDetailPageChapterEntitySubtitle": {
+    "placeholders": {
+      "uploadTime": {},
+      "chapterId": {}
+    }
+  },
+  "ComicDetailPagePositiveMode": "正序",
+  "ComicDetailPageReverseMode": "倒序",
+
+  "AccountManagePageSubtitleNickname": "昵称: {nickname}",
+  "@AccountManagePageSubtitleNickname": {
+    "placeholders": {
+      "nickname": {
+        "example": "未知"
+      }
+    }
+  },
+  "AccountManagePageSubtitleUID": "UID: {userId}",
+  "@AccountManagePageSubtitleUID": {
+    "placeholders": {
+      "userId": {
+        "example": "未知"
+      }
+    }
+  },
+  "AccountManagePageSubtitleUsername": "用户名: {username}",
+  "@AccountManagePageSubtitleUsername": {
+    "placeholders": {
+      "username": {
+        "example": "未知"
+      }
+    }
+  },
+
+  "ComicViewerPageComments": "评论",
+  "ComicViewerPageDirectory": "目录",
+
+  "ComicDetailPageComments": "评论",
+
+  "TimeOrRankFilterEntityName": "排序方式",
+  "TimeOrRankFilterEntityModes": "{modes, select, ranking{热度} latestUpdate{更新} other{未知}}",
+
+  "DMZJLoginUsername": "用户名",
+  "DMZJLoginUsernameHint": "邮箱/用户名/手机号",
+  "DMZJLoginPassword": "密码",
+  "DMZJLoginPasswordHint": "你的大妈之家密码",
+  "DMZJTitle": "大妈之家",
+  "DMZJLoginQQLogin": "QQ登录",
+
+
+  "CommonLoginLogin": "登录",
+  "CommonLoginLogout": "登出",
+  "CommonLoginLoginFailed": "登录失败: {Reason}.",
+  "@CommonLoginLoginFailed": {
+    "placeholders": {
+      "Reason": {
+        "example": "未知"
+      }
+    }
+  },
+
+  "CopyMangaTitle": "拷贝漫画",
+  "CopyMangaLoginPasswordHint": "你的拷贝漫画账号密码",
+  "CopyMangaLoginUsernameHint": "用户名",
+  "LoginPageTitle": "登录"
+}

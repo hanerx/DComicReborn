@@ -1,4 +1,4 @@
-import 'package:date_format/date_format.dart' as formatDate;
+import 'package:date_format/date_format.dart' as formatdate;
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
@@ -47,12 +47,16 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
           child: Scaffold(
         floatingActionButton: FloatingActionButton(
           onPressed: () {},
+          shape: const CircleBorder(),
           child: const Icon(Icons.play_arrow),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
         bottomNavigationBar: BottomAppBar(
           color: Theme.of(context).colorScheme.primary,
           shape: const CircularNotchedRectangle(),
+          notchMargin: 0,
+          padding: const EdgeInsets.symmetric(vertical: 3.0, horizontal: 16.0),
+          height: 55,
           child: IconTheme(
               data: Theme.of(context)
                   .iconTheme
@@ -61,15 +65,15 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                 children: [
                   IconButton(
                       onPressed: () {},
-                      icon: Icon(Icons.file_download_outlined)),
+                      icon: const Icon(Icons.file_download_outlined)),
                   Builder(
                       builder: (context) => IconButton(
                           onPressed: () {
                             Scaffold.of(context).openEndDrawer();
                           },
-                          icon: Icon(Icons.message_outlined))),
-                  IconButton(onPressed: () {}, icon: Icon(Icons.share)),
-                  Spacer()
+                          icon: const Icon(Icons.message_outlined))),
+                  IconButton(onPressed: () {}, icon: const Icon(Icons.share)),
+                  const Spacer()
                 ],
               )),
         ),
@@ -491,43 +495,53 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       BuildContext context, List<BaseComicChapterEntityModel> data) {
     if (Provider.of<ComicDetailPageController>(context).nest) {
       return GridView.builder(
-        padding: EdgeInsets.zero,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3, childAspectRatio: 3 / 1),
-        itemCount: data.length,
-        itemBuilder: (context, index) => Padding(
-          padding: const EdgeInsets.all(3),
-          child: OutlinedButton(
-              onPressed: () {
-                var detailModel = Provider.of<ComicDetailPageController>(
-                        context,
-                        listen: false)
-                    .detailModel!;
-                var chapters = Provider.of<ComicDetailPageController>(context,
+          padding: EdgeInsets.zero,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3, childAspectRatio: 3 / 1),
+          itemCount: data.length,
+          itemBuilder: (context, index) {
+            bool isLatestChapter = data[index].chapterId ==
+                Provider.of<ComicDetailPageController>(context).latestChapterId;
+            return Padding(
+              padding: const EdgeInsets.all(3),
+              child: OutlinedButton(
+                  onPressed: () {
+                    var detailModel = Provider.of<ComicDetailPageController>(
+                            context,
                             listen: false)
-                        .reverse
-                    ? data.reversed.toList()
-                    : data;
-                Provider.of<NavigatorProvider>(context, listen: false)
-                    .getNavigator(context, NavigatorType.defaultNavigator)
-                    ?.push(MaterialPageRoute(
-                        builder: (context) => ComicViewerPage(
-                            detailModel: detailModel,
-                            chapters: chapters,
-                            chapterId: data[index].chapterId),
-                        settings:
-                            const RouteSettings(name: 'ComicViewerPage')));
-              },
-              child: Text(
-                data[index].title,
-                style:
-                    TextStyle(color: Theme.of(context).colorScheme.secondary),
-                overflow: TextOverflow.ellipsis,
-              )),
-        ),
-      );
+                        .detailModel!;
+                    var chapters = Provider.of<ComicDetailPageController>(
+                                context,
+                                listen: false)
+                            .reverse
+                        ? data.reversed.toList()
+                        : data;
+                    Provider.of<ComicDetailPageController>(context,
+                            listen: false)
+                        .addComicHistory(
+                            data[index].chapterId, data[index].title);
+                    Provider.of<NavigatorProvider>(context, listen: false)
+                        .getNavigator(context, NavigatorType.defaultNavigator)
+                        ?.push(MaterialPageRoute(
+                            builder: (context) => ComicViewerPage(
+                                detailModel: detailModel,
+                                chapters: chapters,
+                                chapterId: data[index].chapterId),
+                            settings:
+                                const RouteSettings(name: 'ComicViewerPage')));
+                  },
+                  child: Text(
+                    data[index].title,
+                    style: TextStyle(
+                        color: isLatestChapter
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.secondary),
+                    overflow: TextOverflow.ellipsis,
+                  )),
+            );
+          });
     } else {
       return ListView.builder(
         padding: EdgeInsets.zero,
@@ -537,8 +551,8 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
         itemBuilder: (context, index) => ListTile(
           title: Text(data[index].title),
           subtitle: Text(S.of(context).ComicDetailPageChapterEntitySubtitle(
-              formatDate.formatDate(data[index].uploadTime,
-                  [formatDate.yyyy, '-', formatDate.mm, '-', formatDate.dd]),
+              formatdate.formatDate(data[index].uploadTime,
+                  [formatdate.yyyy, '-', formatdate.mm, '-', formatdate.dd]),
               data[index].chapterId)),
           onTap: () {
             var detailModel =
@@ -580,7 +594,11 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       data.add(Padding(
         padding: const EdgeInsets.only(left: 5),
         child: ActionChip(
-            onPressed: item.onTap==null?null:() {item.onTap!(context);},
+            onPressed: item.onTap == null
+                ? null
+                : () {
+                    item.onTap!(context);
+                  },
             label: Text(
               item.title,
             ),
@@ -607,7 +625,11 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       data.add(Padding(
         padding: const EdgeInsets.only(left: 5),
         child: ActionChip(
-            onPressed: item.onTap==null?null:() {item.onTap!(context);},
+            onPressed: item.onTap == null
+                ? null
+                : () {
+                    item.onTap!(context);
+                  },
             label: Text(
               item.title,
             ),
@@ -618,7 +640,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
     return data;
   }
 
-  Widget _buildEndDrawer(BuildContext context){
+  Widget _buildEndDrawer(BuildContext context) {
     return Drawer(
       width: MediaQuery.of(context).size.width * 0.9,
       backgroundColor: Colors.transparent,
@@ -628,8 +650,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(3),
-                    topRight: Radius.circular(3)),
+                    topLeft: Radius.circular(3), topRight: Radius.circular(3)),
                 child: Container(
                   height: MediaQuery.of(context).padding.top - 4,
                   color: Theme.of(context).primaryColor,
@@ -638,15 +659,17 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
               Container(
                 color: Theme.of(context).primaryColor,
                 child: IconTheme(
-                  data: Theme.of(context).iconTheme.copyWith(
-                      color: CustomTheme.of(context).foregroundColor),
+                  data: Theme.of(context)
+                      .iconTheme
+                      .copyWith(color: CustomTheme.of(context).foregroundColor),
                   child: DefaultTextStyle(
-                    style: Theme.of(context).textTheme.bodyText2!.copyWith(
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                         color: CustomTheme.of(context).foregroundColor),
                     child: Row(
                       children: [
                         const BackButton(),
-                        Expanded(child: Text(S.of(context).ComicDetailPageComments))
+                        Expanded(
+                            child: Text(S.of(context).ComicDetailPageComments))
                       ],
                     ),
                   ),
@@ -660,27 +683,29 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                       child: EasyRefresh(
                         header: const ClassicHeader(safeArea: false),
                         refreshOnStart: true,
-                        onRefresh: () async{
-                          await Provider.of<ComicDetailPageController>(context,listen: false).refreshComment();
+                        onRefresh: () async {
+                          await Provider.of<ComicDetailPageController>(context,
+                                  listen: false)
+                              .refreshComment();
                         },
-                        onLoad: ()async{
-                          await Provider.of<ComicDetailPageController>(context,listen: false).loadComment();
+                        onLoad: () async {
+                          await Provider.of<ComicDetailPageController>(context,
+                                  listen: false)
+                              .loadComment();
                         },
                         child: Container(
-                          color:
-                          Theme.of(context).colorScheme.surfaceVariant,
+                          color: Theme.of(context).colorScheme.surfaceVariant,
                           child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                              itemCount:
-                              Provider.of<ComicDetailPageController>(
-                                  context)
+                              padding: EdgeInsets.zero,
+                              itemCount: Provider.of<ComicDetailPageController>(
+                                      context)
                                   .comments
                                   .length,
                               itemBuilder: (context, index) {
                                 var item =
-                                Provider.of<ComicDetailPageController>(
-                                    context)
-                                    .comments[index];
+                                    Provider.of<ComicDetailPageController>(
+                                            context)
+                                        .comments[index];
                                 return CommentCard(
                                     avatar: item.avatar,
                                     nickname: item.nickname,

@@ -170,7 +170,8 @@ class _$ConfigDao extends ConfigDao {
 
   @override
   Future<ConfigEntity?> getConfigByKey(String key) async {
-    return _queryAdapter.query('SELECT * FROM ConfigEntity WHERE key = ?1',
+    return _queryAdapter.query(
+        'SELECT * FROM ConfigEntity WHERE `key` = ?1 LIMIT 1',
         mapper: (Map<String, Object?> row) => ConfigEntity(
             row['id'] as int?, row['key'] as String, row['value'] as String?),
         arguments: [key]);
@@ -255,20 +256,14 @@ class _$ComicHistoryDao extends ComicHistoryDao {
   }
 
   @override
-  Future<ComicHistoryEntity?> getComicHistoryByComicId(String comicId) async {
+  Future<ComicHistoryEntity?> getComicHistoryByComicId(
+    String comicId,
+    String providerName,
+  ) async {
     return _queryAdapter.query(
-        'SELECT * FROM ComicHistoryEntity WHERE comicId= ?1',
-        mapper: (Map<String, Object?> row) => ComicHistoryEntity(
-            row['id'] as int?,
-            row['comicId'] as String,
-            row['title'] as String?,
-            row['cover'] as String?,
-            _imageTypeNullableConverter.decode(row['coverType'] as int?),
-            row['lastChapterTitle'] as String?,
-            row['lastChapterId'] as String?,
-            _dateTimeNullableConverter.decode(row['timestamp'] as int?),
-            row['providerName'] as String?),
-        arguments: [comicId]);
+        'SELECT * FROM ComicHistoryEntity WHERE comicId= ?1 AND providerName= ?2 LIMIT 1',
+        mapper: (Map<String, Object?> row) => ComicHistoryEntity(row['id'] as int?, row['comicId'] as String, row['title'] as String?, row['cover'] as String?, _imageTypeNullableConverter.decode(row['coverType'] as int?), row['lastChapterTitle'] as String?, row['lastChapterId'] as String?, _dateTimeNullableConverter.decode(row['timestamp'] as int?), row['providerName'] as String?),
+        arguments: [comicId, providerName]);
   }
 
   @override
@@ -344,7 +339,8 @@ class _$CookieDao extends CookieDao {
 
   @override
   Future<CookieEntity?> getCookieByKey(String key) async {
-    return _queryAdapter.query('SELECT * FROM CookieEntity WHERE key = ?1',
+    return _queryAdapter.query(
+        'SELECT * FROM CookieEntity WHERE `key` = ?1 LIMIT 1',
         mapper: (Map<String, Object?> row) => CookieEntity(
             row['id'] as int?, row['key'] as String, row['value'] as String),
         arguments: [key]);
@@ -352,7 +348,8 @@ class _$CookieDao extends CookieDao {
 
   @override
   Future<void> deleteCookie(String key) async {
-    await _queryAdapter.queryNoReturn('DELETE FROM CookieEntity WHERE key = ?1',
+    await _queryAdapter.queryNoReturn(
+        'DELETE FROM CookieEntity WHERE `key` = ?1',
         arguments: [key]);
   }
 

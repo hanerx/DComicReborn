@@ -79,6 +79,7 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
 
 class CopyMangaComicDetailModel extends BaseComicDetailModel {
   final Map rawData;
+  @override
   final CopyMangaComicSourceModel parent;
   final Map groupsRawData;
 
@@ -137,6 +138,8 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
           .map<BaseComicChapterEntityModel>((e) =>
               DefaultComicChapterEntityModel(
                   e['name'], e['uuid'], DateTime.parse(e['datetime_created'])))
+          .toList()
+          .reversed
           .toList();
     }
     return result;
@@ -493,7 +496,7 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
   String? get uid => _uid;
 
   @override
-  Future<bool> unsubscribeComic(String comicId) async{
+  Future<bool> unsubscribeComic(String comicId) async {
     try {
       var response = await RequestHandlers.copyMangaRequestHandler
           .addSubscribe(comicId, false);
@@ -515,15 +518,20 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
         .getOrCreateConfigByKey('isLogin', parent!.type.sourceId));
     _isLogin = databaseIsLogin.get<bool>() ?? false;
     if (_isLogin) {
-      var response =
-          await RequestHandlers.copyMangaRequestHandler.getUserInfo();
-      if (response.statusCode == 200) {
-        var data = response.data['results'];
-        _uid = data['user_id'];
-        _nickname = data['nickname'];
-        _username = data['username'];
-        _avatar = ImageEntity(ImageType.network, data['avatar'],
-            imageHeaders: {"Referer": "https://www.mangacopy.com/"});
+      try {
+        var response =
+            await RequestHandlers.copyMangaRequestHandler.getUserInfo();
+        if (response.statusCode == 200) {
+          var data = response.data['results'];
+          _uid = data['user_id'];
+          _nickname = data['nickname'];
+          _username = data['username'];
+          _avatar = ImageEntity(ImageType.network, data['avatar'],
+              imageHeaders: {"Referer": "https://www.mangacopy.com/"});
+        }
+      } catch (e, s) {
+        logger.e('$e', error: e, stackTrace: s);
+        _isLogin = false;
       }
     }
     _isLoading = false;
@@ -553,7 +561,7 @@ class CopyMangaComicHomepageModel extends BaseComicHomepageModel {
       int categoryType = 0}) async {
     List<ListItemEntity> data = [];
     try {
-      var order = categoryFilter['TimeOrRank'] == 'latestUpdate'
+      var order = categoryFilter['TimeOrRank'] == TimeOrRankEnum.latestUpdate
           ? '-datetime_updated'
           : '-popular';
       Response response;

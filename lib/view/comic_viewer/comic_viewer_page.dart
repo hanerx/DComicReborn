@@ -11,7 +11,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:provider/provider.dart';
-import 'package:date_format/date_format.dart' as formatDate;
+import 'package:date_format/date_format.dart' as formatdate;
 
 class ComicViewerPage extends StatefulWidget {
   final BaseComicDetailModel detailModel;
@@ -43,10 +43,6 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
             color: Colors.black,
             child: EasyRefresh(
               controller: _easyRefreshController,
-              // noMoreRefresh:
-              //     Provider.of<ComicViewerPageController>(context).preChapter == null,
-              // noMoreLoad:
-              //     Provider.of<ComicViewerPageController>(context).nextChapter == null,
               header: BezierHeader(
                   triggerOffset: 50,
                   backgroundColor: Theme.of(context).colorScheme.primary,
@@ -460,7 +456,7 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                             subtitle: Text(S
                                 .of(context)
                                 .ComicDetailPageChapterEntitySubtitle(
-                                    formatDate.formatDate(
+                                    formatdate.formatDate(
                                         Provider.of<ComicViewerPageController>(
                                                 context)
                                             .chapters
@@ -468,11 +464,11 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                                             .toList()[index]
                                             .uploadTime,
                                         [
-                                          formatDate.yyyy,
+                                          formatdate.yyyy,
                                           '-',
-                                          formatDate.mm,
+                                          formatdate.mm,
                                           '-',
-                                          formatDate.dd
+                                          formatdate.dd
                                         ]),
                                     Provider.of<ComicViewerPageController>(
                                             context)

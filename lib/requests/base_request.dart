@@ -75,7 +75,9 @@ class RequestHandler {
     try {
       await dio.get(path);
       return DateTime.now().millisecondsSinceEpoch - now.millisecondsSinceEpoch;
-    } catch (e) {}
+    } catch (e) {
+      rethrow;
+    }
     return -1;
   }
 }

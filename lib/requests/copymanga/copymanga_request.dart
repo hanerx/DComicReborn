@@ -159,13 +159,13 @@ class CopyMangaRequestHandler extends RequestHandler {
   Future<Response> getChapterComments(String chapterId,
       {int limit = 50, int page = 0}) {
     return dio
-        .get('/api/v3/roasts?chapter_id=$chapterId&limit=$limit&offset=$page');
+        .get('/api/v3/roasts?chapter_id=$chapterId&limit=$limit&offset=${page*limit}');
   }
 
   Future<Response> getComments(String comicId,
       {int limit = 20, int page = 0}) async {
     return dio.get(
-        '/api/v3/comments?comic_id=$comicId&limit=$limit&offset=$page',
+        '/api/v3/comments?comic_id=$comicId&limit=$limit&offset=${limit * page}',
         options: await setHeader({'Platform': '1'}));
   }
 }

@@ -65,6 +65,7 @@ dependencies:
   package_info_plus: ^5.0.1
   url_launcher: ^6.2.4
   sqflite: ^2.3.2
+  motion_toast: ^2.8.0
 
 dev_dependencies:
   flutter_test:

@@ -1,7 +1,6 @@
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/view/settings/about_page.dart';
-import 'package:dcomic/view/settings/account_login_page.dart';
 import 'package:dcomic/view/settings/account_manage_page.dart';
 import 'package:dcomic/view/settings/debug_page.dart';
 import 'package:easy_refresh/easy_refresh.dart';

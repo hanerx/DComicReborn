@@ -44,7 +44,7 @@ Future<void> main() async {
 }
 
 class App extends StatelessWidget {
-  const App({Key? key}) : super(key: key);
+  const App({super.key});
 
   // This widget is the root of your application.
   @override
@@ -81,6 +81,7 @@ class App extends StatelessWidget {
               //此处
               S.delegate,
               GlobalMaterialLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               DefaultCupertinoLocalizations.delegate,
             ],
@@ -89,7 +90,7 @@ class App extends StatelessWidget {
 }
 
 class MainFramework extends StatefulWidget {
-  const MainFramework({Key? key}) : super(key: key);
+  const MainFramework({super.key});
 
   @override
   State<MainFramework> createState() => _MainFrameworkState();

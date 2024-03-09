@@ -1,3 +1,4 @@
+import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/entity/comic_history.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/base_model.dart';
@@ -38,14 +39,14 @@ abstract class BaseComicSourceModel extends BaseModel {
   Future<List<ComicHistoryEntity>> getComicHistory();
 
   @override
-  Future<void> init()async{
-    if(accountModel!=null){
+  Future<void> init() async {
+    if (accountModel != null) {
       await accountModel!.init();
     }
   }
 }
 
-class CategoryEntity{
+class CategoryEntity {
   final String title;
   final String categoryId;
   final void Function(BuildContext context)? onTap;
@@ -70,15 +71,58 @@ abstract class BaseComicDetailModel extends BaseModel {
 
   bool get subscribe => false;
 
-  set subscribe(bool subscribe){}
+  set subscribe(bool subscribe) {}
 
   List<CategoryEntity> get authors;
 
   List<CategoryEntity> get categories;
 
+  BaseComicSourceModel get parent;
+
   Future<BaseComicChapterDetailModel?> getChapter(String chapterId);
 
-  Future<List<ComicCommentEntity>> getComments({int page=0});
+  Future<List<ComicCommentEntity>> getComments({int page = 0});
+
+  @override
+  Future<void> init() async {
+    await super.init();
+    await loadComicHistory();
+  }
+
+  Future<void> loadComicHistory() async {
+    try {
+      var databaseInstance = await DatabaseInstance.instance;
+      var comicHistoryEntity = (await databaseInstance.comicHistoryDao
+          .getOrCreateConfigByComicId(comicId, parent.type.sourceId));
+      _latestChapterId = comicHistoryEntity.lastChapterId;
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+    }
+  }
+
+  Future<bool> addComicHistory(String chapterId, String chapterName) async {
+    try {
+      var databaseInstance = await DatabaseInstance.instance;
+      var comicHistoryEntity = (await databaseInstance.comicHistoryDao
+          .getOrCreateConfigByComicId(comicId, parent.type.sourceId));
+      comicHistoryEntity.cover = cover.imageUrl;
+      comicHistoryEntity.coverType = cover.imageType;
+      comicHistoryEntity.title = title;
+      comicHistoryEntity.lastChapterId = chapterId;
+      comicHistoryEntity.lastChapterTitle = chapterName;
+      comicHistoryEntity.timestamp = DateTime.now();
+      await databaseInstance.comicHistoryDao
+          .updateComicHistory(comicHistoryEntity);
+      return true;
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+    }
+    return false;
+  }
+
+  String? _latestChapterId;
+
+  String? get latestChapterId => _latestChapterId;
 }
 
 abstract class BaseComicChapterEntityModel extends BaseModel {
@@ -145,7 +189,7 @@ abstract class BaseComicAccountModel extends BaseModel {
 
   Future<bool> unsubscribeComic(String comicId);
 
-  Future<List<GridItemEntity>> getSubscribeComics({int page=0});
+  Future<List<GridItemEntity>> getSubscribeComics({int page = 0});
 }
 
 abstract class BaseComicHomepageModel extends BaseModel {
@@ -167,10 +211,14 @@ abstract class BaseComicHomepageModel extends BaseModel {
   /// category的filter
   List<FilterEntity> get categoryFilter;
 
-  Future<List<ListItemEntity>> getCategoryDetailList({required String categoryId,required Map<String,dynamic> categoryFilter,int page = 0, int categoryType = 0});
+  Future<List<ListItemEntity>> getCategoryDetailList(
+      {required String categoryId,
+      required Map<String, dynamic> categoryFilter,
+      int page = 0,
+      int categoryType = 0});
 }
 
-abstract class FilterEntity{
+abstract class FilterEntity {
   String getLocalizedFilterName(BuildContext context);
 
   IconData get filterIcon;
@@ -179,9 +227,9 @@ abstract class FilterEntity{
 
   dynamic get initValue;
 
-  Map<String,dynamic> getLocalizedMappingChoice(BuildContext context);
+  Map<String, dynamic> getLocalizedMappingChoice(BuildContext context);
 
-  String getLocalizedStringByValue(BuildContext context,dynamic value);
+  String getLocalizedStringByValue(BuildContext context, dynamic value);
 }
 
 enum TimeOrRankEnum { ranking, latestUpdate }
@@ -217,23 +265,23 @@ class TimeOrRankFilterEntity extends FilterEntity {
   IconData get filterIcon => FontAwesome5.sort_amount_down;
 }
 
-
-class ChapterCommentEntity{
+class ChapterCommentEntity {
   final String comment;
   final int likes;
   final String commentId;
 
-  ChapterCommentEntity(this.commentId,this.comment, this.likes);
+  ChapterCommentEntity(this.commentId, this.comment, this.likes);
 }
 
-class ComicCommentEntity{
+class ComicCommentEntity {
   final ImageEntity avatar;
   final String comment;
   final String commentId;
   final String nickname;
   final int likes;
 
-  ComicCommentEntity(this.avatar, this.comment, this.commentId, this.nickname, this.likes);
+  ComicCommentEntity(
+      this.avatar, this.comment, this.commentId, this.nickname, this.likes);
 }
 
 class CarouselEntity {

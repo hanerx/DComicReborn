@@ -346,6 +346,7 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
 
 class DMZJV4ComicDetailModel extends BaseComicDetailModel {
   final ComicDetailInfoResponse rawData;
+  @override
   final DMZJComicSourceModel parent;
 
   bool _isSubscribe = false;
@@ -617,6 +618,9 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                           if (formKey.currentState!.validate()) {
                             if (await login(usernameController.text,
                                 passwordController.text)) {
+                              if(!context.mounted){
+                                return;
+                              }
                               Provider.of<NavigatorProvider>(context,
                                       listen: false)
                                   .getNavigator(
@@ -626,6 +630,9 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                           }
                         } catch (e, s) {
                           logger.e(e, error: e, stackTrace: s);
+                          if(!context.mounted){
+                            return;
+                          }
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content:
                                 Text(S.of(context).CommonLoginLoginFailed(e)),

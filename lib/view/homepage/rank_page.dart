@@ -1,7 +1,5 @@
 import 'package:dcomic/providers/page_controllers/comic_rank_page_controller.dart';
-import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/components/card_list_item.dart';
-import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

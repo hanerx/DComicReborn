@@ -57,8 +57,8 @@ abstract class ComicHistoryDao {
   @Query('SELECT * FROM ComicHistoryEntity')
   Future<List<ComicHistoryEntity>> getAllComicHistoryEntity();
 
-  @Query('SELECT * FROM ComicHistoryEntity WHERE comicId= :comicId')
-  Future<ComicHistoryEntity?> getComicHistoryByComicId(String comicId);
+  @Query('SELECT * FROM ComicHistoryEntity WHERE comicId= :comicId AND providerName= :providerName LIMIT 1')
+  Future<ComicHistoryEntity?> getComicHistoryByComicId(String comicId, String providerName);
 
   @Query('SELECT * FROM ComicHistoryEntity WHERE providerName= :providerName')
   Future<List<ComicHistoryEntity>> getComicHistoryByProvider(
@@ -69,4 +69,14 @@ abstract class ComicHistoryDao {
 
   @Update(onConflict: OnConflictStrategy.replace)
   Future<void> updateComicHistory(ComicHistoryEntity comicHistoryEntity);
+
+  Future<ComicHistoryEntity> getOrCreateConfigByComicId(String comicId,String sourceModel,
+      {dynamic value = ''}) async {
+    var result = await getComicHistoryByComicId(comicId,sourceModel);
+    if (result == null) {
+      result ??= ComicHistoryEntity.createComicHistoryEntity(comicId, providerName: sourceModel);
+      await insertComicHistory(result);
+    }
+    return result;
+  }
 }
