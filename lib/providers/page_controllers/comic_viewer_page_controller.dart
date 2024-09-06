@@ -38,6 +38,7 @@ class ComicViewerPageController extends BaseProvider{
     chapterDetailModel=await detailModel.getChapter(currentChapter!.chapterId);
     _currentPage=0;
     await loadComment();
+    await addComicHistory();
     notifyListeners();
   }
 
@@ -48,6 +49,7 @@ class ComicViewerPageController extends BaseProvider{
     chapterDetailModel=await detailModel.getChapter(currentChapter!.chapterId);
     _currentPage=0;
     await loadComment();
+    await addComicHistory();
     notifyListeners();
   }
 
@@ -56,6 +58,7 @@ class ComicViewerPageController extends BaseProvider{
     chapterDetailModel=await detailModel.getChapter(currentChapter!.chapterId);
     _currentPage=0;
     await loadComment();
+    await addComicHistory();
     notifyListeners();
   }
 
@@ -65,6 +68,12 @@ class ComicViewerPageController extends BaseProvider{
     }
     notifyListeners();
   }
+
+  Future<void> addComicHistory() async {
+    if(currentChapter!=null){
+      await detailModel.addComicHistory(currentChapter!.chapterId, currentChapter!.title);
+    }
+    }
 
   int get currentPage => _currentPage;
 

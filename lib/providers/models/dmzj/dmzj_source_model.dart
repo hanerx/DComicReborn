@@ -41,16 +41,48 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
   }
 
   @override
-  Future<List<ComicHistoryEntity>> getComicHistory() {
-    // TODO: implement getComicHistory
-    throw UnimplementedError();
+  Future<List<ListItemEntity>> getComicHistory(ComicHistorySourceType sourceType, {int page=0}) async {
+    if(sourceType == ComicHistorySourceType.local){
+      return super.getComicHistory(sourceType, page: page);
+    }
+    return [];
   }
 
   @override
-  Future<List<BaseComicDetailModel>> searchComicDetail(String keyword,
-      {int page = 0}) {
-    // TODO: implement searchComicDetail
-    throw UnimplementedError();
+  Future<List<ListItemEntity>> searchComicDetail(String keyword,
+      {int page = 0}) async {
+    List<ListItemEntity> data = [];
+    var response =
+        await RequestHandlers.dmzjv3requestHandler.search(keyword, page);
+    try {
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        var responseData = response.data;
+        for (var item in responseData) {
+          data.add(ListItemEntity(
+              item['title'],
+              ImageEntity(ImageType.network, item['cover'],
+                  imageHeaders: {"referer": "https://i.dmzj.com"}),
+              {
+                Icons.supervisor_account_rounded: item['authors'],
+                Icons.apps: item['types'],
+                Icons.history_edu: item['last_name']
+              }, (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicDetailPage(
+                          title: item['title'],
+                          comicId: item['id'].toString(),
+                          comicSourceModel: this,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
+          }));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+    }
+    return data;
   }
 
   @override
@@ -296,7 +328,8 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
   Future<List<ListItemEntity>> getCategoryDetailList(
       {required String categoryId,
       required Map<String, dynamic> categoryFilter,
-      int page = 0, int categoryType = 0}) async {
+      int page = 0,
+      int categoryType = 0}) async {
     List<ListItemEntity> data = [];
     try {
       Response response = await RequestHandlers.dmzjv3requestHandler
@@ -618,7 +651,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                           if (formKey.currentState!.validate()) {
                             if (await login(usernameController.text,
                                 passwordController.text)) {
-                              if(!context.mounted){
+                              if (!context.mounted) {
                                 return;
                               }
                               Provider.of<NavigatorProvider>(context,
@@ -630,7 +663,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                           }
                         } catch (e, s) {
                           logger.e(e, error: e, stackTrace: s);
-                          if(!context.mounted){
+                          if (!context.mounted) {
                             return;
                           }
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(

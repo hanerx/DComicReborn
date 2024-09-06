@@ -93,7 +93,7 @@ class _$DComicDatabase extends DComicDatabase {
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `ConfigEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT)');
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `ComicHistoryEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `title` TEXT, `cover` TEXT, `coverType` INTEGER, `lastChapterTitle` TEXT, `lastChapterId` TEXT, `timestamp` INTEGER, `providerName` TEXT)');
+            'CREATE TABLE IF NOT EXISTS `ComicHistoryEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `title` TEXT NOT NULL, `cover` TEXT NOT NULL, `coverType` INTEGER NOT NULL, `lastChapterTitle` TEXT NOT NULL, `lastChapterId` TEXT NOT NULL, `timestamp` INTEGER, `providerName` TEXT NOT NULL)');
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `CookieEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT NOT NULL)');
         await database.execute(
@@ -203,8 +203,7 @@ class _$ComicHistoryDao extends ComicHistoryDao {
                   'comicId': item.comicId,
                   'title': item.title,
                   'cover': item.cover,
-                  'coverType':
-                      _imageTypeNullableConverter.encode(item.coverType),
+                  'coverType': _imageTypeConverter.encode(item.coverType),
                   'lastChapterTitle': item.lastChapterTitle,
                   'lastChapterId': item.lastChapterId,
                   'timestamp':
@@ -220,8 +219,7 @@ class _$ComicHistoryDao extends ComicHistoryDao {
                   'comicId': item.comicId,
                   'title': item.title,
                   'cover': item.cover,
-                  'coverType':
-                      _imageTypeNullableConverter.encode(item.coverType),
+                  'coverType': _imageTypeConverter.encode(item.coverType),
                   'lastChapterTitle': item.lastChapterTitle,
                   'lastChapterId': item.lastChapterId,
                   'timestamp':
@@ -246,13 +244,13 @@ class _$ComicHistoryDao extends ComicHistoryDao {
         mapper: (Map<String, Object?> row) => ComicHistoryEntity(
             row['id'] as int?,
             row['comicId'] as String,
-            row['title'] as String?,
-            row['cover'] as String?,
-            _imageTypeNullableConverter.decode(row['coverType'] as int?),
-            row['lastChapterTitle'] as String?,
-            row['lastChapterId'] as String?,
+            row['title'] as String,
+            row['cover'] as String,
+            _imageTypeConverter.decode(row['coverType'] as int),
+            row['lastChapterTitle'] as String,
+            row['lastChapterId'] as String,
             _dateTimeNullableConverter.decode(row['timestamp'] as int?),
-            row['providerName'] as String?));
+            row['providerName'] as String));
   }
 
   @override
@@ -261,8 +259,8 @@ class _$ComicHistoryDao extends ComicHistoryDao {
     String providerName,
   ) async {
     return _queryAdapter.query(
-        'SELECT * FROM ComicHistoryEntity WHERE comicId= ?1 AND providerName= ?2 LIMIT 1',
-        mapper: (Map<String, Object?> row) => ComicHistoryEntity(row['id'] as int?, row['comicId'] as String, row['title'] as String?, row['cover'] as String?, _imageTypeNullableConverter.decode(row['coverType'] as int?), row['lastChapterTitle'] as String?, row['lastChapterId'] as String?, _dateTimeNullableConverter.decode(row['timestamp'] as int?), row['providerName'] as String?),
+        'SELECT * FROM ComicHistoryEntity WHERE `comicId`= ?1 AND `providerName`= ?2',
+        mapper: (Map<String, Object?> row) => ComicHistoryEntity(row['id'] as int?, row['comicId'] as String, row['title'] as String, row['cover'] as String, _imageTypeConverter.decode(row['coverType'] as int), row['lastChapterTitle'] as String, row['lastChapterId'] as String, _dateTimeNullableConverter.decode(row['timestamp'] as int?), row['providerName'] as String),
         arguments: [comicId, providerName]);
   }
 
@@ -270,17 +268,17 @@ class _$ComicHistoryDao extends ComicHistoryDao {
   Future<List<ComicHistoryEntity>> getComicHistoryByProvider(
       String providerName) async {
     return _queryAdapter.queryList(
-        'SELECT * FROM ComicHistoryEntity WHERE providerName= ?1',
+        'SELECT * FROM ComicHistoryEntity WHERE `providerName`= ?1',
         mapper: (Map<String, Object?> row) => ComicHistoryEntity(
             row['id'] as int?,
             row['comicId'] as String,
-            row['title'] as String?,
-            row['cover'] as String?,
-            _imageTypeNullableConverter.decode(row['coverType'] as int?),
-            row['lastChapterTitle'] as String?,
-            row['lastChapterId'] as String?,
+            row['title'] as String,
+            row['cover'] as String,
+            _imageTypeConverter.decode(row['coverType'] as int),
+            row['lastChapterTitle'] as String,
+            row['lastChapterId'] as String,
             _dateTimeNullableConverter.decode(row['timestamp'] as int?),
-            row['providerName'] as String?),
+            row['providerName'] as String),
         arguments: [providerName]);
   }
 

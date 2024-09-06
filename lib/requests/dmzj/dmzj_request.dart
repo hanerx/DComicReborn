@@ -62,7 +62,7 @@ class DMZJV3RequestHandler extends RequestHandler {
   // 搜索
   Future<Response> search(String keyword, int page, {int type = 0}) {
     return dio
-        .get('/search/show/$type/${Uri.encodeComponent(keyword)}/$page.json');
+        .get('/search/show/$type/$keyword/$page.json');
   }
 
   // Unknown
@@ -261,5 +261,30 @@ class DMZJCommentRequestHandler extends RequestHandler {
       {int limit = 30, int type = 4}) {
     return dio
         .get('/v1/$type/latest/$comicId?limit=$limit&page_index=${page + 1}');
+  }
+}
+
+class DMZJInterfaceRequestHandler extends RequestHandler {
+  DMZJInterfaceRequestHandler(): super('https://interface.dmzj.com');
+  Future<Response> updateUnread(String comicId) async {
+    return dio.get('/api/subscribe/upread?sub_id=$comicId');
+  }
+
+  Future<Response> getHistory(String uid, int page) {
+    return dio.get('/api/getReInfo/comic/$uid/$page');
+  }
+
+  Future<Response<T>> addHistory<T>(int comicId, String uid, int chapterId,
+      {int page= 1}) async {
+    Map map = {
+      comicId.toString(): chapterId.toString(),
+      "comicId": comicId.toString(),
+      "chapterId": chapterId.toString(),
+      "page": page,
+      "time": DateTime.now().millisecondsSinceEpoch / 1000
+    };
+    var json = Uri.encodeComponent(jsonEncode(map));
+    return dio.get(
+        "/api/record/getRe?st=comic&uid=$uid&callback=record_jsonpCallback&json=[$json]&type=3");
   }
 }

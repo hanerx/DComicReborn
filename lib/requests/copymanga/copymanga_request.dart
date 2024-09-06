@@ -50,9 +50,9 @@ class CopyMangaRequestHandler extends RequestHandler {
         }));
   }
 
-  Future<Response> search(String keyword, {int page = 0}) {
+  Future<Response> search(String keyword, {int page = 0, int limit=12}) async {
     return dio.get(
-        '/api/v3/search/comic?platform=1&q=$keyword&limit=20&offset=$page&q_type=&_update=true');
+        '/api/kb/web/searchba/comics?offset=${page*limit}&platform=2&limit=$limit&q=$keyword&q_type=');
   }
 
   Future<Response> login(String username, String password) async {
@@ -74,7 +74,7 @@ class CopyMangaRequestHandler extends RequestHandler {
 
   Future<Response> getSubscribe({int page = 0, int limit = 21}) async {
     return dio.get(
-        '/api/v3/member/collect/comics?free_type=1&limit=$limit&offset=${page * limit}&_update=true&ordering=-datetime_modifier',
+        '/api/v3/member/collect/comics?free_type=1&limit=$limit&offset=${page * limit}&_update=true&ordering=-datetime_updated',
         options: await setHeader());
   }
 
@@ -158,8 +158,8 @@ class CopyMangaRequestHandler extends RequestHandler {
 
   Future<Response> getChapterComments(String chapterId,
       {int limit = 50, int page = 0}) {
-    return dio
-        .get('/api/v3/roasts?chapter_id=$chapterId&limit=$limit&offset=${page*limit}');
+    return dio.get(
+        '/api/v3/roasts?chapter_id=$chapterId&limit=$limit&offset=${page * limit}');
   }
 
   Future<Response> getComments(String comicId,

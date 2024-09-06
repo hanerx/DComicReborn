@@ -536,7 +536,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                     data[index].title,
                     style: TextStyle(
                         color: isLatestChapter
-                            ? Theme.of(context).colorScheme.primary
+                            ? Theme.of(context).colorScheme.error
                             : Theme.of(context).colorScheme.secondary),
                     overflow: TextOverflow.ellipsis,
                   )),

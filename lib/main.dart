@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dcomic/providers/comic_veiwer_config_provider.dart';
 import 'package:dcomic/providers/version_provider.dart';
+import 'package:dcomic/view/drawer_page/search_page.dart';
 import 'package:dcomic/view/homepage/category_page.dart';
 import 'package:dcomic/view/homepage/latest_page.dart';
 import 'package:dcomic/view/homepage/rank_page.dart';
@@ -107,7 +108,13 @@ class _MainFrameworkState extends State<MainFramework> {
                 appBar: AppBar(
                   title: Text(S.of(context).AppName),
                   actions: [
-                    IconButton(onPressed: () {}, icon: const Icon(Icons.search))
+                    IconButton(onPressed: () {
+                      Provider.of<NavigatorProvider>(context, listen: false)
+                          .getNavigator(context, NavigatorType.defaultNavigator)
+                          ?.push(MaterialPageRoute(
+                          builder: (context) => const SearchPage(),
+                          settings: const RouteSettings(name: 'SearchPage')));
+                    }, icon: const Icon(Icons.search))
                   ],
                   bottom: TabBar(
                     tabs: [

@@ -1,10 +1,13 @@
 import 'package:dcomic/database/database_instance.dart';
-import 'package:dcomic/database/entity/comic_history.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/base_model.dart';
+import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/utils/image_utils.dart';
+import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
+import 'package:date_format/date_format.dart' as date_format;
+import 'package:provider/provider.dart';
 
 class ComicSourceEntity {
   final String sourceName;
@@ -24,6 +27,8 @@ class ComicSourceEntity {
   }
 }
 
+enum ComicHistorySourceType{ network, local}
+
 abstract class BaseComicSourceModel extends BaseModel {
   BaseComicHomepageModel? get homepage => null;
 
@@ -33,10 +38,42 @@ abstract class BaseComicSourceModel extends BaseModel {
 
   Future<BaseComicDetailModel?> getComicDetail(String comicId, String title);
 
-  Future<List<BaseComicDetailModel>> searchComicDetail(String keyword,
+  Future<List<ListItemEntity>> searchComicDetail(String keyword,
       {int page = 0});
 
-  Future<List<ComicHistoryEntity>> getComicHistory();
+  Future<List<ListItemEntity>> getComicHistory(ComicHistorySourceType sourceType, {int page=0}) async{
+    if(sourceType == ComicHistorySourceType.local && page == 0){
+      try {
+        List<ListItemEntity> data = [];
+        var databaseInstance = await DatabaseInstance.instance;
+        var comicHistoryEntityList = await databaseInstance.comicHistoryDao
+            .getComicHistoryByProvider(type.sourceId);
+        for(var entity in comicHistoryEntityList){
+          data.add(ListItemEntity(entity.title,
+              ImageEntity(entity.coverType, entity.cover), {
+                Icons.history: date_format.formatDate(
+                    entity.timestamp!,
+                    [date_format.yyyy, '-', date_format.mm, '-', date_format.dd]),
+                Icons.history_edu: entity.lastChapterTitle
+              }, (context) {
+                Provider.of<NavigatorProvider>(context, listen: false)
+                    .getNavigator(context, NavigatorType.defaultNavigator)
+                    ?.push(MaterialPageRoute(
+                    builder: (context) => ComicDetailPage(
+                      title: entity.title,
+                      comicId: entity.comicId,
+                      comicSourceModel: this,
+                    ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
+              }));
+        }
+        return data;
+      } catch (e, s) {
+        logger.e('$e', error: e, stackTrace: s);
+      }
+    }
+    return [];
+  }
 
   @override
   Future<void> init() async {
@@ -93,8 +130,8 @@ abstract class BaseComicDetailModel extends BaseModel {
     try {
       var databaseInstance = await DatabaseInstance.instance;
       var comicHistoryEntity = (await databaseInstance.comicHistoryDao
-          .getOrCreateConfigByComicId(comicId, parent.type.sourceId));
-      _latestChapterId = comicHistoryEntity.lastChapterId;
+          .getComicHistoryByComicId(comicId, parent.type.sourceId));
+      _latestChapterId = comicHistoryEntity?.lastChapterId;
     } catch (e, s) {
       logger.e('$e', error: e, stackTrace: s);
     }

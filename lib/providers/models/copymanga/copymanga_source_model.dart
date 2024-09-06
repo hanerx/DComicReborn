@@ -52,16 +52,41 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
   }
 
   @override
-  Future<List<ComicHistoryEntity>> getComicHistory() {
-    // TODO: implement getComicHistory
-    throw UnimplementedError();
+  Future<List<ListItemEntity>> getComicHistory(ComicHistorySourceType sourceType, {int page=0}) async {
+    if(sourceType == ComicHistorySourceType.local){
+      return super.getComicHistory(sourceType, page: page);
+    }
+    return [];
   }
 
   @override
-  Future<List<BaseComicDetailModel>> searchComicDetail(String keyword,
-      {int page = 0}) {
-    // TODO: implement searchComicDetail
-    throw UnimplementedError();
+  Future<List<ListItemEntity>> searchComicDetail(String keyword,
+      {int page = 0}) async {
+    List<ListItemEntity> data = [];
+    var response = await RequestHandlers.copyMangaRequestHandler
+        .search(keyword, page: page);
+    if ((response.statusCode == 200 || response.statusCode == 304) &&
+        response.data['code'] == 200) {
+      var responseData = response.data['results']['list'];
+      for (var item in responseData) {
+        data.add(ListItemEntity(
+            item['name'], ImageEntity(ImageType.network, item['cover']), {
+          Icons.supervisor_account_rounded: item['author'].map((e) => e['name']).toList().join('/'),
+          Icons.local_fire_department: item['popular'].toString()
+        }, (context) {
+          Provider.of<NavigatorProvider>(context, listen: false)
+              .getNavigator(context, NavigatorType.defaultNavigator)
+              ?.push(MaterialPageRoute(
+                  builder: (context) => ComicDetailPage(
+                        title: item['name'],
+                        comicId: item['path_word'],
+                        comicSourceModel: this,
+                      ),
+                  settings: const RouteSettings(name: 'ComicDetailPage')));
+        }));
+      }
+    }
+    return data;
   }
 
   @override
