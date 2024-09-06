@@ -530,7 +530,12 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                                 chapters: chapters,
                                 chapterId: data[index].chapterId),
                             settings:
-                                const RouteSettings(name: 'ComicViewerPage')));
+                                const RouteSettings(name: 'ComicViewerPage')))
+                        .then((value) async{
+                      await Provider.of<ComicDetailPageController>(context,
+                              listen: false)
+                          .refresh(context, widget.comicId, widget.title);
+                    });
                   },
                   child: Text(
                     data[index].title,
