@@ -11,10 +11,15 @@ class ComicDetailPageController extends BaseProvider {
   BaseComicDetailModel? detailModel;
   BaseComicSourceModel? comicSourceModel;
 
-  bool _nest=true;
-  bool _reverse=true;
+  bool _nest = true;
+  bool _reverse = true;
 
   bool get isLoading => _isLoading;
+
+  List<ComicCommentEntity> _comments = [];
+  int _commentPage = 0;
+
+  List<ComicCommentEntity> get comments => _comments;
 
   ComicDetailPageController(this.comicSourceModel);
 
@@ -33,6 +38,30 @@ class ComicDetailPageController extends BaseProvider {
     _isLoading = false;
     notifyListeners();
   }
+
+  Future<void> refreshComment() async {
+    if (detailModel != null) {
+      _commentPage = 0;
+      _comments = await detailModel!.getComments(page: _commentPage);
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadComment() async {
+    if (detailModel != null) {
+      _commentPage++;
+      _comments += await detailModel!.getComments(page: _commentPage);
+      notifyListeners();
+    }
+  }
+
+  Future<void> addComicHistory(String chapterId, String chapterName) async {
+    if (detailModel != null) {
+      await detailModel!.addComicHistory(chapterId, chapterName);
+    }
+  }
+
+  String? get latestChapterId => detailModel?.latestChapterId;
 
   String get title => detailModel == null ? "" : detailModel!.title;
 
@@ -56,13 +85,14 @@ class ComicDetailPageController extends BaseProvider {
   List<CategoryEntity> get categories =>
       detailModel == null ? [] : detailModel!.categories;
 
-  Map<String, List<BaseComicChapterEntityModel>> get chapters=>detailModel==null?{}:detailModel!.chapters;
+  Map<String, List<BaseComicChapterEntityModel>> get chapters =>
+      detailModel == null ? {} : detailModel!.chapters;
 
-  bool get subscribe => detailModel==null?false:detailModel!.subscribe;
+  bool get subscribe => detailModel == null ? false : detailModel!.subscribe;
 
-  set subscribe(bool subscribe){
-    if(detailModel!=null){
-      detailModel!.subscribe=subscribe;
+  set subscribe(bool subscribe) {
+    if (detailModel != null) {
+      detailModel!.subscribe = subscribe;
       notifyListeners();
     }
   }

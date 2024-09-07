@@ -26,7 +26,7 @@ class CardListItem extends StatelessWidget {
                 onTap!(context);
               },
         child: Card(
-          margin: EdgeInsets.only(left: 3,right: 3),
+          margin: const EdgeInsets.only(left: 3,right: 3),
           color: Colors.transparent,
           elevation: 0,
           child: Row(

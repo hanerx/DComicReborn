@@ -370,6 +370,56 @@ class S {
     );
   }
 
+  /// `Try Crash`
+  String get DebugPageTryCrash {
+    return Intl.message(
+      'Try Crash',
+      name: 'DebugPageTryCrash',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Try call a crash to test firebase collection method.`
+  String get DebugPageTryCrashDescription {
+    return Intl.message(
+      'Try call a crash to test firebase collection method.',
+      name: 'DebugPageTryCrashDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Try Print All Database Content`
+  String get DebugPagePrintModelDatabase {
+    return Intl.message(
+      'Try Print All Database Content',
+      name: 'DebugPagePrintModelDatabase',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Try Print All Database Content to Log`
+  String get DebugPagePrintModelDatabaseDescription {
+    return Intl.message(
+      'Try Print All Database Content to Log',
+      name: 'DebugPagePrintModelDatabaseDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Database Debug Page`
+  String get DatabaseDebugPageTitle {
+    return Intl.message(
+      'Database Debug Page',
+      name: 'DatabaseDebugPageTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Check For Update`
   String get AboutPageCheckForUpdate {
     return Intl.message(
@@ -596,6 +646,271 @@ class S {
       args: [username],
     );
   }
+
+  /// `Comments`
+  String get ComicViewerPageComments {
+    return Intl.message(
+      'Comments',
+      name: 'ComicViewerPageComments',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Directory`
+  String get ComicViewerPageDirectory {
+    return Intl.message(
+      'Directory',
+      name: 'ComicViewerPageDirectory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Comments`
+  String get ComicDetailPageComments {
+    return Intl.message(
+      'Comments',
+      name: 'ComicDetailPageComments',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `SortType`
+  String get TimeOrRankFilterEntityName {
+    return Intl.message(
+      'SortType',
+      name: 'TimeOrRankFilterEntityName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{modes, select, ranking{Ranking} latestUpdate{Latest Update} other{Unknown}}`
+  String TimeOrRankFilterEntityModes(Object modes) {
+    return Intl.select(
+      modes,
+      {
+        'ranking': 'Ranking',
+        'latestUpdate': 'Latest Update',
+        'other': 'Unknown',
+      },
+      name: 'TimeOrRankFilterEntityModes',
+      desc: '',
+      args: [modes],
+    );
+  }
+
+  /// `Username`
+  String get DMZJLoginUsername {
+    return Intl.message(
+      'Username',
+      name: 'DMZJLoginUsername',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Email/Username/PhoneNumber`
+  String get DMZJLoginUsernameHint {
+    return Intl.message(
+      'Email/Username/PhoneNumber',
+      name: 'DMZJLoginUsernameHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password`
+  String get DMZJLoginPassword {
+    return Intl.message(
+      'Password',
+      name: 'DMZJLoginPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your DMZJ Password!`
+  String get DMZJLoginPasswordHint {
+    return Intl.message(
+      'Your DMZJ Password!',
+      name: 'DMZJLoginPasswordHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `DMZJ`
+  String get DMZJTitle {
+    return Intl.message(
+      'DMZJ',
+      name: 'DMZJTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `QQ Login`
+  String get DMZJLoginQQLogin {
+    return Intl.message(
+      'QQ Login',
+      name: 'DMZJLoginQQLogin',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Login`
+  String get CommonLoginLogin {
+    return Intl.message(
+      'Login',
+      name: 'CommonLoginLogin',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Logout`
+  String get CommonLoginLogout {
+    return Intl.message(
+      'Logout',
+      name: 'CommonLoginLogout',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Login Failed, Failed Reason: {Reason}.`
+  String CommonLoginLoginFailed(Object Reason) {
+    return Intl.message(
+      'Login Failed, Failed Reason: $Reason.',
+      name: 'CommonLoginLoginFailed',
+      desc: '',
+      args: [Reason],
+    );
+  }
+
+  /// `CopyManga`
+  String get CopyMangaTitle {
+    return Intl.message(
+      'CopyManga',
+      name: 'CopyMangaTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your CopyManga Password!`
+  String get CopyMangaLoginPasswordHint {
+    return Intl.message(
+      'Your CopyManga Password!',
+      name: 'CopyMangaLoginPasswordHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Username`
+  String get CopyMangaLoginUsernameHint {
+    return Intl.message(
+      'Username',
+      name: 'CopyMangaLoginUsernameHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Login`
+  String get LoginPageTitle {
+    return Intl.message(
+      'Login',
+      name: 'LoginPageTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ping Success!`
+  String get DebugPagePingSuccessTitle {
+    return Intl.message(
+      'Ping Success!',
+      name: 'DebugPagePingSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ping: {Ping} ms`
+  String DebugPagePingSuccessDescription(Object Ping) {
+    return Intl.message(
+      'Ping: $Ping ms',
+      name: 'DebugPagePingSuccessDescription',
+      desc: '',
+      args: [Ping],
+    );
+  }
+
+  /// `Ping Failed!`
+  String get DebugPagePingFailedTitle {
+    return Intl.message(
+      'Ping Failed!',
+      name: 'DebugPagePingFailedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Fail Reason: {Reason}`
+  String DebugPagePingFailedDescription(Object Reason) {
+    return Intl.message(
+      'Fail Reason: $Reason',
+      name: 'DebugPagePingFailedDescription',
+      desc: '',
+      args: [Reason],
+    );
+  }
+
+  /// `Token`
+  String get CopyMangaToken {
+    return Intl.message(
+      'Token',
+      name: 'CopyMangaToken',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Use Token to Login(No need input password or username if you are using token login)`
+  String get CopyMangaTokenHint {
+    return Intl.message(
+      'Use Token to Login(No need input password or username if you are using token login)',
+      name: 'CopyMangaTokenHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Read Direction`
+  String get ViewerSettingAlign {
+    return Intl.message(
+      'Read Direction',
+      name: 'ViewerSettingAlign',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Show Click Area`
+  String get ViewerSettingDebugView {
+    return Intl.message(
+      'Show Click Area',
+      name: 'ViewerSettingDebugView',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
@@ -604,6 +919,7 @@ class AppLocalizationDelegate extends LocalizationsDelegate<S> {
   List<Locale> get supportedLocales {
     return const <Locale>[
       Locale.fromSubtags(languageCode: 'en'),
+      Locale.fromSubtags(languageCode: 'zh'),
     ];
   }
 

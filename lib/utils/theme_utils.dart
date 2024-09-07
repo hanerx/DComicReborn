@@ -15,12 +15,13 @@ class ThemeModel {
 
   static final light = ThemeData(
     brightness: Brightness.light,
-    useMaterial3: false,
+    useMaterial3: true,
     colorSchemeSeed: Colors.blue,
   );
 
   static final dark = ThemeData(
     brightness: Brightness.dark,
+    useMaterial3: true,
     colorSchemeSeed: Colors.blue,
   );
 

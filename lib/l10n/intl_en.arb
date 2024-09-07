@@ -1,25 +1,21 @@
 {
-  "@@locale" : "en",
+  "@@locale": "en",
   "AppName": "DComic",
   "DrawerEmail": "DComic 00Q[T]",
   "UnknownScreen": "Your Screen Size is not support, please connect author.",
-
   "MainPageHome": "Home",
   "MainPageCategory": "Category",
   "MainPageRank": "Rank",
   "MainPageLatest": "Latest",
-
   "ImageTypeNotSupport": "Unknown Image Type",
   "Loading": "Loading...",
-  "Empty":"No more Information",
+  "Empty": "No more Information",
   "RequireLogin": "This Page Needs User Info, Please Login",
   "JumpToLogin": "Jump To Login Page",
-
   "DrawerFavorite": "Favorite",
   "DrawerHistory": "History",
   "DrawerDownloads": "Downloads",
   "DrawerSetting": "Setting",
-
   "ReaderSettings": "Reader Settings",
   "ReaderSettingsDescription": "Settings About Comic Reader",
   "SourceSettings": "Source Settings",
@@ -34,10 +30,13 @@
   "DebugSettingsDescription": "Debug Settings (Some may not work)",
   "ExperimentalSettings": "Experimental Settings",
   "ExperimentalSettingsDescription": "DComic 00Q[T] Trans-Arm, Quantum Burst!",
-
   "DebugPageNetworkCheck": "Network Check",
   "DebugPageNetworkCheckDescription": "Just check network by ping baidu.com, maybe change to more useful page in future.",
-
+  "DebugPageTryCrash": "Try Crash",
+  "DebugPageTryCrashDescription": "Try call a crash to test firebase collection method.",
+  "DebugPagePrintModelDatabase": "Try Print All Database Content",
+  "DebugPagePrintModelDatabaseDescription": "Try Print All Database Content to Log",
+  "DatabaseDebugPageTitle": "Database Debug Page",
   "AboutPageCheckForUpdate": "Check For Update",
   "AboutPageUpdateChannel": "Update Channel",
   "AboutPageUpdateChannelModes": "{modes, select, release{Release} beta{Beta} develop{Develop} other{Unknown}}",
@@ -53,7 +52,6 @@
   "AboutPageAbout": "About",
   "AboutPageAboutSubtitle": "About DComicReborn",
   "AboutPageAboutDialogueDescription": "DComic 00Q[T], reborn of the DComic.",
-
   "ComicDetailPageAuthor": "Author: ",
   "ComicDetailPageCategory": "Category: ",
   "ComicDetailPageOriginalComicId": "Origin ComicID: ",
@@ -69,7 +67,6 @@
   },
   "ComicDetailPagePositiveMode": "Positive",
   "ComicDetailPageReverseMode": "Reverse",
-
   "AccountManagePageSubtitleNickname": "Nickname: {nickname}",
   "@AccountManagePageSubtitleNickname": {
     "placeholders": {
@@ -93,5 +90,52 @@
         "example": "Unknown"
       }
     }
-  }
+  },
+  "ComicViewerPageComments": "Comments",
+  "ComicViewerPageDirectory": "Directory",
+  "ComicDetailPageComments": "Comments",
+  "TimeOrRankFilterEntityName": "SortType",
+  "TimeOrRankFilterEntityModes": "{modes, select, ranking{Ranking} latestUpdate{Latest Update} other{Unknown}}",
+  "DMZJLoginUsername": "Username",
+  "DMZJLoginUsernameHint": "Email/Username/PhoneNumber",
+  "DMZJLoginPassword": "Password",
+  "DMZJLoginPasswordHint": "Your DMZJ Password!",
+  "DMZJTitle": "DMZJ",
+  "DMZJLoginQQLogin": "QQ Login",
+  "CommonLoginLogin": "Login",
+  "CommonLoginLogout": "Logout",
+  "CommonLoginLoginFailed": "Login Failed, Failed Reason: {Reason}.",
+  "@CommonLoginLoginFailed": {
+    "placeholders": {
+      "Reason": {
+        "example": "Unknown"
+      }
+    }
+  },
+  "CopyMangaTitle": "CopyManga",
+  "CopyMangaLoginPasswordHint": "Your CopyManga Password!",
+  "CopyMangaLoginUsernameHint": "Username",
+  "LoginPageTitle": "Login",
+  "DebugPagePingSuccessTitle": "Ping Success!",
+  "DebugPagePingSuccessDescription": "Ping: {Ping} ms",
+  "@DebugPagePingSuccessDescription": {
+    "placeholders": {
+      "Ping": {
+        "example": "Nan"
+      }
+    }
+  },
+  "DebugPagePingFailedTitle": "Ping Failed!",
+  "DebugPagePingFailedDescription": "Fail Reason: {Reason}",
+  "@DebugPagePingFailedDescription": {
+    "placeholders": {
+      "Reason": {
+        "example": "Unknown"
+      }
+    }
+  },
+  "CopyMangaToken": "Token",
+  "CopyMangaTokenHint": "Use Token to Login(No need input password or username if you are using token login)",
+  "ViewerSettingAlign": "Read Direction",
+  "ViewerSettingDebugView": "Show Click Area"
 }

@@ -1,6 +1,4 @@
 import 'package:dcomic/providers/page_controllers/comic_category_page_controller.dart';
-import 'package:dcomic/utils/image_utils.dart';
-import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:dcomic/view/components/grid_card.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';

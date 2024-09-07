@@ -1,9 +1,10 @@
 import 'package:dcomic/providers/base_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
+import 'package:dcomic/providers/models/copymanga/copymanga_source_model.dart';
 import 'package:dcomic/providers/models/dmzj/dmzj_source_model.dart';
 
 class ComicSourceProvider extends BaseProvider {
-  List<BaseComicSourceModel> sources = [DMZJComicSourceModel()];
+  List<BaseComicSourceModel> sources = [DMZJComicSourceModel(),CopyMangaComicSourceModel()];
 
   @override
   Future<void> init() async {

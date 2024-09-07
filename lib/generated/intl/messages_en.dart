@@ -36,6 +36,18 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m4(uploadTime, chapterId) =>
       "Upload Time: ${uploadTime} ChapterID: ${chapterId}";
 
+  static String m5(Reason) => "Login Failed, Failed Reason: ${Reason}.";
+
+  static String m6(Reason) => "Fail Reason: ${Reason}";
+
+  static String m7(Ping) => "Ping: ${Ping} ms";
+
+  static String m8(modes) => "${Intl.select(modes, {
+            'ranking': 'Ranking',
+            'latestUpdate': 'Latest Update',
+            'other': 'Unknown',
+          })}";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
         "AboutPageAbout": MessageLookupByLibrary.simpleMessage("About"),
@@ -74,6 +86,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "ComicDetailPageCategory":
             MessageLookupByLibrary.simpleMessage("Category: "),
         "ComicDetailPageChapterEntitySubtitle": m4,
+        "ComicDetailPageComments":
+            MessageLookupByLibrary.simpleMessage("Comments"),
         "ComicDetailPageGridMode": MessageLookupByLibrary.simpleMessage("Grid"),
         "ComicDetailPageListMode": MessageLookupByLibrary.simpleMessage("List"),
         "ComicDetailPageOriginalComicId":
@@ -82,10 +96,49 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Positive"),
         "ComicDetailPageReverseMode":
             MessageLookupByLibrary.simpleMessage("Reverse"),
+        "ComicViewerPageComments":
+            MessageLookupByLibrary.simpleMessage("Comments"),
+        "ComicViewerPageDirectory":
+            MessageLookupByLibrary.simpleMessage("Directory"),
+        "CommonLoginLogin": MessageLookupByLibrary.simpleMessage("Login"),
+        "CommonLoginLoginFailed": m5,
+        "CommonLoginLogout": MessageLookupByLibrary.simpleMessage("Logout"),
+        "CopyMangaLoginPasswordHint":
+            MessageLookupByLibrary.simpleMessage("Your CopyManga Password!"),
+        "CopyMangaLoginUsernameHint":
+            MessageLookupByLibrary.simpleMessage("Username"),
+        "CopyMangaTitle": MessageLookupByLibrary.simpleMessage("CopyManga"),
+        "CopyMangaToken": MessageLookupByLibrary.simpleMessage("Token"),
+        "CopyMangaTokenHint": MessageLookupByLibrary.simpleMessage(
+            "Use Token to Login(No need input password or username if you are using token login)"),
+        "DMZJLoginPassword": MessageLookupByLibrary.simpleMessage("Password"),
+        "DMZJLoginPasswordHint":
+            MessageLookupByLibrary.simpleMessage("Your DMZJ Password!"),
+        "DMZJLoginQQLogin": MessageLookupByLibrary.simpleMessage("QQ Login"),
+        "DMZJLoginUsername": MessageLookupByLibrary.simpleMessage("Username"),
+        "DMZJLoginUsernameHint":
+            MessageLookupByLibrary.simpleMessage("Email/Username/PhoneNumber"),
+        "DMZJTitle": MessageLookupByLibrary.simpleMessage("DMZJ"),
+        "DatabaseDebugPageTitle":
+            MessageLookupByLibrary.simpleMessage("Database Debug Page"),
         "DebugPageNetworkCheck":
             MessageLookupByLibrary.simpleMessage("Network Check"),
         "DebugPageNetworkCheckDescription": MessageLookupByLibrary.simpleMessage(
             "Just check network by ping baidu.com, maybe change to more useful page in future."),
+        "DebugPagePingFailedDescription": m6,
+        "DebugPagePingFailedTitle":
+            MessageLookupByLibrary.simpleMessage("Ping Failed!"),
+        "DebugPagePingSuccessDescription": m7,
+        "DebugPagePingSuccessTitle":
+            MessageLookupByLibrary.simpleMessage("Ping Success!"),
+        "DebugPagePrintModelDatabase": MessageLookupByLibrary.simpleMessage(
+            "Try Print All Database Content"),
+        "DebugPagePrintModelDatabaseDescription":
+            MessageLookupByLibrary.simpleMessage(
+                "Try Print All Database Content to Log"),
+        "DebugPageTryCrash": MessageLookupByLibrary.simpleMessage("Try Crash"),
+        "DebugPageTryCrashDescription": MessageLookupByLibrary.simpleMessage(
+            "Try call a crash to test firebase collection method."),
         "DebugSettings": MessageLookupByLibrary.simpleMessage("Debug Settings"),
         "DebugSettingsDescription": MessageLookupByLibrary.simpleMessage(
             "Debug Settings (Some may not work)"),
@@ -108,6 +161,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "JumpToLogin":
             MessageLookupByLibrary.simpleMessage("Jump To Login Page"),
         "Loading": MessageLookupByLibrary.simpleMessage("Loading..."),
+        "LoginPageTitle": MessageLookupByLibrary.simpleMessage("Login"),
         "MainPageCategory": MessageLookupByLibrary.simpleMessage("Category"),
         "MainPageHome": MessageLookupByLibrary.simpleMessage("Home"),
         "MainPageLatest": MessageLookupByLibrary.simpleMessage("Latest"),
@@ -122,7 +176,14 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Source Settings"),
         "SourceSettingsDescription":
             MessageLookupByLibrary.simpleMessage("Manage Comic Source"),
+        "TimeOrRankFilterEntityModes": m8,
+        "TimeOrRankFilterEntityName":
+            MessageLookupByLibrary.simpleMessage("SortType"),
         "UnknownScreen": MessageLookupByLibrary.simpleMessage(
-            "Your Screen Size is not support, please connect author.")
+            "Your Screen Size is not support, please connect author."),
+        "ViewerSettingAlign":
+            MessageLookupByLibrary.simpleMessage("Read Direction"),
+        "ViewerSettingDebugView":
+            MessageLookupByLibrary.simpleMessage("Show Click Area")
       };
 }

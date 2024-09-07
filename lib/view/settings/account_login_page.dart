@@ -1,7 +1,6 @@
+import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
-import 'package:dcomic/providers/source_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class AccountLoginPage extends StatefulWidget {
   final BaseComicSourceModel sourceModel;
@@ -16,7 +15,7 @@ class _AccountLoginPageState extends State<AccountLoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
           appBar: AppBar(
-            title: Text("Login"),
+            title: Text(S.of(context).LoginPageTitle),
             elevation: 0,
           ),
           body: Container(

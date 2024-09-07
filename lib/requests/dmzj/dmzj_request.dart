@@ -10,7 +10,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 class DMZJV3RequestHandler extends RequestHandler {
-  DMZJV3RequestHandler() : super('https://nnv3api.muwai.com');
+  DMZJV3RequestHandler() : super('https://nnv3api.dmzj.com');
 
   // 获取用户中心数据
   Future<Response> getUserInfo(String uid) async {
@@ -45,7 +45,7 @@ class DMZJV3RequestHandler extends RequestHandler {
   }
 
   // 获取每章吐槽
-  Future<Response> getViewpoint(String comicId, String chapterId) {
+  Future<Response> getChapterComments(String comicId, String chapterId) {
     return dio.get('/viewPoint/0/$comicId/$chapterId.json');
   }
 
@@ -62,7 +62,7 @@ class DMZJV3RequestHandler extends RequestHandler {
   // 搜索
   Future<Response> search(String keyword, int page, {int type = 0}) {
     return dio
-        .get('/search/show/$type/${Uri.encodeComponent(keyword)}/$page.json');
+        .get('/search/show/$type/$keyword/$page.json');
   }
 
   // Unknown
@@ -104,8 +104,8 @@ class DMZJV3RequestHandler extends RequestHandler {
 
   // 获取分类详情
   Future<Response> getCategoryDetail(
-      int categoryId, int date, int tag, int type, int page) {
-    return dio.get('/classify/$categoryId-$date-$tag/$type/$page.json');
+      int categoryId, {int date=0, int tag=0, int type=0, int page=0}) {
+    return dio.get('/classify/$categoryId/$type/$page.json');
   }
 
   // 获取小说分类列表
@@ -143,7 +143,7 @@ class DMZJV3RequestHandler extends RequestHandler {
 }
 
 class DMZJV4RequestHandler extends RequestHandler {
-  DMZJV4RequestHandler() : super('https://nnv4api.muwai.com');
+  DMZJV4RequestHandler() : super('https://v4api.dmzj.com');
 
   static get privateKey =>
       "MIICeAIBADANBgkqhkiG9w0BAQEFAASCAmIwggJeAgEAAoGBAK8nNR1lTnIfIes6oRWJNj3mB6OssDGx0uGMpgpbVCpf6+VwnuI2stmhZNoQcM417Iz7WqlPzbUmu9R4dEKmLGEEqOhOdVaeh9Xk2IPPjqIu5TbkLZRxkY3dJM1htbz57d/roesJLkZXqssfG5EJauNc+RcABTfLb4IiFjSMlTsnAgMBAAECgYEAiz/pi2hKOJKlvcTL4jpHJGjn8+lL3wZX+LeAHkXDoTjHa47g0knYYQteCbv+YwMeAGupBWiLy5RyyhXFoGNKbbnvftMYK56hH+iqxjtDLnjSDKWnhcB7089sNKaEM9Ilil6uxWMrMMBH9v2PLdYsqMBHqPutKu/SigeGPeiB7VECQQDizVlNv67go99QAIv2n/ga4e0wLizVuaNBXE88AdOnaZ0LOTeniVEqvPtgUk63zbjl0P/pzQzyjitwe6HoCAIpAkEAxbOtnCm1uKEp5HsNaXEJTwE7WQf7PrLD4+BpGtNKkgja6f6F4ld4QZ2TQ6qvsCizSGJrjOpNdjVGJ7bgYMcczwJBALvJWPLmDi7ToFfGTB0EsNHZVKE66kZ/8Stx+ezueke4S556XplqOflQBjbnj2PigwBN/0afT+QZUOBOjWzoDJkCQClzo+oDQMvGVs9GEajS/32mJ3hiWQZrWvEzgzYRqSf3XVcEe7PaXSd8z3y3lACeeACsShqQoc8wGlaHXIJOHTcCQQCZw5127ZGs8ZDTSrogrH73Kw/HvX55wGAeirKYcv28eauveCG7iyFR0PFB/P/EDZnyb+ifvyEFlucPUI0+Y87F";
@@ -161,8 +161,8 @@ class DMZJV4RequestHandler extends RequestHandler {
 
   Future<Map<String, dynamic>> getParam({bool login = false}) async {
     var data = {
-      "channel": Platform.operatingSystem,
-      "version": "3.0.0",
+      "channel": "android",
+      // "version": "3.8.2",
       "timestamp":
           (DateTime.now().millisecondsSinceEpoch / 1000).toStringAsFixed(0),
     };
@@ -215,7 +215,7 @@ class DMZJV4RequestHandler extends RequestHandler {
   }
 
   Future<ComicDetailInfoResponse?> getComicDetail(String comicId) async {
-    var response = await dio.get('/comic/detail/$comicId',
+    var response = await dio.get('/comic/detail/$comicId?uid=2665531',
         queryParameters: await getParam(login: true));
     if (response.statusCode == 200) {
       var data = ComicDetailResponse.fromBuffer(decrypt(response.data));
@@ -245,10 +245,46 @@ class DMZJV4RequestHandler extends RequestHandler {
   }
 }
 
-class DMZJUserRequestHandler extends RequestHandler{
-  DMZJUserRequestHandler() : super('https://user.muwai.com');
-  
-  Future<Response> loginV2(String username,String password)async {
-    return dio.post('/loginV2/m_confirm',data: FormData.fromMap({"passwd": password, "nickname": username}));
+class DMZJUserRequestHandler extends RequestHandler {
+  DMZJUserRequestHandler() : super('https://user.dmzj.com');
+
+  Future<Response> loginV2(String username, String password) async {
+    return dio.post('/loginV2/m_confirm',
+        data: FormData.fromMap({"passwd": password, "nickname": username}));
+  }
+}
+
+class DMZJCommentRequestHandler extends RequestHandler {
+  DMZJCommentRequestHandler() : super('https://v3comment.idmzj.com');
+
+  Future<Response> getComments(String comicId, int page,
+      {int limit = 30, int type = 4}) {
+    return dio
+        .get('/v1/$type/latest/$comicId?limit=$limit&page_index=${page + 1}');
+  }
+}
+
+class DMZJInterfaceRequestHandler extends RequestHandler {
+  DMZJInterfaceRequestHandler(): super('https://interface.dmzj.com');
+  Future<Response> updateUnread(String comicId) async {
+    return dio.get('/api/subscribe/upread?sub_id=$comicId');
+  }
+
+  Future<Response> getHistory(String uid, int page) {
+    return dio.get('/api/getReInfo/comic/$uid/$page');
+  }
+
+  Future<Response<T>> addHistory<T>(int comicId, String uid, int chapterId,
+      {int page= 1}) async {
+    Map map = {
+      comicId.toString(): chapterId.toString(),
+      "comicId": comicId.toString(),
+      "chapterId": chapterId.toString(),
+      "page": page,
+      "time": DateTime.now().millisecondsSinceEpoch / 1000
+    };
+    var json = Uri.encodeComponent(jsonEncode(map));
+    return dio.get(
+        "/api/record/getRe?st=comic&uid=$uid&callback=record_jsonpCallback&json=[$json]&type=3");
   }
 }

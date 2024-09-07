@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dcomic/requests/copymanga/copymanga_request.dart';
 import 'package:dcomic/requests/dmzj/dmzj_request.dart';
 import 'package:dcomic/utils/db_cookie_jar.dart';
 import 'package:dio/dio.dart';
@@ -36,7 +37,7 @@ class RequestHandler {
   CacheOptions? options;
   final String baseUrl;
 
-  RequestHandler(this.baseUrl, {CachePolicy policy: CachePolicy.request}) {
+  RequestHandler(this.baseUrl, {CachePolicy policy= CachePolicy.request,bool useCookie=true}) {
     dio.options.baseUrl = baseUrl;
     RequestStatics.store.then((value) {
       options = CacheOptions(
@@ -52,7 +53,9 @@ class RequestHandler {
         // Very optional. Overrides any HTTP directive to delete entry past this duration.
         keyBuilder: CacheOptions.defaultCacheKeyBuilder,
       );
-      dio.interceptors.add(cookieManager);
+      if(useCookie){
+        dio.interceptors.add(cookieManager);
+      }
       dio.interceptors.add(DioCacheInterceptor(options: options!));
     });
   }
@@ -67,12 +70,14 @@ class RequestHandler {
     return true;
   }
 
-  Future<int> ping({String path: '/'}) async {
+  Future<int> ping({String path = '/'}) async {
     DateTime now = DateTime.now();
     try {
       await dio.get(path);
       return DateTime.now().millisecondsSinceEpoch - now.millisecondsSinceEpoch;
-    } catch (e) {}
+    } catch (e) {
+      rethrow;
+    }
     return -1;
   }
 }
@@ -81,4 +86,8 @@ class RequestHandlers{
   static DMZJV3RequestHandler dmzjv3requestHandler=DMZJV3RequestHandler();
   static DMZJV4RequestHandler dmzjv4requestHandler=DMZJV4RequestHandler();
   static DMZJUserRequestHandler dmzjUserRequestHandler=DMZJUserRequestHandler();
+  static DMZJCommentRequestHandler dmzjCommentRequestHandler=DMZJCommentRequestHandler();
+  static DMZJInterfaceRequestHandler dmzjInterfaceRequestHandler=DMZJInterfaceRequestHandler();
+
+  static CopyMangaRequestHandler copyMangaRequestHandler=CopyMangaRequestHandler();
 }

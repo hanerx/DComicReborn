@@ -8,6 +8,18 @@ class ComicViewerPageController extends BaseProvider{
   BaseComicChapterEntityModel? currentChapter;
   BaseComicChapterDetailModel? chapterDetailModel;
 
+  // viewer参数
+  int _currentPage=0;
+  bool _showToolBar=false;
+  int _endDrawerPage=0;
+
+  // comment
+  List<ChapterCommentEntity> _comments=[];
+
+  List<ChapterCommentEntity> get comments => _comments;
+
+  int get maxLikes=>_comments.isNotEmpty?_comments.first.likes>100?_comments.first.likes:100:0;
+
   ComicViewerPageController(this.detailModel,this.chapters,this.initChapterId){
     if(chapters.indexWhere((element) => element.chapterId==initChapterId)>=0){
       currentChapter=chapters[chapters.indexWhere((element) => element.chapterId==initChapterId)];
@@ -24,6 +36,9 @@ class ComicViewerPageController extends BaseProvider{
       currentChapter=preChapter;
     }
     chapterDetailModel=await detailModel.getChapter(currentChapter!.chapterId);
+    _currentPage=0;
+    await loadComment();
+    await addComicHistory();
     notifyListeners();
   }
 
@@ -32,6 +47,54 @@ class ComicViewerPageController extends BaseProvider{
       currentChapter=nextChapter;
     }
     chapterDetailModel=await detailModel.getChapter(currentChapter!.chapterId);
+    _currentPage=0;
+    await loadComment();
+    await addComicHistory();
+    notifyListeners();
+  }
+
+  Future<void> loadChapter(BaseComicChapterEntityModel chapter)async{
+    currentChapter=chapter;
+    chapterDetailModel=await detailModel.getChapter(currentChapter!.chapterId);
+    _currentPage=0;
+    await loadComment();
+    await addComicHistory();
+    notifyListeners();
+  }
+
+  Future<void> loadComment()async{
+    if(chapterDetailModel!=null){
+      _comments=await chapterDetailModel!.getChapterComments();
+    }
+    notifyListeners();
+  }
+
+  Future<void> addComicHistory() async {
+    if(currentChapter!=null){
+      await detailModel.addComicHistory(currentChapter!.chapterId, currentChapter!.title);
+    }
+    }
+
+  int get currentPage => _currentPage;
+
+  set currentPage(int value) {
+    _currentPage = value;
+    notifyListeners();
+  }
+
+  bool get showToolBar => _showToolBar;
+
+  set showToolBar(bool value) {
+    _showToolBar = value;
+    notifyListeners();
+  }
+
+  String get title=>chapterDetailModel==null?"title":chapterDetailModel!.title;
+
+  int get endDrawerPage => _endDrawerPage;
+
+  set endDrawerPage(int value) {
+    _endDrawerPage = value;
     notifyListeners();
   }
 }

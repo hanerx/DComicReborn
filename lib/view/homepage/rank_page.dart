@@ -1,7 +1,5 @@
 import 'package:dcomic/providers/page_controllers/comic_rank_page_controller.dart';
-import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/components/card_list_item.dart';
-import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -28,7 +26,7 @@ class _RankPageState extends State<RankPage> {
             await Provider.of<ComicRankPageController>(context, listen: false)
                 .load(context);
           },
-          noMoreLoad: !Provider.of<ComicRankPageController>(context).canLoad,
+          // noMoreLoad: !Provider.of<ComicRankPageController>(context).canLoad,
           child: Container(
             height: double.infinity,
             color: Theme.of(context).colorScheme.surfaceVariant,

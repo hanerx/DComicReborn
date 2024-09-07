@@ -1,13 +1,15 @@
 import 'dart:convert';
 
-import 'package:date_format/date_format.dart';
+import 'package:date_format/date_format.dart' as date_format;
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/entity/comic_history.dart';
+import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/protobuf/comic.pb.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/utils/image_utils.dart';
+import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
 import 'package:dcomic/view/drawer_page/favorite_page.dart';
 import 'package:dio/dio.dart';
@@ -20,7 +22,7 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
 
   @override
   ComicSourceEntity get type => ComicSourceEntity("大妈之家", "dmzj",
-      hasHomepage: true, hasAccountSupport: true);
+      hasHomepage: true, hasAccountSupport: true, hasComment: true);
 
   @override
   Future<BaseComicDetailModel?> getComicDetail(
@@ -32,23 +34,93 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
         return DMZJV4ComicDetailModel(rawData, this);
       }
     } catch (e, s) {
-      logger.e('$e', e, s);
+      logger.e('$e', error: e, stackTrace: s);
       rethrow;
     }
     return null;
   }
 
   @override
-  Future<List<ComicHistoryEntity>> getComicHistory() {
-    // TODO: implement getComicHistory
-    throw UnimplementedError();
+  Future<List<ListItemEntity>> getComicHistory(ComicHistorySourceType sourceType, {int page=0}) async {
+    if(sourceType == ComicHistorySourceType.local){
+      return super.getComicHistory(sourceType, page: page);
+    }else if(sourceType == ComicHistorySourceType.network){
+      if(accountModel == null || accountModel?.uid == null){
+        return [];
+      }
+      List<ListItemEntity> data = [];
+      var response =
+      await RequestHandlers.dmzjInterfaceRequestHandler.getHistory(accountModel!.uid!, page);
+      try {
+        if ((response.statusCode == 200 || response.statusCode == 304)) {
+          var responseData = jsonDecode(response.data);
+          for (var item in responseData) {
+            data.add(ListItemEntity(
+                item['comic_name'],
+                ImageEntity(ImageType.network, item['cover'],
+                    imageHeaders: {"referer": "https://i.dmzj.com"}),
+                {
+                  Icons.history: date_format.formatDate(
+                      DateTime.fromMicrosecondsSinceEpoch(
+                          item['viewing_time'] * 1000000),
+                      [date_format.yyyy, '-', date_format.mm, '-', date_format.dd]),
+                  Icons.history_edu: item['chapter_name']
+                }, (context) {
+              Provider.of<NavigatorProvider>(context, listen: false)
+                  .getNavigator(context, NavigatorType.defaultNavigator)
+                  ?.push(MaterialPageRoute(
+                  builder: (context) => ComicDetailPage(
+                    title: item['comic_name'],
+                    comicId: item['comic_id'].toString(),
+                    comicSourceModel: this,
+                  ),
+                  settings: const RouteSettings(name: 'ComicDetailPage')));
+            }));
+          }
+        }
+      } catch (e, s) {
+        logger.e('$e', error: e, stackTrace: s);
+      }
+      return data;
+    }
+    return [];
   }
 
   @override
-  Future<List<BaseComicDetailModel>> searchComicDetail(String keyword,
-      {int page = 0}) {
-    // TODO: implement searchComicDetail
-    throw UnimplementedError();
+  Future<List<ListItemEntity>> searchComicDetail(String keyword,
+      {int page = 0}) async {
+    List<ListItemEntity> data = [];
+    var response =
+        await RequestHandlers.dmzjv3requestHandler.search(keyword, page);
+    try {
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        var responseData = response.data;
+        for (var item in responseData) {
+          data.add(ListItemEntity(
+              item['title'],
+              ImageEntity(ImageType.network, item['cover'],
+                  imageHeaders: {"referer": "https://i.dmzj.com"}),
+              {
+                Icons.supervisor_account_rounded: item['authors'],
+                Icons.apps: item['types'],
+                Icons.history_edu: item['last_name']
+              }, (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicDetailPage(
+                          title: item['title'],
+                          comicId: item['id'].toString(),
+                          comicSourceModel: this,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
+          }));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+    }
+    return data;
   }
 
   @override
@@ -61,7 +133,6 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
   BaseComicHomepageModel? get homepage => DMZJComicHomepageModel(this);
 
   @override
-  // TODO: implement accountModel
   BaseComicAccountModel? get accountModel => _accountModel;
 }
 
@@ -110,7 +181,7 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
           }, children));
         }
       } catch (e, s) {
-        logger.e('$e', e, s);
+        logger.e('$e', error: e, stackTrace: s);
       }
     }
     Response response =
@@ -129,25 +200,26 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
                 ImageEntity(ImageType.network, rawItem['cover'],
                     imageHeaders: {"referer": "https://i.dmzj.com"}),
                 (context) {
-                  if(rawData['category_id']==47){
-                    Provider.of<NavigatorProvider>(context, listen: false)
-                        .getNavigator(context, NavigatorType.defaultNavigator)
-                        ?.push(MaterialPageRoute(
+              if (rawItem['type'] == 1) {
+                Provider.of<NavigatorProvider>(context, listen: false)
+                    .getNavigator(context, NavigatorType.defaultNavigator)
+                    ?.push(MaterialPageRoute(
                         builder: (context) => ComicDetailPage(
-                          title: rawItem['title'],
-                          comicId: rawItem['obj_id'].toString(),
-                          comicSourceModel: parent,
-                        ),
-                        settings: const RouteSettings(name: 'ComicDetailPage')));
-                  }
-                }));
+                              title: rawItem['title'],
+                              comicId: rawItem['obj_id'].toString(),
+                              comicSourceModel: parent,
+                            ),
+                        settings:
+                            const RouteSettings(name: 'ComicDetailPage')));
+              }
+            }));
           }
           data.add(HomepageCardEntity(
               rawData['title'], null, (context) {}, children));
         }
       }
     } catch (e, s) {
-      logger.e('$e', e, s);
+      logger.e('$e', error: e, stackTrace: s);
     }
     return data;
   }
@@ -164,12 +236,23 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
           data.add(CarouselEntity(
               ImageEntity(ImageType.network, rawItem['cover'],
                   imageHeaders: {"referer": "https://i.dmzj.com"}),
-              rawItem['title'],
-              (context) {}));
+              rawItem['title'], (context) {
+            if (rawItem['type'] == 1) {
+              Provider.of<NavigatorProvider>(context, listen: false)
+                  .getNavigator(context, NavigatorType.defaultNavigator)
+                  ?.push(MaterialPageRoute(
+                      builder: (context) => ComicDetailPage(
+                            title: rawItem['title'],
+                            comicId: rawItem['obj_id'].toString(),
+                            comicSourceModel: parent,
+                          ),
+                      settings: const RouteSettings(name: 'ComicDetailPage')));
+            }
+          }));
         }
       }
     } catch (e, s) {
-      logger.e('$e', e, s);
+      logger.e('$e', error: e, stackTrace: s);
     }
     return data;
   }
@@ -181,17 +264,33 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
         await RequestHandlers.dmzjv3requestHandler.getCategory();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
-        for (var rawData in response.data['data']) {
+        List result = [];
+        if (response.data is List) {
+          result = response.data;
+        } else {
+          result = response.data['data'];
+        }
+        for (var rawData in result) {
           data.add(GridItemEntity(
               rawData['title'],
               null,
               ImageEntity(ImageType.network, rawData['cover'],
-                  imageHeaders: {"referer": "https://i.dmzj.com"}),
-              (context) {}));
+                  imageHeaders: {"referer": "https://i.dmzj.com"}), (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicCategoryDetailPage(
+                          categoryId: rawData['tag_id'].toString(),
+                          sourceModel: parent,
+                          categoryTitle: rawData['title'],
+                        ),
+                    settings:
+                        const RouteSettings(name: 'ComicCategoryDetailPage')));
+          }));
         }
       }
     } catch (e, s) {
-      logger.e('$e', e, s);
+      logger.e('$e', error: e, stackTrace: s);
     }
     return data;
   }
@@ -209,10 +308,10 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
           {
             Icons.supervisor_account_rounded: rawListItem.authors,
             Icons.apps: rawListItem.types,
-            Icons.history_edu: formatDate(
+            Icons.history_edu: date_format.formatDate(
                 DateTime.fromMicrosecondsSinceEpoch(
                     rawListItem.lastUpdatetime.toInt() * 1000000),
-                [yyyy, '-', mm, '-', dd])
+                [date_format.yyyy, '-', date_format.mm, '-', date_format.dd])
           }, (context) {
         Provider.of<NavigatorProvider>(context, listen: false)
             .getNavigator(context, NavigatorType.defaultNavigator)
@@ -241,10 +340,10 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
           {
             Icons.supervisor_account_rounded: rawListItem.authors,
             Icons.apps: rawListItem.types,
-            Icons.history_edu: formatDate(
+            Icons.history_edu: date_format.formatDate(
                 DateTime.fromMicrosecondsSinceEpoch(
                     rawListItem.lastUpdatetime.toInt() * 1000000),
-                [yyyy, '-', mm, '-', dd])
+                [date_format.yyyy, '-', date_format.mm, '-', date_format.dd])
           }, (context) {
         Provider.of<NavigatorProvider>(context, listen: false)
             .getNavigator(context, NavigatorType.defaultNavigator)
@@ -259,10 +358,66 @@ class DMZJComicHomepageModel extends BaseComicHomepageModel {
     }
     return data;
   }
+
+  @override
+  List<FilterEntity> get categoryFilter => [TimeOrRankFilterEntity()];
+
+  @override
+  Future<List<ListItemEntity>> getCategoryDetailList(
+      {required String categoryId,
+      required Map<String, dynamic> categoryFilter,
+      int page = 0,
+      int categoryType = 0}) async {
+    List<ListItemEntity> data = [];
+    try {
+      Response response = await RequestHandlers.dmzjv3requestHandler
+          .getCategoryDetail(int.parse(categoryId),
+              page: page,
+              type:
+                  TimeOrRankEnum.values.indexOf(categoryFilter['TimeOrRank']));
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        for (var rawItem in response.data) {
+          data.add(ListItemEntity(
+              rawItem['title'],
+              ImageEntity(ImageType.network, rawItem['cover'],
+                  imageHeaders: {"referer": "https://i.dmzj.com"}),
+              {
+                Icons.supervisor_account_rounded: rawItem['authors'],
+                Icons.apps: rawItem['types'],
+                Icons.history_edu: date_format.formatDate(
+                    DateTime.fromMicrosecondsSinceEpoch(
+                        rawItem['last_updatetime'] * 1000000),
+                    [
+                      date_format.yyyy,
+                      '-',
+                      date_format.mm,
+                      '-',
+                      date_format.dd
+                    ])
+              }, (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicDetailPage(
+                          title: rawItem['title'],
+                          comicId: rawItem['id'].toString(),
+                          comicSourceModel: parent,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
+          }));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+      rethrow;
+    }
+    return data;
+  }
 }
 
 class DMZJV4ComicDetailModel extends BaseComicDetailModel {
   final ComicDetailInfoResponse rawData;
+  @override
   final DMZJComicSourceModel parent;
 
   bool _isSubscribe = false;
@@ -308,7 +463,7 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
         return DMZJV4ComicChapterDetailModel(rawData, this);
       }
     } catch (e, s) {
-      logger.e('$e', e, s);
+      logger.e('$e', error: e, stackTrace: s);
       rethrow;
     }
     return null;
@@ -344,13 +499,61 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
 
   @override
   List<CategoryEntity> get authors => rawData.authors
-      .map((e) => CategoryEntity(e.tagName, e.tagId.toString()))
+      .map((e) => CategoryEntity(e.tagName, e.tagId.toString(), (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicCategoryDetailPage(
+                          categoryId: e.tagId.toString(),
+                          sourceModel: parent,
+                          categoryTitle: e.tagName,
+                        ),
+                    settings:
+                        const RouteSettings(name: 'ComicCategoryDetailPage')));
+          }))
       .toList();
 
   @override
   List<CategoryEntity> get categories => rawData.types
-      .map((e) => CategoryEntity(e.tagName, e.tagId.toString()))
+      .map((e) => CategoryEntity(e.tagName, e.tagId.toString(), (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                    builder: (context) => ComicCategoryDetailPage(
+                          categoryId: e.tagId.toString(),
+                          sourceModel: parent,
+                          categoryTitle: e.tagName,
+                        ),
+                    settings:
+                        const RouteSettings(name: 'ComicCategoryDetailPage')));
+          }))
       .toList();
+
+  @override
+  Future<List<ComicCommentEntity>> getComments({int page = 0}) async {
+    List<ComicCommentEntity> data = [];
+    var response = await RequestHandlers.dmzjCommentRequestHandler
+        .getComments(comicId, page);
+    try {
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        for (String key in response.data['commentIds']) {
+          var commentKey = key.split(',').first;
+          var item = response.data['comments'][commentKey];
+          data.add(ComicCommentEntity(
+              ImageEntity(ImageType.network, item['avatar_url'],
+                  imageHeaders: {"referer": "https://i.dmzj.com"}),
+              item['content'],
+              item['id'].toString(),
+              item['nickname'],
+              int.parse(item['like_amount'].toString())));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+      rethrow;
+    }
+    return data;
+  }
 }
 
 class DMZJV4ComicChapterDetailModel extends BaseComicChapterDetailModel {
@@ -363,13 +566,33 @@ class DMZJV4ComicChapterDetailModel extends BaseComicChapterDetailModel {
   String get chapterId => rawData.chapterId.toString();
 
   @override
-  List<ImageEntity> get pages => rawData.rawPages
+  List<ImageEntity> get pages => rawData.smallPages
       .map((e) => ImageEntity(ImageType.network, e,
           imageHeaders: {"referer": "https://i.dmzj.com"}))
       .toList();
 
   @override
   String get title => rawData.title;
+
+  @override
+  Future<List<ChapterCommentEntity>> getChapterComments() async {
+    List<ChapterCommentEntity> data = [];
+    try {
+      var response = await RequestHandlers.dmzjv3requestHandler
+          .getChapterComments(parent.comicId, chapterId);
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        response.data
+            .sort((a, b) => int.parse(b['num'].toString()).compareTo(a['num']));
+        for (var item in response.data) {
+          data.add(ChapterCommentEntity(
+              item['id'].toString(), item['content'], item['num']));
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+    }
+    return data;
+  }
 }
 
 class DMZJComicAccountModel extends BaseComicAccountModel {
@@ -385,7 +608,6 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
   DMZJComicAccountModel();
 
   @override
-  // TODO: implement avatar
   ImageEntity? get avatar => _avatar;
 
   @override
@@ -409,7 +631,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                     children: [
                       Center(
                         child: Text(
-                          "DMZJ",
+                          S.of(context).DMZJTitle,
                           style: Theme.of(context).textTheme.headlineMedium,
                         ),
                       ),
@@ -423,23 +645,30 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                                   controller: usernameController,
                                   decoration: InputDecoration(
                                       isDense: true,
-                                      border: OutlineInputBorder(gapPadding: 1),
-                                      labelText: '用户名',
-                                      prefixIcon: Icon(Icons.account_circle),
-                                      hintText: '昵称/手机号/邮箱'),
+                                      border: const OutlineInputBorder(
+                                          gapPadding: 1),
+                                      labelText:
+                                          S.of(context).DMZJLoginUsername,
+                                      prefixIcon:
+                                          const Icon(Icons.account_circle),
+                                      hintText:
+                                          S.of(context).DMZJLoginUsernameHint),
                                 ),
                               ),
                               Padding(
-                                padding: EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.only(bottom: 10),
                                 child: TextFormField(
                                   controller: passwordController,
                                   obscureText: true,
                                   decoration: InputDecoration(
                                       isDense: true,
-                                      border: OutlineInputBorder(gapPadding: 1),
-                                      labelText: '密码',
-                                      prefixIcon: Icon(Icons.lock),
-                                      hintText: '大妈之家登录密码'),
+                                      border: const OutlineInputBorder(
+                                          gapPadding: 1),
+                                      labelText:
+                                          S.of(context).DMZJLoginPassword,
+                                      prefixIcon: const Icon(Icons.lock),
+                                      hintText:
+                                          S.of(context).DMZJLoginPasswordHint),
                                 ),
                               )
                             ],
@@ -460,6 +689,9 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                           if (formKey.currentState!.validate()) {
                             if (await login(usernameController.text,
                                 passwordController.text)) {
+                              if (!context.mounted) {
+                                return;
+                              }
                               Provider.of<NavigatorProvider>(context,
                                       listen: false)
                                   .getNavigator(
@@ -468,23 +700,28 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                             }
                           }
                         } catch (e, s) {
-                          logger.e(e, e, s);
+                          logger.e(e, error: e, stackTrace: s);
+                          if (!context.mounted) {
+                            return;
+                          }
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text('登录失败: $e'),
+                            content:
+                                Text(S.of(context).CommonLoginLoginFailed(e)),
                           ));
                         }
                       },
                       icon: const Icon(FontAwesome5.arrow_right),
-                      label: Text("登录"),
+                      label: Text(S.of(context).CommonLoginLogin),
                       style: ButtonStyle(
-                          shape:
-                              MaterialStateProperty.all(RoundedRectangleBorder(
+                          shape: MaterialStateProperty.all(
+                              const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(3),
                             bottomLeft: Radius.circular(3),
                           ))),
                           padding: MaterialStateProperty.all(
-                              EdgeInsets.only(top: 10, left: 10, bottom: 10))),
+                              const EdgeInsets.only(
+                                  top: 10, left: 10, bottom: 10))),
                     ))
               ],
             ),
@@ -498,18 +735,19 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                     child: ElevatedButton.icon(
                       onPressed: () {},
                       icon: const Icon(FontAwesome5.qq),
-                      label: Text("QQ登录"),
+                      label: Text(S.of(context).DMZJLoginQQLogin),
                       style: ButtonStyle(
                           backgroundColor:
                               MaterialStateProperty.all(Colors.cyan),
-                          shape:
-                              MaterialStateProperty.all(RoundedRectangleBorder(
+                          shape: MaterialStateProperty.all(
+                              const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(3),
                             bottomLeft: Radius.circular(3),
                           ))),
                           padding: MaterialStateProperty.all(
-                              EdgeInsets.only(top: 10, left: 10, bottom: 10))),
+                              const EdgeInsets.only(
+                                  top: 10, left: 10, bottom: 10))),
                     ))
               ],
             )
@@ -543,7 +781,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
         }
       }
     } catch (e, s) {
-      logger.e(e, e, s);
+      logger.e(e, error: e, stackTrace: s);
       rethrow;
     }
     return false;
@@ -587,7 +825,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
         _avatar = ImageEntity(ImageType.network, response.data['cover'],
             imageHeaders: {"referer": "https://i.dmzj.com"});
       } catch (e, s) {
-        logger.e(e, e, s);
+        logger.e(e, error: e, stackTrace: s);
         _isLogin = false;
       }
     } else {
@@ -623,7 +861,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
         return response.data['code'] == 0;
       }
     } catch (e, s) {
-      logger.e(e, e, s);
+      logger.e(e, error: e, stackTrace: s);
     }
     return false;
   }
@@ -640,7 +878,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
         return true;
       }
     } catch (e, s) {
-      logger.e(e, e, s);
+      logger.e(e, error: e, stackTrace: s);
     }
     return false;
   }
@@ -657,7 +895,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
         return true;
       }
     } catch (e, s) {
-      logger.e(e, e, s);
+      logger.e(e, error: e, stackTrace: s);
     }
     return false;
   }
@@ -688,7 +926,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
         }
       }
     } catch (e, s) {
-      logger.e(e, e, s);
+      logger.e(e, error: e, stackTrace: s);
     }
     return data;
   }

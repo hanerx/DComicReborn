@@ -34,13 +34,13 @@ abstract class ConfigDao {
   @Query('SELECT * FROM ConfigEntity')
   Future<List<ConfigEntity>> getAllConfig();
 
-  @Query('SELECT * FROM ConfigEntity WHERE key = :key')
+  @Query('SELECT * FROM ConfigEntity WHERE `key` = :key LIMIT 1')
   Future<ConfigEntity?> getConfigByKey(String key);
 
   @insert
   Future<void> insertConfig(ConfigEntity configEntity);
 
-  @update
+  @Update(onConflict: OnConflictStrategy.replace)
   Future<void> updateConfig(ConfigEntity configEntity);
 
   Future<ConfigEntity> getOrCreateConfigByKey(String key,
@@ -48,7 +48,7 @@ abstract class ConfigDao {
     var result = await getConfigByKey(key);
     if (result == null) {
       result ??= ConfigEntity.createConfigEntity(key, value);
-      insertConfig(result);
+      await insertConfig(result);
     }
     return result;
   }

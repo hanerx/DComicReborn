@@ -26,7 +26,7 @@ abstract class CookieDao {
   @Query('SELECT * FROM CookieEntity')
   Future<List<CookieEntity>> getAllCookies();
 
-  @Query('SELECT * FROM CookieEntity WHERE key = :key')
+  @Query('SELECT * FROM CookieEntity WHERE `key` = :key LIMIT 1')
   Future<CookieEntity?> getCookieByKey(String key);
 
   @Insert(onConflict: OnConflictStrategy.replace)
@@ -46,6 +46,6 @@ abstract class CookieDao {
     await insertCookie(cookie);
   }
 
-  @Query('DELETE FROM CookieEntity WHERE key = :key')
+  @Query('DELETE FROM CookieEntity WHERE `key` = :key')
   Future<void> deleteCookie(String key);
 }

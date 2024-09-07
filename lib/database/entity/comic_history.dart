@@ -9,19 +9,19 @@ class ComicHistoryEntity extends EntityBase {
 
   final String comicId;
 
-  String? title;
+  String title = '';
 
-  String? cover;
+  String cover = '';
 
-  ImageType? coverType;
+  ImageType coverType = ImageType.unknown;
 
-  String? lastChapterTitle;
+  String lastChapterTitle = '';
 
-  String? lastChapterId;
+  String lastChapterId = '';
 
   DateTime? timestamp;
 
-  String? providerName;
+  String providerName = 'Unknown';
 
   ComicHistoryEntity(
       this.id,
@@ -36,13 +36,13 @@ class ComicHistoryEntity extends EntityBase {
 
   ComicHistoryEntity.createComicHistoryEntity(
     this.comicId, {
-    this.title,
-    this.cover,
-    this.coverType,
-    this.lastChapterTitle,
-    this.lastChapterId,
+    this.title = '',
+    this.cover = '',
+    this.coverType = ImageType.unknown,
+    this.lastChapterTitle = '',
+    this.lastChapterId = '',
     this.timestamp,
-    this.providerName,
+    this.providerName = 'Unknown',
     this.id,
   });
 
@@ -57,10 +57,10 @@ abstract class ComicHistoryDao {
   @Query('SELECT * FROM ComicHistoryEntity')
   Future<List<ComicHistoryEntity>> getAllComicHistoryEntity();
 
-  @Query('SELECT * FROM ComicHistoryEntity WHERE comicId= :comicId')
-  Future<ComicHistoryEntity?> getComicHistoryByComicId(String comicId);
+  @Query('SELECT * FROM ComicHistoryEntity WHERE `comicId`= :comicId AND `providerName`= :providerName')
+  Future<ComicHistoryEntity?> getComicHistoryByComicId(String comicId, String providerName);
 
-  @Query('SELECT * FROM ComicHistoryEntity WHERE providerName= :providerName')
+  @Query('SELECT * FROM ComicHistoryEntity WHERE `providerName`= :providerName GROUP BY comicId')
   Future<List<ComicHistoryEntity>> getComicHistoryByProvider(
       String providerName);
 
@@ -69,4 +69,14 @@ abstract class ComicHistoryDao {
 
   @Update(onConflict: OnConflictStrategy.replace)
   Future<void> updateComicHistory(ComicHistoryEntity comicHistoryEntity);
+
+  Future<ComicHistoryEntity> getOrCreateConfigByComicId(String comicId,String sourceModel,
+      {dynamic value = ''}) async {
+    var result = await getComicHistoryByComicId(comicId,sourceModel);
+    if (result == null) {
+      result ??= ComicHistoryEntity.createComicHistoryEntity(comicId, providerName: sourceModel);
+      await insertComicHistory(result);
+    }
+    return result;
+  }
 }

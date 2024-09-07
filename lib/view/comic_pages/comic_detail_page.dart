@@ -1,10 +1,12 @@
-import 'package:date_format/date_format.dart' as formatDate;
+import 'package:date_format/date_format.dart' as formatdate;
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/page_controllers/comic_detail_page_controller.dart';
 import 'package:dcomic/providers/source_provider.dart';
+import 'package:dcomic/utils/custom_theme.dart';
 import 'package:dcomic/view/comic_viewer/comic_viewer_page.dart';
+import 'package:dcomic/view/components/comment_card.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:direct_select_flutter/direct_select_container.dart';
 import 'package:direct_select_flutter/direct_select_item.dart';
@@ -45,8 +47,37 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
           child: Scaffold(
         floatingActionButton: FloatingActionButton(
           onPressed: () {},
+          shape: const CircleBorder(),
           child: const Icon(Icons.play_arrow),
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+        bottomNavigationBar: BottomAppBar(
+          color: Theme.of(context).colorScheme.primary,
+          shape: const CircularNotchedRectangle(),
+          notchMargin: 0,
+          padding: const EdgeInsets.symmetric(vertical: 3.0, horizontal: 16.0),
+          height: 55,
+          child: IconTheme(
+              data: Theme.of(context)
+                  .iconTheme
+                  .copyWith(color: CustomTheme.of(context).foregroundColor),
+              child: Row(
+                children: [
+                  IconButton(
+                      onPressed: () {},
+                      icon: const Icon(Icons.file_download_outlined)),
+                  Builder(
+                      builder: (context) => IconButton(
+                          onPressed: () {
+                            Scaffold.of(context).openEndDrawer();
+                          },
+                          icon: const Icon(Icons.message_outlined))),
+                  IconButton(onPressed: () {}, icon: const Icon(Icons.share)),
+                  const Spacer()
+                ],
+              )),
+        ),
+        endDrawer: _buildEndDrawer(context),
         body: Container(
             color: Theme.of(context).colorScheme.surfaceVariant,
             child: ExtendedNestedScrollView(
@@ -61,10 +92,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                     elevation: 0,
                     expandedHeight: 300,
                     pinned: true,
-                    actions: [
-                      IconButton(
-                          onPressed: () {}, icon: const Icon(Icons.share))
-                    ],
+                    actions: const [Spacer()],
                     flexibleSpace: FlexibleSpaceBar(
                       title: Text(
                         Provider.of<ComicDetailPageController>(context).title,
@@ -467,37 +495,58 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       BuildContext context, List<BaseComicChapterEntityModel> data) {
     if (Provider.of<ComicDetailPageController>(context).nest) {
       return GridView.builder(
-        padding: EdgeInsets.zero,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3, childAspectRatio: 3 / 1),
-        itemCount: data.length,
-        itemBuilder: (context, index) => Padding(
-          padding: const EdgeInsets.all(3),
-          child: OutlinedButton(
-              onPressed: () {
-                var detailModel=Provider.of<ComicDetailPageController>(context, listen: false)
-                    .detailModel!;
-                var chapters=Provider.of<ComicDetailPageController>(context, listen: false).reverse?data.reversed.toList():data;
-                Provider.of<NavigatorProvider>(context, listen: false)
-                    .getNavigator(context, NavigatorType.defaultNavigator)
-                    ?.push(MaterialPageRoute(
-                        builder: (context) => ComicViewerPage(
-                            detailModel:detailModel,
-                            chapters: chapters,
-                            chapterId: data[index].chapterId),
-                        settings:
-                            const RouteSettings(name: 'ComicViewerPage')));
-              },
-              child: Text(
-                data[index].title,
-                style:
-                    TextStyle(color: Theme.of(context).colorScheme.secondary),
-                overflow: TextOverflow.ellipsis,
-              )),
-        ),
-      );
+          padding: EdgeInsets.zero,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3, childAspectRatio: 3 / 1),
+          itemCount: data.length,
+          itemBuilder: (context, index) {
+            bool isLatestChapter = data[index].chapterId ==
+                Provider.of<ComicDetailPageController>(context).latestChapterId;
+            return Padding(
+              padding: const EdgeInsets.all(3),
+              child: OutlinedButton(
+                  onPressed: () {
+                    var detailModel = Provider.of<ComicDetailPageController>(
+                            context,
+                            listen: false)
+                        .detailModel!;
+                    var chapters = Provider.of<ComicDetailPageController>(
+                                context,
+                                listen: false)
+                            .reverse
+                        ? data.reversed.toList()
+                        : data;
+                    Provider.of<ComicDetailPageController>(context,
+                            listen: false)
+                        .addComicHistory(
+                            data[index].chapterId, data[index].title);
+                    Provider.of<NavigatorProvider>(context, listen: false)
+                        .getNavigator(context, NavigatorType.defaultNavigator)
+                        ?.push(MaterialPageRoute(
+                            builder: (context) => ComicViewerPage(
+                                detailModel: detailModel,
+                                chapters: chapters,
+                                chapterId: data[index].chapterId),
+                            settings:
+                                const RouteSettings(name: 'ComicViewerPage')))
+                        .then((value) async{
+                      await Provider.of<ComicDetailPageController>(context,
+                              listen: false)
+                          .refresh(context, widget.comicId, widget.title);
+                    });
+                  },
+                  child: Text(
+                    data[index].title,
+                    style: TextStyle(
+                        color: isLatestChapter
+                            ? Theme.of(context).colorScheme.error
+                            : Theme.of(context).colorScheme.secondary),
+                    overflow: TextOverflow.ellipsis,
+                  )),
+            );
+          });
     } else {
       return ListView.builder(
         padding: EdgeInsets.zero,
@@ -507,22 +556,26 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
         itemBuilder: (context, index) => ListTile(
           title: Text(data[index].title),
           subtitle: Text(S.of(context).ComicDetailPageChapterEntitySubtitle(
-              formatDate.formatDate(data[index].uploadTime,
-                  [formatDate.yyyy, '-', formatDate.mm, '-', formatDate.dd]),
+              formatdate.formatDate(data[index].uploadTime,
+                  [formatdate.yyyy, '-', formatdate.mm, '-', formatdate.dd]),
               data[index].chapterId)),
           onTap: () {
-            var detailModel=Provider.of<ComicDetailPageController>(context, listen: false)
-                .detailModel!;
-            var chapters=Provider.of<ComicDetailPageController>(context, listen: false).reverse?data.reversed.toList():data;
+            var detailModel =
+                Provider.of<ComicDetailPageController>(context, listen: false)
+                    .detailModel!;
+            var chapters =
+                Provider.of<ComicDetailPageController>(context, listen: false)
+                        .reverse
+                    ? data.reversed.toList()
+                    : data;
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(
-                builder: (context) => ComicViewerPage(
-                    detailModel: detailModel,
-                    chapters: chapters,
-                    chapterId: data[index].chapterId),
-                settings:
-                const RouteSettings(name: 'ComicViewerPage')));
+                    builder: (context) => ComicViewerPage(
+                        detailModel: detailModel,
+                        chapters: chapters,
+                        chapterId: data[index].chapterId),
+                    settings: const RouteSettings(name: 'ComicViewerPage')));
           },
         ),
       );
@@ -546,7 +599,11 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       data.add(Padding(
         padding: const EdgeInsets.only(left: 5),
         child: ActionChip(
-            onPressed: () {},
+            onPressed: item.onTap == null
+                ? null
+                : () {
+                    item.onTap!(context);
+                  },
             label: Text(
               item.title,
             ),
@@ -573,7 +630,11 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       data.add(Padding(
         padding: const EdgeInsets.only(left: 5),
         child: ActionChip(
-            onPressed: () {},
+            onPressed: item.onTap == null
+                ? null
+                : () {
+                    item.onTap!(context);
+                  },
             label: Text(
               item.title,
             ),
@@ -582,5 +643,85 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       ));
     }
     return data;
+  }
+
+  Widget _buildEndDrawer(BuildContext context) {
+    return Drawer(
+      width: MediaQuery.of(context).size.width * 0.9,
+      backgroundColor: Colors.transparent,
+      child: Card(
+        child: SizedBox.expand(
+          child: Column(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(3), topRight: Radius.circular(3)),
+                child: Container(
+                  height: MediaQuery.of(context).padding.top - 4,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+              Container(
+                color: Theme.of(context).primaryColor,
+                child: IconTheme(
+                  data: Theme.of(context)
+                      .iconTheme
+                      .copyWith(color: CustomTheme.of(context).foregroundColor),
+                  child: DefaultTextStyle(
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: CustomTheme.of(context).foregroundColor),
+                    child: Row(
+                      children: [
+                        const BackButton(),
+                        Expanded(
+                            child: Text(S.of(context).ComicDetailPageComments))
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                  child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(3),
+                          bottomRight: Radius.circular(3)),
+                      child: EasyRefresh(
+                        header: const ClassicHeader(safeArea: false),
+                        refreshOnStart: true,
+                        onRefresh: () async {
+                          await Provider.of<ComicDetailPageController>(context,
+                                  listen: false)
+                              .refreshComment();
+                        },
+                        onLoad: () async {
+                          await Provider.of<ComicDetailPageController>(context,
+                                  listen: false)
+                              .loadComment();
+                        },
+                        child: Container(
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          child: ListView.builder(
+                              padding: EdgeInsets.zero,
+                              itemCount: Provider.of<ComicDetailPageController>(
+                                      context)
+                                  .comments
+                                  .length,
+                              itemBuilder: (context, index) {
+                                var item =
+                                    Provider.of<ComicDetailPageController>(
+                                            context)
+                                        .comments[index];
+                                return CommentCard(
+                                    avatar: item.avatar,
+                                    nickname: item.nickname,
+                                    comment: item.comment);
+                              }),
+                        ),
+                      )))
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

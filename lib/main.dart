@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:dcomic/providers/comic_veiwer_config_provider.dart';
 import 'package:dcomic/providers/version_provider.dart';
+import 'package:dcomic/view/drawer_page/search_page.dart';
 import 'package:dcomic/view/homepage/category_page.dart';
 import 'package:dcomic/view/homepage/latest_page.dart';
 import 'package:dcomic/view/homepage/rank_page.dart';
@@ -18,7 +20,6 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_adaptive_ui/flutter_adaptive_ui.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -38,57 +39,59 @@ Future<void> main() async {
     EasyRefresh.defaultFooterBuilder = () => const ClassicFooter();
 
     runApp(const App());
-  }, (error, stack) => FirebaseCrashlytics.instance.recordError(error, stack,fatal: true));
+  },
+      (error, stack) =>
+          FirebaseCrashlytics.instance.recordError(error, stack, fatal: true));
 }
 
 class App extends StatelessWidget {
-  const App({Key? key}) : super(key: key);
+  const App({super.key});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
-        ChangeNotifierProvider<ConfigProvider>(
-          create: (_) => ConfigProvider(),
-          lazy: false,
-        ),
-        ChangeNotifierProvider<NavigatorProvider>(
-          create: (_) => NavigatorProvider(context),
-          lazy: false,
-        ),
-        ChangeNotifierProvider<ComicSourceProvider>(
-          create: (_) => ComicSourceProvider(),
-          lazy: false,
-        ),
-        ChangeNotifierProvider<VersionProvider>(
-          create: (_) => VersionProvider(),
-          lazy: false,
-        )
-      ],
-      builder: (context, child) => Breakpoint(
-          breakpointData: const BreakpointData(),
-          child: MaterialApp(
-              title: 'DComic',
-              theme: ThemeModel.light,
-              darkTheme: ThemeModel.dark,
-              supportedLocales: S.delegate.supportedLocales,
-              localizationsDelegates: const [
-                //此处
-                S.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                DefaultCupertinoLocalizations.delegate,
-                //TODO 这个不知道干嘛的，反正先不用他
-                // ChineseCupertinoLocalizations.delegate,
-              ],
-              home: const MainFramework())),
-    );
+        providers: [
+          ChangeNotifierProvider<ConfigProvider>(
+            create: (_) => ConfigProvider(),
+            lazy: false,
+          ),
+          ChangeNotifierProvider<NavigatorProvider>(
+            create: (_) => NavigatorProvider(context),
+            lazy: false,
+          ),
+          ChangeNotifierProvider<ComicSourceProvider>(
+            create: (_) => ComicSourceProvider(),
+            lazy: false,
+          ),
+          ChangeNotifierProvider<VersionProvider>(
+            create: (_) => VersionProvider(),
+            lazy: false,
+          ),
+          ChangeNotifierProvider<ComicViewerConfigProvider>(
+            create: (_) => ComicViewerConfigProvider(),
+            lazy: false,
+          )
+        ],
+        builder: (context, child) => MaterialApp(
+            title: 'DComic',
+            theme: ThemeModel.light,
+            darkTheme: ThemeModel.dark,
+            supportedLocales: S.delegate.supportedLocales,
+            localizationsDelegates: const [
+              //此处
+              S.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              DefaultCupertinoLocalizations.delegate,
+            ],
+            home: const MainFramework()));
   }
 }
 
 class MainFramework extends StatefulWidget {
-  const MainFramework({Key? key}) : super(key: key);
+  const MainFramework({super.key});
 
   @override
   State<MainFramework> createState() => _MainFrameworkState();
@@ -98,165 +101,48 @@ class _MainFrameworkState extends State<MainFramework> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<AppBarProvider>(
-      create: (_) => AppBarProvider(context),
-      builder: (context, child) => AdaptiveBuilder(
-        defaultBuilder: (context, screen) {
-          return DefaultTabController(
-            length: 4,
-            child: Scaffold(
-              appBar: AppBar(
-                title: Text(S.of(context).AppName),
-                actions: [
-                  IconButton(onPressed: (){}, icon: const Icon(Icons.search))
-                ],
-                bottom: TabBar(
-                  tabs: [
-                    Tab(
-                      text: S.of(context).MainPageHome,
-                    ),
-                    Tab(
-                      text: S.of(context).MainPageCategory,
-                    ),
-                    Tab(
-                      text: S.of(context).MainPageRank,
-                    ),
-                    Tab(
-                      text: S.of(context).MainPageLatest,
-                    )
+        create: (_) => AppBarProvider(context),
+        builder: (context, child) => DefaultTabController(
+              length: 4,
+              child: Scaffold(
+                appBar: AppBar(
+                  title: Text(S.of(context).AppName),
+                  actions: [
+                    IconButton(onPressed: () {
+                      Provider.of<NavigatorProvider>(context, listen: false)
+                          .getNavigator(context, NavigatorType.defaultNavigator)
+                          ?.push(MaterialPageRoute(
+                          builder: (context) => const SearchPage(),
+                          settings: const RouteSettings(name: 'SearchPage')));
+                    }, icon: const Icon(Icons.search))
+                  ],
+                  bottom: TabBar(
+                    tabs: [
+                      Tab(
+                        text: S.of(context).MainPageHome,
+                      ),
+                      Tab(
+                        text: S.of(context).MainPageCategory,
+                      ),
+                      Tab(
+                        text: S.of(context).MainPageRank,
+                      ),
+                      Tab(
+                        text: S.of(context).MainPageLatest,
+                      )
+                    ],
+                  ),
+                ),
+                drawer: LeftDrawer(),
+                body: const TabBarView(
+                  children: [
+                    HomePage(),
+                    CategoryPage(),
+                    RankPage(),
+                    LatestPage()
                   ],
                 ),
               ),
-              drawer: LeftDrawer(),
-              body: const TabBarView(
-                children: [
-                  HomePage(),
-                  CategoryPage(),
-                  RankPage(),
-                  LatestPage()
-                ],
-              ),
-            ),
-          );
-        },
-        layoutDelegate: const AdaptiveLayoutDelegateWithMinimallScreenType(
-          // handset: (context, screen) => DefaultTabController(
-          //   length: 4,
-          //   child: Scaffold(
-          //     appBar: AppBar(
-          //       title: Text(S.of(context).AppName),
-          //       bottom: TabBar(
-          //         tabs: [
-          //           Tab(
-          //             text: S.of(context).MainPageHome,
-          //           ),
-          //           Tab(
-          //             text: S.of(context).MainPageCategory,
-          //           ),
-          //           Tab(
-          //             text: S.of(context).MainPageRank,
-          //           ),
-          //           Tab(
-          //             text: S.of(context).MainPageLatest,
-          //           )
-          //         ],
-          //       ),
-          //     ),
-          //     drawer: LeftDrawer(),
-          //     body: TabBarView(
-          //       children: [
-          //         const HomePage(),
-          //         const CategoryPage(),
-          //         Container(
-          //           color: Colors.green,
-          //         ),
-          //         Container(
-          //           color: Colors.blue,
-          //         )
-          //       ],
-          //     ),
-          //   ),
-          // ),
-          // Todo: 后面再写
-          // tablet: (context, screen) => Scaffold(
-          //       appBar: Provider.of<AppBarProvider>(context).currentAppBar,
-          //       drawer: LeftDrawer(),
-          //       body: Navigator(
-          //         key: Provider.of<NavigatorProvider>(context).largeNavigator,
-          //         initialRoute: '',
-          //         onGenerateRoute: (val) => PageRouteBuilder(
-          //             pageBuilder: (BuildContext nContext,
-          //                     Animation<double> animation,
-          //                     Animation<double> secondaryAnimation) =>
-          //                 Row(
-          //                   children: [
-          //                     Expanded(
-          //                         child: Navigator(
-          //                       key: Provider.of<NavigatorProvider>(context)
-          //                           .homeNavigator,
-          //                       initialRoute: '',
-          //                       onGenerateRoute: (val) => PageRouteBuilder(
-          //                           pageBuilder: (BuildContext nContext,
-          //                                   Animation<double> animation,
-          //                                   Animation<double>
-          //                                       secondaryAnimation) =>
-          //                               HomePage()),
-          //                     )),
-          //                     Expanded(
-          //                         child: Navigator(
-          //                       key: Provider.of<NavigatorProvider>(context)
-          //                           .rightNavigator,
-          //                       initialRoute: '',
-          //                       onGenerateRoute: (val) => PageRouteBuilder(
-          //                           pageBuilder: (BuildContext nContext,
-          //                                   Animation<double> animation,
-          //                                   Animation<double>
-          //                                       secondaryAnimation) =>
-          //                               Container(
-          //                                 color: Colors.orange,
-          //                               )),
-          //                     ))
-          //                   ],
-          //                 )),
-          //       ),
-          //     ),
-          // desktop: (context, screen) => Scaffold(
-          //       appBar: AppBar(
-          //         title: Text(S.of(context).AppName),
-          //       ),
-          //       body: Navigator(
-          //         key: Provider.of<NavigatorProvider>(context).largeNavigator,
-          //         initialRoute: '',
-          //         onGenerateRoute: (val) => PageRouteBuilder(
-          //             pageBuilder: (BuildContext nContext,
-          //                     Animation<double> animation,
-          //                     Animation<double> secondaryAnimation) =>
-          //                 Row(
-          //                   children: [
-          //                     Expanded(child: LeftDrawer()),
-          //                     Expanded(
-          //                       flex: 2,
-          //                         child: Navigator(
-          //                       key: Provider.of<NavigatorProvider>(context)
-          //                           .homeNavigator,
-          //                       initialRoute: '',
-          //                       onGenerateRoute: (val) => PageRouteBuilder(
-          //                           pageBuilder: (BuildContext nContext,
-          //                                   Animation<double> animation,
-          //                                   Animation<double>
-          //                                       secondaryAnimation) =>
-          //                               HomePage()),
-          //                     )),
-          //                     Expanded(
-          //                       flex: 2,
-          //                         child: Container(
-          //                       color: Colors.orange,
-          //                     ))
-          //                   ],
-          //                 )),
-          //       ),
-          //     )
-        ),
-      ),
-    );
+            ));
   }
 }
