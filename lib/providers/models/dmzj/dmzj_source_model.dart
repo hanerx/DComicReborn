@@ -44,6 +44,44 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
   Future<List<ListItemEntity>> getComicHistory(ComicHistorySourceType sourceType, {int page=0}) async {
     if(sourceType == ComicHistorySourceType.local){
       return super.getComicHistory(sourceType, page: page);
+    }else if(sourceType == ComicHistorySourceType.network){
+      if(accountModel == null || accountModel?.uid == null){
+        return [];
+      }
+      List<ListItemEntity> data = [];
+      var response =
+      await RequestHandlers.dmzjInterfaceRequestHandler.getHistory(accountModel!.uid!, page);
+      try {
+        if ((response.statusCode == 200 || response.statusCode == 304)) {
+          var responseData = jsonDecode(response.data);
+          for (var item in responseData) {
+            data.add(ListItemEntity(
+                item['comic_name'],
+                ImageEntity(ImageType.network, item['cover'],
+                    imageHeaders: {"referer": "https://i.dmzj.com"}),
+                {
+                  Icons.history: date_format.formatDate(
+                      DateTime.fromMicrosecondsSinceEpoch(
+                          item['viewing_time'] * 1000000),
+                      [date_format.yyyy, '-', date_format.mm, '-', date_format.dd]),
+                  Icons.history_edu: item['chapter_name']
+                }, (context) {
+              Provider.of<NavigatorProvider>(context, listen: false)
+                  .getNavigator(context, NavigatorType.defaultNavigator)
+                  ?.push(MaterialPageRoute(
+                  builder: (context) => ComicDetailPage(
+                    title: item['comic_name'],
+                    comicId: item['comic_id'].toString(),
+                    comicSourceModel: this,
+                  ),
+                  settings: const RouteSettings(name: 'ComicDetailPage')));
+            }));
+          }
+        }
+      } catch (e, s) {
+        logger.e('$e', error: e, stackTrace: s);
+      }
+      return data;
     }
     return [];
   }

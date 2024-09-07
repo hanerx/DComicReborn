@@ -87,6 +87,7 @@ class RequestHandlers{
   static DMZJV4RequestHandler dmzjv4requestHandler=DMZJV4RequestHandler();
   static DMZJUserRequestHandler dmzjUserRequestHandler=DMZJUserRequestHandler();
   static DMZJCommentRequestHandler dmzjCommentRequestHandler=DMZJCommentRequestHandler();
+  static DMZJInterfaceRequestHandler dmzjInterfaceRequestHandler=DMZJInterfaceRequestHandler();
 
   static CopyMangaRequestHandler copyMangaRequestHandler=CopyMangaRequestHandler();
 }
