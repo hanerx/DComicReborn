@@ -108,6 +108,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "CopyMangaLoginUsernameHint":
             MessageLookupByLibrary.simpleMessage("Username"),
         "CopyMangaTitle": MessageLookupByLibrary.simpleMessage("CopyManga"),
+        "CopyMangaToken": MessageLookupByLibrary.simpleMessage("Token"),
+        "CopyMangaTokenHint": MessageLookupByLibrary.simpleMessage(
+            "Use Token to Login(No need input password or username if you are using token login)"),
         "DMZJLoginPassword": MessageLookupByLibrary.simpleMessage("Password"),
         "DMZJLoginPasswordHint":
             MessageLookupByLibrary.simpleMessage("Your DMZJ Password!"),
@@ -177,6 +180,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "TimeOrRankFilterEntityName":
             MessageLookupByLibrary.simpleMessage("SortType"),
         "UnknownScreen": MessageLookupByLibrary.simpleMessage(
-            "Your Screen Size is not support, please connect author.")
+            "Your Screen Size is not support, please connect author."),
+        "ViewerSettingAlign":
+            MessageLookupByLibrary.simpleMessage("Read Direction"),
+        "ViewerSettingDebugView":
+            MessageLookupByLibrary.simpleMessage("Show Click Area")
       };
 }

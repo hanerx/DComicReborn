@@ -133,5 +133,9 @@
         "example": "Unknown"
       }
     }
-  }
+  },
+  "CopyMangaToken": "Token",
+  "CopyMangaTokenHint": "Use Token to Login(No need input password or username if you are using token login)",
+  "ViewerSettingAlign": "Read Direction",
+  "ViewerSettingDebugView": "Show Click Area"
 }

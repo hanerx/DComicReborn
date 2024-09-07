@@ -95,6 +95,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "CopyMangaLoginUsernameHint":
             MessageLookupByLibrary.simpleMessage("用户名"),
         "CopyMangaTitle": MessageLookupByLibrary.simpleMessage("拷贝漫画"),
+        "CopyMangaToken": MessageLookupByLibrary.simpleMessage("Token"),
+        "CopyMangaTokenHint":
+            MessageLookupByLibrary.simpleMessage("使用Token进行登录（无需填写用户名密码）"),
         "DMZJLoginPassword": MessageLookupByLibrary.simpleMessage("密码"),
         "DMZJLoginPasswordHint":
             MessageLookupByLibrary.simpleMessage("你的大妈之家密码"),
@@ -151,6 +154,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "TimeOrRankFilterEntityName":
             MessageLookupByLibrary.simpleMessage("排序方式"),
         "UnknownScreen":
-            MessageLookupByLibrary.simpleMessage("不支持的屏幕分辨率，提issue去")
+            MessageLookupByLibrary.simpleMessage("不支持的屏幕分辨率，提issue去"),
+        "ViewerSettingAlign": MessageLookupByLibrary.simpleMessage("阅读方向"),
+        "ViewerSettingDebugView": MessageLookupByLibrary.simpleMessage("显示点击区域")
       };
 }

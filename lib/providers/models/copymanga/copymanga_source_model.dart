@@ -55,6 +55,32 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
   Future<List<ListItemEntity>> getComicHistory(ComicHistorySourceType sourceType, {int page=0}) async {
     if(sourceType == ComicHistorySourceType.local){
       return super.getComicHistory(sourceType, page: page);
+    }else if(sourceType == ComicHistorySourceType.network){
+      List<ListItemEntity> data = [];
+      var response = await RequestHandlers.copyMangaRequestHandler
+          .getHistory(page: page);
+      if ((response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['code'] == 200) {
+        var responseData = response.data['results']['list'];
+        for (var item in responseData) {
+          data.add(ListItemEntity(
+              item['comic']['name'], ImageEntity(ImageType.network, item['comic']['cover']), {
+            Icons.history: item['comic']['last_chapter_name'],
+            Icons.history_edu: item['last_chapter_name']
+          }, (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                builder: (context) => ComicDetailPage(
+                  title: item['comic']['name'],
+                  comicId: item['comic']['path_word'],
+                  comicSourceModel: this,
+                ),
+                settings: const RouteSettings(name: 'ComicDetailPage')));
+          }));
+        }
+      }
+      return data;
     }
     return [];
   }
@@ -297,6 +323,7 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
     GlobalKey<FormState> formKey = GlobalKey<FormState>();
     TextEditingController usernameController = TextEditingController();
     TextEditingController passwordController = TextEditingController();
+    TextEditingController tokenController = TextEditingController();
     return Stack(
       children: [
         Container(
@@ -353,6 +380,23 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                                       hintText: S
                                           .of(context)
                                           .CopyMangaLoginPasswordHint),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: TextFormField(
+                                  controller: tokenController,
+                                  obscureText: true,
+                                  decoration: InputDecoration(
+                                      isDense: true,
+                                      border: const OutlineInputBorder(
+                                          gapPadding: 1),
+                                      labelText:
+                                      S.of(context).CopyMangaToken,
+                                      prefixIcon: const Icon(Icons.token_outlined),
+                                      hintText: S
+                                          .of(context)
+                                          .CopyMangaTokenHint),
                                 ),
                               )
                             ],

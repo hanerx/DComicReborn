@@ -168,4 +168,10 @@ class CopyMangaRequestHandler extends RequestHandler {
         '/api/v3/comments?comic_id=$comicId&limit=$limit&offset=${limit * page}',
         options: await setHeader({'Platform': '1'}));
   }
+
+  Future<Response> getHistory({int limit=12, int page=0}) async {
+    return dio.get(
+        '/api/kb/web/browses?limit=$limit&offset=${limit * page}',
+        options: await setHeader({'Platform': '1'}));
+  }
 }

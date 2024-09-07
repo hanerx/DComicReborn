@@ -871,6 +871,46 @@ class S {
       args: [Reason],
     );
   }
+
+  /// `Token`
+  String get CopyMangaToken {
+    return Intl.message(
+      'Token',
+      name: 'CopyMangaToken',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Use Token to Login(No need input password or username if you are using token login)`
+  String get CopyMangaTokenHint {
+    return Intl.message(
+      'Use Token to Login(No need input password or username if you are using token login)',
+      name: 'CopyMangaTokenHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Read Direction`
+  String get ViewerSettingAlign {
+    return Intl.message(
+      'Read Direction',
+      name: 'ViewerSettingAlign',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Show Click Area`
+  String get ViewerSettingDebugView {
+    return Intl.message(
+      'Show Click Area',
+      name: 'ViewerSettingDebugView',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

@@ -268,17 +268,8 @@ class _$ComicHistoryDao extends ComicHistoryDao {
   Future<List<ComicHistoryEntity>> getComicHistoryByProvider(
       String providerName) async {
     return _queryAdapter.queryList(
-        'SELECT * FROM ComicHistoryEntity WHERE `providerName`= ?1',
-        mapper: (Map<String, Object?> row) => ComicHistoryEntity(
-            row['id'] as int?,
-            row['comicId'] as String,
-            row['title'] as String,
-            row['cover'] as String,
-            _imageTypeConverter.decode(row['coverType'] as int),
-            row['lastChapterTitle'] as String,
-            row['lastChapterId'] as String,
-            _dateTimeNullableConverter.decode(row['timestamp'] as int?),
-            row['providerName'] as String),
+        'SELECT * FROM ComicHistoryEntity WHERE `providerName`= ?1 GROUP BY comicId',
+        mapper: (Map<String, Object?> row) => ComicHistoryEntity(row['id'] as int?, row['comicId'] as String, row['title'] as String, row['cover'] as String, _imageTypeConverter.decode(row['coverType'] as int), row['lastChapterTitle'] as String, row['lastChapterId'] as String, _dateTimeNullableConverter.decode(row['timestamp'] as int?), row['providerName'] as String),
         arguments: [providerName]);
   }
 

@@ -40,7 +40,7 @@ abstract class ConfigDao {
   @insert
   Future<void> insertConfig(ConfigEntity configEntity);
 
-  @update
+  @Update(onConflict: OnConflictStrategy.replace)
   Future<void> updateConfig(ConfigEntity configEntity);
 
   Future<ConfigEntity> getOrCreateConfigByKey(String key,
@@ -48,7 +48,7 @@ abstract class ConfigDao {
     var result = await getConfigByKey(key);
     if (result == null) {
       result ??= ConfigEntity.createConfigEntity(key, value);
-      insertConfig(result);
+      await insertConfig(result);
     }
     return result;
   }

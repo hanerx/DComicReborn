@@ -130,5 +130,9 @@
   "CopyMangaTitle": "拷贝漫画",
   "CopyMangaLoginPasswordHint": "你的拷贝漫画账号密码",
   "CopyMangaLoginUsernameHint": "用户名",
-  "LoginPageTitle": "登录"
+  "LoginPageTitle": "登录",
+  "CopyMangaToken": "Token",
+  "CopyMangaTokenHint": "使用Token进行登录（无需填写用户名密码）",
+  "ViewerSettingAlign": "阅读方向",
+  "ViewerSettingDebugView": "显示点击区域"
 }
