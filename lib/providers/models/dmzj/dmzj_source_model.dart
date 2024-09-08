@@ -537,15 +537,24 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (String key in response.data['commentIds']) {
-          var commentKey = key.split(',').first;
-          var item = response.data['comments'][commentKey];
-          data.add(ComicCommentEntity(
-              ImageEntity(ImageType.network, item['avatar_url'],
-                  imageHeaders: {"referer": "https://i.dmzj.com"}),
-              item['content'],
-              item['id'].toString(),
-              item['nickname'],
-              int.parse(item['like_amount'].toString())));
+          ComicCommentEntity? parent;
+          var commentKeyList = key.split(',');
+          for(var commentKey in commentKeyList){
+            var item = response.data['comments'][commentKey];
+            var entity = ComicCommentEntity(
+                ImageEntity(ImageType.network, item['avatar_url'],
+                    imageHeaders: {"referer": "https://i.dmzj.com"}),
+                item['content'],
+                item['id'].toString(),
+                item['nickname'],
+                int.parse(item['like_amount'].toString()), []);
+            if(parent == null){
+              parent = entity;
+            }else{
+              parent.subComments.add(entity);
+            }
+          }
+          data.add(parent!);
         }
       }
     } catch (e, s) {

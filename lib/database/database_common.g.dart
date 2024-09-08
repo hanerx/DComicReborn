@@ -170,8 +170,7 @@ class _$ConfigDao extends ConfigDao {
 
   @override
   Future<ConfigEntity?> getConfigByKey(String key) async {
-    return _queryAdapter.query(
-        'SELECT * FROM ConfigEntity WHERE `key` = ?1 LIMIT 1',
+    return _queryAdapter.query('SELECT * FROM ConfigEntity WHERE `key` = ?1',
         mapper: (Map<String, Object?> row) => ConfigEntity(
             row['id'] as int?, row['key'] as String, row['value'] as String?),
         arguments: [key]);
@@ -186,7 +185,7 @@ class _$ConfigDao extends ConfigDao {
   @override
   Future<void> updateConfig(ConfigEntity configEntity) async {
     await _configEntityUpdateAdapter.update(
-        configEntity, OnConflictStrategy.abort);
+        configEntity, OnConflictStrategy.replace);
   }
 }
 

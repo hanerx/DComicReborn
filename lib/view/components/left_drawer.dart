@@ -1,4 +1,5 @@
 import 'package:dcomic/generated/l10n.dart';
+import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/source_provider.dart';
@@ -20,6 +21,13 @@ class LeftDrawer extends StatefulWidget {
 }
 
 class _LeftDrawerState extends State<LeftDrawer> {
+
+  final themeMode2Icon = {
+    ThemeMode.system: Icons.brightness_4,
+    ThemeMode.dark: Icons.dark_mode,
+    ThemeMode.light: Icons.brightness_5
+  };
+
   @override
   Widget build(BuildContext context) {
     List list = buildList(context);
@@ -47,13 +55,20 @@ class _LeftDrawerState extends State<LeftDrawer> {
         currentAccountPicture: const FlutterLogo(),
         otherAccountsPictures: <Widget>[
           TextButton(
-            onPressed: () {},
+            onPressed: () {
+              var index = ThemeMode.values.indexOf(Provider.of<ConfigProvider>(context, listen: false).themeMode);
+              index +=1;
+              if(index >= ThemeMode.values.length){
+                index = 0;
+              }
+              Provider.of<ConfigProvider>(context, listen: false).themeMode = ThemeMode.values[index];
+            },
             style: ButtonStyle(
                 shape: MaterialStateProperty.all(const CircleBorder()),
                 padding: MaterialStateProperty.all(const EdgeInsets.all(3))),
             child: Icon(
-              Icons.brightness_4,
-              color: Theme.of(context).primaryTextTheme.bodyText1?.color,
+              themeMode2Icon[Provider.of<ConfigProvider>(context).themeMode],
+              color: Theme.of(context).primaryTextTheme.bodyLarge?.color,
             ),
           ),
           TextButton(
@@ -69,7 +84,7 @@ class _LeftDrawerState extends State<LeftDrawer> {
                 padding: MaterialStateProperty.all(const EdgeInsets.all(3))),
             child: Icon(
               Icons.manage_accounts,
-              color: Theme.of(context).primaryTextTheme.bodyText1?.color,
+              color: Theme.of(context).primaryTextTheme.bodyLarge?.color,
             ),
           )
         ],

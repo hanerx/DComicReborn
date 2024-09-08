@@ -1,3 +1,4 @@
+
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/providers/base_provider.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +33,14 @@ class DatabaseDebugPageController extends BaseProvider {
     var databaseInstance = await DatabaseInstance.instance;
     tableData[tableName] = await databaseInstance.database.query(tableName);
     columnData[tableName] = tableData[tableName].keys;
+    notifyListeners();
+  }
+
+  Future<void> delete(Map row, String tableName) async {
+    var databaseInstance = await DatabaseInstance.instance;
+    var where = row.keys.map<String>((e) => '`$e` = ?').join(' AND ');
+    await databaseInstance.database.delete(tableName, where: where, whereArgs: row.values.toList());
+    await refreshDatabase(tableName);
     notifyListeners();
   }
 }

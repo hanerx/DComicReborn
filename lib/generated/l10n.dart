@@ -911,6 +911,56 @@ class S {
       args: [],
     );
   }
+
+  /// `Click Area Size(Horizontal)`
+  String get ViewerSettingHorizontalSize {
+    return Intl.message(
+      'Click Area Size(Horizontal)',
+      name: 'ViewerSettingHorizontalSize',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Click Area Size(Vertical)`
+  String get ViewerSettingVerticalSize {
+    return Intl.message(
+      'Click Area Size(Vertical)',
+      name: 'ViewerSettingVerticalSize',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Theme Color`
+  String get ViewerSettingThemeColor {
+    return Intl.message(
+      'Theme Color',
+      name: 'ViewerSettingThemeColor',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Use Material 3 Design`
+  String get ViewerSettingUseMaterial3Design {
+    return Intl.message(
+      'Use Material 3 Design',
+      name: 'ViewerSettingUseMaterial3Design',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Maybe not bad?`
+  String get ViewerSettingUseMaterial3DesignSubTitle {
+    return Intl.message(
+      'Maybe not bad?',
+      name: 'ViewerSettingUseMaterial3DesignSubTitle',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

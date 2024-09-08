@@ -714,7 +714,8 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                                 return CommentCard(
                                     avatar: item.avatar,
                                     nickname: item.nickname,
-                                    comment: item.comment);
+                                    comment: item.comment,
+                                    subComments: item.subComments,);
                               }),
                         ),
                       )))

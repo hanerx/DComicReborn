@@ -137,5 +137,10 @@
   "CopyMangaToken": "Token",
   "CopyMangaTokenHint": "Use Token to Login(No need input password or username if you are using token login)",
   "ViewerSettingAlign": "Read Direction",
-  "ViewerSettingDebugView": "Show Click Area"
+  "ViewerSettingDebugView": "Show Click Area",
+  "ViewerSettingHorizontalSize": "Click Area Size(Horizontal)",
+  "ViewerSettingVerticalSize": "Click Area Size(Vertical)",
+  "ViewerSettingThemeColor": "Theme Color",
+  "ViewerSettingUseMaterial3Design": "Use Material 3 Design",
+  "ViewerSettingUseMaterial3DesignSubTitle": "Maybe not bad?"
 }

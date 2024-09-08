@@ -134,5 +134,10 @@
   "CopyMangaToken": "Token",
   "CopyMangaTokenHint": "使用Token进行登录（无需填写用户名密码）",
   "ViewerSettingAlign": "阅读方向",
-  "ViewerSettingDebugView": "显示点击区域"
+  "ViewerSettingDebugView": "显示点击区域",
+  "ViewerSettingHorizontalSize": "点击区域大小（水平）",
+  "ViewerSettingVerticalSize": "点击区域大小（垂直）",
+  "ViewerSettingThemeColor": "主题颜色",
+  "ViewerSettingUseMaterial3Design": "使用Material3",
+  "ViewerSettingUseMaterial3DesignSubTitle": "好像关了也不难看欸"
 }

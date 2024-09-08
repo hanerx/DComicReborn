@@ -306,8 +306,9 @@ class ChapterCommentEntity {
   final String comment;
   final int likes;
   final String commentId;
+  final ImageEntity? avatar;
 
-  ChapterCommentEntity(this.commentId, this.comment, this.likes);
+  ChapterCommentEntity(this.commentId, this.comment, this.likes, {this.avatar});
 }
 
 class ComicCommentEntity {
@@ -316,9 +317,10 @@ class ComicCommentEntity {
   final String commentId;
   final String nickname;
   final int likes;
+  List<ComicCommentEntity> subComments = [];
 
   ComicCommentEntity(
-      this.avatar, this.comment, this.commentId, this.nickname, this.likes);
+      this.avatar, this.comment, this.commentId, this.nickname, this.likes, this.subComments);
 }
 
 class CarouselEntity {

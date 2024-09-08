@@ -156,6 +156,16 @@ class MessageLookup extends MessageLookupByLibrary {
         "UnknownScreen":
             MessageLookupByLibrary.simpleMessage("不支持的屏幕分辨率，提issue去"),
         "ViewerSettingAlign": MessageLookupByLibrary.simpleMessage("阅读方向"),
-        "ViewerSettingDebugView": MessageLookupByLibrary.simpleMessage("显示点击区域")
+        "ViewerSettingDebugView":
+            MessageLookupByLibrary.simpleMessage("显示点击区域"),
+        "ViewerSettingHorizontalSize":
+            MessageLookupByLibrary.simpleMessage("点击区域大小（水平）"),
+        "ViewerSettingThemeColor": MessageLookupByLibrary.simpleMessage("主题颜色"),
+        "ViewerSettingUseMaterial3Design":
+            MessageLookupByLibrary.simpleMessage("使用Material3"),
+        "ViewerSettingUseMaterial3DesignSubTitle":
+            MessageLookupByLibrary.simpleMessage("好像关了也不难看欸"),
+        "ViewerSettingVerticalSize":
+            MessageLookupByLibrary.simpleMessage("点击区域大小（垂直）")
       };
 }
