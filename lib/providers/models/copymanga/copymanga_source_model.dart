@@ -84,16 +84,16 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
   }
 
   @override
-  Future<List<ListItemEntity>> searchComicDetail(String keyword,
+  Future<List<ComicListItemEntity>> searchComicDetail(String keyword,
       {int page = 0}) async {
-    List<ListItemEntity> data = [];
+    List<ComicListItemEntity> data = [];
     var response = await RequestHandlers.copyMangaRequestHandler
         .search(keyword, page: page);
     if ((response.statusCode == 200 || response.statusCode == 304) &&
         response.data['code'] == 200) {
       var responseData = response.data['results']['list'];
       for (var item in responseData) {
-        data.add(ListItemEntity(
+        data.add(ComicListItemEntity(
             item['name'], ImageEntity(ImageType.network, item['cover']), {
           Icons.supervisor_account_rounded: item['author'].map((e) => e['name']).toList().join('/'),
           Icons.local_fire_department: item['popular'].toString()
@@ -107,7 +107,7 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
                         comicSourceModel: this,
                       ),
                   settings: const RouteSettings(name: 'ComicDetailPage')));
-        }));
+        }, item['path_word']));
       }
     }
     return data;

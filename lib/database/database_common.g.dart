@@ -69,6 +69,8 @@ class _$DComicDatabase extends DComicDatabase {
 
   ModelConfigDao? _modelConfigDaoInstance;
 
+  ComicMappingDao? _comicMappingDaoInstance;
+
   Future<sqflite.Database> open(
     String path,
     List<Migration> migrations, [
@@ -98,6 +100,8 @@ class _$DComicDatabase extends DComicDatabase {
             'CREATE TABLE IF NOT EXISTS `CookieEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT NOT NULL)');
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `ModelConfigEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT, `sourceModel` TEXT)');
+        await database.execute(
+            'CREATE TABLE IF NOT EXISTS `ComicMappingEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `sourceProviderName` TEXT NOT NULL, `targetProviderName` TEXT NOT NULL, `resultComicId` TEXT NOT NULL)');
 
         await callback?.onCreate?.call(database, version);
       },
@@ -125,6 +129,12 @@ class _$DComicDatabase extends DComicDatabase {
   ModelConfigDao get modelConfigDao {
     return _modelConfigDaoInstance ??=
         _$ModelConfigDao(database, changeListener);
+  }
+
+  @override
+  ComicMappingDao get comicMappingDao {
+    return _comicMappingDaoInstance ??=
+        _$ComicMappingDao(database, changeListener);
   }
 }
 
@@ -420,6 +430,80 @@ class _$ModelConfigDao extends ModelConfigDao {
   Future<void> updateConfig(ModelConfigEntity configEntity) async {
     await _modelConfigEntityUpdateAdapter.update(
         configEntity, OnConflictStrategy.abort);
+  }
+}
+
+class _$ComicMappingDao extends ComicMappingDao {
+  _$ComicMappingDao(
+    this.database,
+    this.changeListener,
+  )   : _queryAdapter = QueryAdapter(database),
+        _comicMappingEntityInsertionAdapter = InsertionAdapter(
+            database,
+            'ComicMappingEntity',
+            (ComicMappingEntity item) => <String, Object?>{
+                  'id': item.id,
+                  'comicId': item.comicId,
+                  'sourceProviderName': item.sourceProviderName,
+                  'targetProviderName': item.targetProviderName,
+                  'resultComicId': item.resultComicId
+                }),
+        _comicMappingEntityUpdateAdapter = UpdateAdapter(
+            database,
+            'ComicMappingEntity',
+            ['id'],
+            (ComicMappingEntity item) => <String, Object?>{
+                  'id': item.id,
+                  'comicId': item.comicId,
+                  'sourceProviderName': item.sourceProviderName,
+                  'targetProviderName': item.targetProviderName,
+                  'resultComicId': item.resultComicId
+                });
+
+  final sqflite.DatabaseExecutor database;
+
+  final StreamController<String> changeListener;
+
+  final QueryAdapter _queryAdapter;
+
+  final InsertionAdapter<ComicMappingEntity>
+      _comicMappingEntityInsertionAdapter;
+
+  final UpdateAdapter<ComicMappingEntity> _comicMappingEntityUpdateAdapter;
+
+  @override
+  Future<List<ComicMappingEntity>> getAllComicMappingEntity() async {
+    return _queryAdapter.queryList('SELECT * FROM ComicMappingEntity',
+        mapper: (Map<String, Object?> row) => ComicMappingEntity(
+            row['id'] as int?,
+            row['comicId'] as String,
+            row['sourceProviderName'] as String,
+            row['targetProviderName'] as String,
+            row['resultComicId'] as String));
+  }
+
+  @override
+  Future<ComicMappingEntity?> getComicMappingByComicId(
+    String comicId,
+    String sourceProviderName,
+    String targetProviderName,
+  ) async {
+    return _queryAdapter.query(
+        'SELECT * FROM ComicMappingEntity WHERE `comicId`= ?1 AND `sourceProviderName`= ?2 AND `targetProviderName`= ?3',
+        mapper: (Map<String, Object?> row) => ComicMappingEntity(row['id'] as int?, row['comicId'] as String, row['sourceProviderName'] as String, row['targetProviderName'] as String, row['resultComicId'] as String),
+        arguments: [comicId, sourceProviderName, targetProviderName]);
+  }
+
+  @override
+  Future<void> insertComicMapping(ComicMappingEntity comicMappingEntity) async {
+    await _comicMappingEntityInsertionAdapter.insert(
+        comicMappingEntity, OnConflictStrategy.replace);
+  }
+
+  @override
+  Future<void> updateComicMapping(ComicMappingEntity comicMappingEntity) async {
+    await _comicMappingEntityUpdateAdapter.update(
+        comicMappingEntity, OnConflictStrategy.replace);
   }
 }
 

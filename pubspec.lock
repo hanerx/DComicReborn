@@ -475,6 +475,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_open_chinese_convert:
+    dependency: "direct main"
+    description:
+      name: flutter_open_chinese_convert
+      sha256: "91cfcc1aa91dc80426d50cc6beacce7d796d52aaef5338aaf4d64a25be24b873"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.4.0"
   flutter_spinkit:
     dependency: "direct main"
     description:

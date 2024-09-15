@@ -1,6 +1,7 @@
 import 'package:dcomic/database/converter/datetime_converter.dart';
 import 'package:dcomic/database/converter/image_type_converter.dart';
 import 'package:dcomic/database/entity/comic_history.dart';
+import 'package:dcomic/database/entity/comic_mapping.dart';
 import 'package:dcomic/database/entity/config.dart';
 import 'package:dcomic/database/entity/cookie.dart';
 import 'package:dcomic/database/entity/model_config.dart';
@@ -10,11 +11,12 @@ import 'package:sqflite/sqflite.dart' as sqflite;
 
 part 'database_common.g.dart';
 
-@Database(version: 3, entities: [
+@Database(version: 4, entities: [
   ConfigEntity,
   ComicHistoryEntity,
   CookieEntity,
-  ModelConfigEntity
+  ModelConfigEntity,
+  ComicMappingEntity,
 ])
 @TypeConverters([
   DateTimeConverter,
@@ -30,4 +32,6 @@ abstract class DComicDatabase extends FloorDatabase {
   CookieDao get cookieDao;
 
   ModelConfigDao get modelConfigDao;
+
+  ComicMappingDao get comicMappingDao;
 }

@@ -5,6 +5,7 @@ import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_open_chinese_convert/flutter_open_chinese_convert.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:date_format/date_format.dart' as date_format;
 import 'package:provider/provider.dart';
@@ -38,7 +39,7 @@ abstract class BaseComicSourceModel extends BaseModel {
 
   Future<BaseComicDetailModel?> getComicDetail(String comicId, String title);
 
-  Future<List<ListItemEntity>> searchComicDetail(String keyword,
+  Future<List<ComicListItemEntity>> searchComicDetail(String keyword,
       {int page = 0});
 
   Future<List<ListItemEntity>> getComicHistory(ComicHistorySourceType sourceType, {int page=0}) async{
@@ -80,6 +81,36 @@ abstract class BaseComicSourceModel extends BaseModel {
     if (accountModel != null) {
       await accountModel!.init();
     }
+  }
+
+  Future<BaseComicDetailModel?> searchAndGetComicDetail(String comicId, String title, BaseComicSourceModel sourceModel) async{
+    if(sourceModel == this){
+      return await getComicDetail(comicId, title);
+    }
+    var databaseInstance = await DatabaseInstance.instance;
+    var comicMappingEntity = await databaseInstance.comicMappingDao
+        .getOrCreateConfigByComicId(comicId, sourceModel.type.sourceId, type.sourceId);
+    if(comicMappingEntity.resultComicId.isEmpty){
+      var searchResultList = await searchComicDetail(title);
+      if(searchResultList.length == 1){
+        comicMappingEntity.resultComicId = searchResultList.first.comicId;
+        await databaseInstance.comicMappingDao.updateComicMapping(comicMappingEntity);
+      }else{
+        for(var item in searchResultList){
+          var sourceTitle = await ChineseConverter.convert(item.title, T2S());
+          var targetTitle = await ChineseConverter.convert(title, T2S());
+          if(sourceTitle == targetTitle){
+            comicMappingEntity.resultComicId = item.comicId;
+            await databaseInstance.comicMappingDao.updateComicMapping(comicMappingEntity);
+            break;
+          }
+        }
+      }
+    }
+    if(comicMappingEntity.resultComicId.isNotEmpty){
+      return await getComicDetail(comicMappingEntity.resultComicId, title);
+    }
+    return null;
   }
 }
 
@@ -356,4 +387,10 @@ class ListItemEntity {
   final void Function(BuildContext context)? onTap;
 
   ListItemEntity(this.title, this.cover, this.details, this.onTap);
+}
+
+class ComicListItemEntity extends ListItemEntity{
+  final String comicId;
+  ComicListItemEntity(super.title, super.cover, super.details, super.onTap, this.comicId);
+
 }

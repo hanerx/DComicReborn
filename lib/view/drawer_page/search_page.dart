@@ -45,7 +45,7 @@ class _SearchPageState extends State<SearchPage> {
               isScrollable: true,
               tabs: [
                 for (var item in Provider.of<ComicSourceProvider>(context)
-                    .hasAccountSettingSources)
+                    .sources)
                   Tab(
                     text: item.type.sourceName,
                   )
