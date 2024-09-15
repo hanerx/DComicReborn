@@ -158,6 +158,11 @@ class _DatabaseDebugPage extends State<DatabaseDebugPage> {
                                                         DataCell(Text(
                                                             value.toString())))
                                                     .toList(),
+                                                onLongPress: (){
+                                                  Provider.of<
+                                                      DatabaseDebugPageController>(
+                                                      context, listen: false).delete(row, e);
+                                                }
                                               ))
                                           .toList(),
                                     ),

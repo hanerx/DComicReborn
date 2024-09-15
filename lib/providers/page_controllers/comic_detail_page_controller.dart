@@ -10,6 +10,7 @@ class ComicDetailPageController extends BaseProvider {
   bool _isLoading = true;
   BaseComicDetailModel? detailModel;
   BaseComicSourceModel? comicSourceModel;
+  BaseComicSourceModel? sourceModel;
 
   bool _nest = true;
   bool _reverse = true;
@@ -21,7 +22,9 @@ class ComicDetailPageController extends BaseProvider {
 
   List<ComicCommentEntity> get comments => _comments;
 
-  ComicDetailPageController(this.comicSourceModel);
+  ComicDetailPageController(this.comicSourceModel){
+    sourceModel = comicSourceModel;
+  }
 
   Future<void> refresh(
       BuildContext context, String comicId, String title) async {
@@ -33,7 +36,7 @@ class ComicDetailPageController extends BaseProvider {
       Provider.of<ComicSourceProvider>(context, listen: false).activeModel =
           comicSourceModel!;
     }
-    detailModel = await comicSourceModel?.getComicDetail(comicId, title);
+    detailModel = await comicSourceModel?.searchAndGetComicDetail(comicId, title, sourceModel!);
     await detailModel?.init();
     _isLoading = false;
     notifyListeners();

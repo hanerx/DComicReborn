@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dcomic/requests/copymanga/copymanga_request.dart';
 import 'package:dcomic/requests/dmzj/dmzj_request.dart';
+import 'package:dcomic/requests/zaimanhua/zaimanhua_request.dart';
 import 'package:dcomic/utils/db_cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
@@ -90,4 +91,6 @@ class RequestHandlers{
   static DMZJInterfaceRequestHandler dmzjInterfaceRequestHandler=DMZJInterfaceRequestHandler();
 
   static CopyMangaRequestHandler copyMangaRequestHandler=CopyMangaRequestHandler();
+
+  static ZaiManHuaRequestHandler zaiManHuaRequestHandler=ZaiManHuaRequestHandler();
 }

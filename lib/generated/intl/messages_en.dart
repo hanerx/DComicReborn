@@ -184,6 +184,16 @@ class MessageLookup extends MessageLookupByLibrary {
         "ViewerSettingAlign":
             MessageLookupByLibrary.simpleMessage("Read Direction"),
         "ViewerSettingDebugView":
-            MessageLookupByLibrary.simpleMessage("Show Click Area")
+            MessageLookupByLibrary.simpleMessage("Show Click Area"),
+        "ViewerSettingHorizontalSize":
+            MessageLookupByLibrary.simpleMessage("Click Area Size(Horizontal)"),
+        "ViewerSettingThemeColor":
+            MessageLookupByLibrary.simpleMessage("Theme Color"),
+        "ViewerSettingUseMaterial3Design":
+            MessageLookupByLibrary.simpleMessage("Use Material 3 Design"),
+        "ViewerSettingUseMaterial3DesignSubTitle":
+            MessageLookupByLibrary.simpleMessage("Maybe not bad?"),
+        "ViewerSettingVerticalSize":
+            MessageLookupByLibrary.simpleMessage("Click Area Size(Vertical)")
       };
 }

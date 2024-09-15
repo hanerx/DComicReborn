@@ -34,7 +34,7 @@ abstract class ConfigDao {
   @Query('SELECT * FROM ConfigEntity')
   Future<List<ConfigEntity>> getAllConfig();
 
-  @Query('SELECT * FROM ConfigEntity WHERE `key` = :key LIMIT 1')
+  @Query('SELECT * FROM ConfigEntity WHERE `key` = :key')
   Future<ConfigEntity?> getConfigByKey(String key);
 
   @insert

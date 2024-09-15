@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:dcomic/providers/comic_veiwer_config_provider.dart';
 import 'package:dcomic/providers/version_provider.dart';
 import 'package:dcomic/view/drawer_page/search_page.dart';
 import 'package:dcomic/view/homepage/category_page.dart';
@@ -68,15 +67,20 @@ class App extends StatelessWidget {
             create: (_) => VersionProvider(),
             lazy: false,
           ),
-          ChangeNotifierProvider<ComicViewerConfigProvider>(
-            create: (_) => ComicViewerConfigProvider(),
-            lazy: false,
-          )
         ],
         builder: (context, child) => MaterialApp(
             title: 'DComic',
-            theme: ThemeModel.light,
-            darkTheme: ThemeModel.dark,
+            theme: ThemeData(
+              brightness: Brightness.light,
+              useMaterial3: Provider.of<ConfigProvider>(context).useMaterial3Design,
+              colorSchemeSeed: Provider.of<ConfigProvider>(context).themeColor.color,
+            ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              useMaterial3: Provider.of<ConfigProvider>(context).useMaterial3Design,
+              colorSchemeSeed: Provider.of<ConfigProvider>(context).themeColor.color,
+            ),
+            themeMode: Provider.of<ConfigProvider>(context).themeMode,
             supportedLocales: S.delegate.supportedLocales,
             localizationsDelegates: const [
               //此处

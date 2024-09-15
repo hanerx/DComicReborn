@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:dcomic/database/database_instance.dart';
-import 'package:dcomic/database/entity/comic_history.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
@@ -11,7 +10,6 @@ import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
 import 'package:dio/src/response.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:provider/provider.dart';
 
@@ -86,16 +84,16 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
   }
 
   @override
-  Future<List<ListItemEntity>> searchComicDetail(String keyword,
+  Future<List<ComicListItemEntity>> searchComicDetail(String keyword,
       {int page = 0}) async {
-    List<ListItemEntity> data = [];
+    List<ComicListItemEntity> data = [];
     var response = await RequestHandlers.copyMangaRequestHandler
         .search(keyword, page: page);
     if ((response.statusCode == 200 || response.statusCode == 304) &&
         response.data['code'] == 200) {
       var responseData = response.data['results']['list'];
       for (var item in responseData) {
-        data.add(ListItemEntity(
+        data.add(ComicListItemEntity(
             item['name'], ImageEntity(ImageType.network, item['cover']), {
           Icons.supervisor_account_rounded: item['author'].map((e) => e['name']).toList().join('/'),
           Icons.local_fire_department: item['popular'].toString()
@@ -109,7 +107,7 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
                         comicSourceModel: this,
                       ),
                   settings: const RouteSettings(name: 'ComicDetailPage')));
-        }));
+        }, item['path_word']));
       }
     }
     return data;
@@ -236,7 +234,7 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
               item['comment'],
               item['id'].toString(),
               item['user_name'],
-              item['count']));
+              item['count'], []));
         }
       }
     } catch (e, s) {
@@ -287,7 +285,7 @@ class CopyMangaComicChapterDetailModel extends BaseComicChapterDetailModel {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (var item in response.data['results']['list']) {
           data.add(
-              ChapterCommentEntity(item['id'].toString(), item['comment'], 1));
+              ChapterCommentEntity(item['id'].toString(), item['comment'], 1, avatar: ImageEntity(ImageType.network, item['user_avatar'])));
         }
       }
     } catch (e, s) {

@@ -475,6 +475,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_open_chinese_convert:
+    dependency: "direct main"
+    description:
+      name: flutter_open_chinese_convert
+      sha256: "91cfcc1aa91dc80426d50cc6beacce7d796d52aaef5338aaf4d64a25be24b873"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.4.0"
   flutter_spinkit:
     dependency: "direct main"
     description:
@@ -501,6 +509,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.0.0"
+  folding_cell:
+    dependency: "direct main"
+    description:
+      name: folding_cell
+      sha256: f4a957a94a2b934c5a33600a4b72140ed8540b400d602eff0e41fce5fc149795
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.2"
   frontend_server_client:
     dependency: transitive
     description:
@@ -1042,6 +1058,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.6.1"
+  text_scroll:
+    dependency: "direct main"
+    description:
+      name: text_scroll
+      sha256: "7869d86a6fdd725dee56bdd150216a99f0372b82fbfcac319214dbd5f36e1908"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.2.0"
   timing:
     dependency: transitive
     description:

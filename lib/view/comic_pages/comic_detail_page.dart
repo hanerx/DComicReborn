@@ -384,7 +384,9 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+
+            },
             icon: Icon(
               Icons.refresh,
               color: Theme.of(context).colorScheme.secondary,
@@ -425,13 +427,14 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                         ),
                       );
                     }),
-            onItemSelectedListener: (item, index, context) {
+            onItemSelectedListener: (item, index, context) async{
               ScaffoldMessenger.of(context)
                   .showSnackBar(SnackBar(content: Text(item.type.sourceName)));
               Provider.of<ComicSourceProvider>(context, listen: false)
                   .activeModel = item;
               Provider.of<ComicDetailPageController>(context, listen: false)
                   .comicSourceModel = item;
+              await Provider.of<ComicDetailPageController>(context, listen: false).refresh(context, widget.comicId, widget.title);
             },
             focusedItemDecoration: BoxDecoration(
               border: BorderDirectional(
@@ -714,7 +717,8 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                                 return CommentCard(
                                     avatar: item.avatar,
                                     nickname: item.nickname,
-                                    comment: item.comment);
+                                    comment: item.comment,
+                                    subComments: item.subComments,);
                               }),
                         ),
                       )))

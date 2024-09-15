@@ -1,22 +1,19 @@
 import 'package:dcomic/generated/l10n.dart';
-import 'package:dcomic/providers/comic_veiwer_config_provider.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/page_controllers/comic_viewer_page_controller.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
-import 'package:dcomic/view/components/empty_widget.dart';
 import 'package:dcomic/view/components/expand_card_button.dart';
 import 'package:dcomic/view/components/viewer_setting_list.dart';
 import 'package:easy_refresh/easy_refresh.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:provider/provider.dart';
 import 'package:date_format/date_format.dart' as formatdate;
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:text_scroll/text_scroll.dart';
 
 class ComicViewerPage extends StatefulWidget {
   final BaseComicDetailModel detailModel;
@@ -77,12 +74,18 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                 _pageController.animateToPage(0,
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeIn);
+                _itemScrollController.scrollTo(index: 0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeIn);
               },
               onLoad: () async {
                 await Provider.of<ComicViewerPageController>(context,
                         listen: false)
                     .load();
                 _pageController.animateToPage(0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeIn);
+                _itemScrollController.scrollTo(index: 0,
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeIn);
               },
@@ -221,7 +224,7 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
           top: 0,
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: () {
+            onTap: () async{
               if (Provider.of<ComicViewerPageController>(context, listen: false)
                   .currentPage >
                   0) {
@@ -232,13 +235,13 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                         1,
                     duration: const Duration(milliseconds: 200));
               } else {
-                _easyRefreshController.callRefresh();
+                await _easyRefreshController.callRefresh();
               }
             },
             child: SizedBox(
-              height: 150,
+              height: Provider.of<ConfigProvider>(context).verticalClickAreaSize,
               child:
-              Provider.of<ComicViewerConfigProvider>(context).drawDebugWidget
+              Provider.of<ConfigProvider>(context).drawDebugWidget
                   ? Container(
                 color: Color.lerp(Theme.of(context).colorScheme.primary,
                     Colors.transparent, 0.5),
@@ -276,9 +279,9 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
             }
           },
           child: SizedBox(
-            width: 80,
+            width: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
             child:
-                Provider.of<ComicViewerConfigProvider>(context).drawDebugWidget
+                Provider.of<ConfigProvider>(context).drawDebugWidget
                     ? Container(
                         color: Color.lerp(Theme.of(context).colorScheme.primary,
                             Colors.transparent, 0.5),
@@ -298,7 +301,7 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
           bottom: 0,
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: () {
+            onTap: () async {
               if (Provider.of<ComicViewerPageController>(context, listen: false)
                   .currentPage <
                   Provider.of<ComicViewerPageController>(context, listen: false)
@@ -313,13 +316,13 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                         1,
                     duration: const Duration(milliseconds: 200));
               } else {
-                _easyRefreshController.callLoad();
+                await _easyRefreshController.callLoad();
               }
             },
             child: SizedBox(
-              height: 150,
+              height: Provider.of<ConfigProvider>(context).verticalClickAreaSize,
               child:
-              Provider.of<ComicViewerConfigProvider>(context).drawDebugWidget
+              Provider.of<ConfigProvider>(context).drawDebugWidget
                   ? Container(
                 color: Color.lerp(Theme.of(context).colorScheme.primary,
                     Colors.transparent, 0.5),
@@ -357,9 +360,9 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
             }
           },
           child: SizedBox(
-            width: 80,
+            width: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
             child:
-                Provider.of<ComicViewerConfigProvider>(context).drawDebugWidget
+                Provider.of<ConfigProvider>(context).drawDebugWidget
                     ? Container(
                         color: Color.lerp(Theme.of(context).colorScheme.primary,
                             Colors.transparent, 0.5),
@@ -376,8 +379,8 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
       return Positioned(
           right: 0,
           left: 0,
-          top: 150,
-          bottom: 150,
+          top: Provider.of<ConfigProvider>(context).verticalClickAreaSize,
+          bottom: Provider.of<ConfigProvider>(context).verticalClickAreaSize,
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: () {
@@ -388,7 +391,7 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
             },
             child: SizedBox(
               child:
-              Provider.of<ComicViewerConfigProvider>(context).drawDebugWidget
+              Provider.of<ConfigProvider>(context).drawDebugWidget
                   ? Container(
                 color: Color.lerp(
                     Theme.of(context).colorScheme.tertiary,
@@ -400,8 +403,8 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
           ));
     }
     return Positioned(
-        right: 80,
-        left: 80,
+        right: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
+        left: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
         top: 0,
         bottom: 0,
         child: GestureDetector(
@@ -413,9 +416,8 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                     .showToolBar;
           },
           child: SizedBox(
-            width: 80,
             child:
-                Provider.of<ComicViewerConfigProvider>(context).drawDebugWidget
+                Provider.of<ConfigProvider>(context).drawDebugWidget
                     ? Container(
                         color: Color.lerp(
                             Theme.of(context).colorScheme.tertiary,
@@ -593,13 +595,13 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                                         child: ActionChip(
                                             onPressed: () {},
                                             avatar: CircleAvatar(
-                                              child: Text(
+                                              child: item.avatar == null?Text(
                                                 "${Provider.of<ComicViewerPageController>(context).maxLikes > 100 ? (item.likes / Provider.of<ComicViewerPageController>(context).maxLikes * 100).toInt() : item.likes}",
                                                 style: const TextStyle(
                                                     fontSize: 13),
-                                              ),
+                                              ): DComicImage(item.avatar!),
                                             ),
-                                            label: Text(item.comment),
+                                            label: TextScroll(item.comment, velocity: const Velocity(pixelsPerSecond: Offset(40, 0)),pauseBetween: const Duration(seconds: 3),),
                                             backgroundColor: Color.lerp(
                                                 Theme.of(context)
                                                     .colorScheme

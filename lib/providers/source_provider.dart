@@ -1,17 +1,26 @@
+import 'package:dcomic/database/database_instance.dart';
+import 'package:dcomic/database/entity/config.dart';
 import 'package:dcomic/providers/base_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/models/copymanga/copymanga_source_model.dart';
 import 'package:dcomic/providers/models/dmzj/dmzj_source_model.dart';
+import 'package:dcomic/providers/models/zaimanhua/zaimanhua_source_model.dart';
 
 class ComicSourceProvider extends BaseProvider {
-  List<BaseComicSourceModel> sources = [DMZJComicSourceModel(),CopyMangaComicSourceModel()];
+  List<BaseComicSourceModel> sources = [DMZJComicSourceModel(),CopyMangaComicSourceModel(),ZaiManHuaSourceModel()];
+  ConfigEntity? _activeHomeModelIndexEntity;
 
   @override
   Future<void> init() async {
+    final database = await DatabaseInstance.instance;
+    _activeHomeModelIndexEntity = await database.configDao
+        .getOrCreateConfigByKey('activeHomeModelIndex', value: 0);
+    activeHomeModelIndex = _activeHomeModelIndexEntity?.get<int>();
     for (var sourceModel in sources) {
       logger.i('init source model: ${sourceModel.type}');
       sourceModel.init();
     }
+    notifyListeners();
   }
 
   void callNotify(){
@@ -51,6 +60,10 @@ class ComicSourceProvider extends BaseProvider {
     if (-1 < index && index < hasHomepageSources.length) {
       _activeHomeModel = hasHomepageSources[index];
       _activeHomeModelIndex = index;
+      if(_activeHomeModelIndexEntity!=null){
+        _activeHomeModelIndexEntity!.set(index);
+        DatabaseInstance.instance.then((value) => value.configDao.updateConfig(_activeHomeModelIndexEntity!));
+      }
       notifyListeners();
     }
   }
@@ -62,6 +75,10 @@ class ComicSourceProvider extends BaseProvider {
     if (hasHomepageSources.contains(baseComicSourceModel)) {
       _activeHomeModel = baseComicSourceModel;
       _activeHomeModelIndex = hasHomepageSources.indexOf(baseComicSourceModel);
+      if(_activeHomeModelIndexEntity!=null){
+        _activeHomeModelIndexEntity!.set(_activeHomeModelIndex);
+        DatabaseInstance.instance.then((value) => value.configDao.updateConfig(_activeHomeModelIndexEntity!));
+      }
       notifyListeners();
     }
   }

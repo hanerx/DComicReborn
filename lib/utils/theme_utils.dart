@@ -3,14 +3,10 @@ import 'package:flutter/material.dart';
 class ThemeModel {
   final String name;
   final Color? color;
-  final ThemeMode? mode;
-  final IconData? icon;
 
   const ThemeModel({
     required this.name,
     this.color,
-    this.mode,
-    this.icon,
   });
 
   static final light = ThemeData(
@@ -25,93 +21,78 @@ class ThemeModel {
     colorSchemeSeed: Colors.blue,
   );
 
-  static final themes = [
-    const ThemeModel(
-      name: 'System',
-      mode: ThemeMode.system,
-      icon: Icons.phone_android,
-    ),
-    const ThemeModel(
-      name: 'Light',
-      mode: ThemeMode.light,
-      icon: Icons.light_mode,
-    ),
-    const ThemeModel(
-      name: 'Dark',
-      mode: ThemeMode.dark,
-      icon: Icons.dark_mode,
-    ),
-    const ThemeModel(
+  static final themes = <String, ThemeModel>{
+    'Blue': const ThemeModel(
       name: 'Blue',
       color: Colors.blue,
     ),
-    const ThemeModel(
+    'Red': const ThemeModel(
       name: 'Red',
       color: Colors.red,
     ),
-    const ThemeModel(
+    'Pink': const ThemeModel(
       name: 'Pink',
       color: Colors.pink,
     ),
-    const ThemeModel(
+    'Purple': const ThemeModel(
       name: 'Purple',
       color: Colors.purple,
     ),
-    const ThemeModel(
+    'DeepPurple': const ThemeModel(
       name: 'DeepPurple',
       color: Colors.deepPurple,
     ),
-    const ThemeModel(
+    'Indigo': const ThemeModel(
       name: 'Indigo',
       color: Colors.indigo,
     ),
-    const ThemeModel(
+    'LightBlue': const ThemeModel(
       name: 'LightBlue',
       color: Colors.lightBlue,
     ),
-    const ThemeModel(
+    'Cyan': const ThemeModel(
       name: 'Cyan',
       color: Colors.cyan,
     ),
-    const ThemeModel(
+    'Teal': const ThemeModel(
       name: 'Teal',
       color: Colors.teal,
     ),
-    const ThemeModel(
+    'LightGreen': const ThemeModel(
       name: 'LightGreen',
       color: Colors.lightGreen,
     ),
-    const ThemeModel(
+    'Lime': const ThemeModel(
       name: 'Lime',
       color: Colors.lime,
     ),
-    const ThemeModel(
+    'Yellow': const ThemeModel(
       name: 'Yellow',
       color: Colors.yellow,
     ),
-    const ThemeModel(
+    'Amber': const ThemeModel(
       name: 'Amber',
       color: Colors.amber,
     ),
-    const ThemeModel(
+    'Orange': const ThemeModel(
       name: 'Orange',
       color: Colors.orange,
     ),
-    const ThemeModel(
+    'DeepOrange': const ThemeModel(
       name: 'DeepOrange',
       color: Colors.deepOrange,
     ),
-    const ThemeModel(
+    'Brown': const ThemeModel(
       name: 'Brown',
       color: Colors.brown,
     ),
-    const ThemeModel(
+    'Grey': const ThemeModel(
       name: 'Grey',
       color: Colors.grey,
     ),
-    const ThemeModel(
+    'BlueGrey': const ThemeModel(
       name: 'BlueGrey',
       color: Colors.blueGrey,
     ),
-  ];
+  };
 }

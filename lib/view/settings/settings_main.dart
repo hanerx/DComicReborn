@@ -3,6 +3,7 @@ import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/view/settings/about_page.dart';
 import 'package:dcomic/view/settings/account_manage_page.dart';
 import 'package:dcomic/view/settings/debug_page.dart';
+import 'package:dcomic/view/settings/viewer_setting_page.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -43,6 +44,13 @@ class _MainSettingPageState extends State<MainSettingPage> {
               leading: const Icon(Icons.chrome_reader_mode),
               title: Text(S.of(context).ReaderSettings),
               subtitle: Text(S.of(context).ReaderSettingsDescription),
+              onTap: (){
+                Provider.of<NavigatorProvider>(context, listen: false)
+                    .getNavigator(context, NavigatorType.defaultNavigator)
+                    ?.push(MaterialPageRoute(
+                    builder: (context) => const ViewerSettingPage(),
+                    settings: const RouteSettings(name: 'ViewerSettingPage')));
+              },
             ),
             ListTile(
               leading: const Icon(Icons.ad_units_outlined),

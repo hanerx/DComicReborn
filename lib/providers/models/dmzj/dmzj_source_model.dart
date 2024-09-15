@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:date_format/date_format.dart' as date_format;
 import 'package:dcomic/database/database_instance.dart';
-import 'package:dcomic/database/entity/comic_history.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/protobuf/comic.pb.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
@@ -87,16 +86,16 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
   }
 
   @override
-  Future<List<ListItemEntity>> searchComicDetail(String keyword,
+  Future<List<ComicListItemEntity>> searchComicDetail(String keyword,
       {int page = 0}) async {
-    List<ListItemEntity> data = [];
+    List<ComicListItemEntity> data = [];
     var response =
         await RequestHandlers.dmzjv3requestHandler.search(keyword, page);
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         var responseData = response.data;
         for (var item in responseData) {
-          data.add(ListItemEntity(
+          data.add(ComicListItemEntity(
               item['title'],
               ImageEntity(ImageType.network, item['cover'],
                   imageHeaders: {"referer": "https://i.dmzj.com"}),
@@ -114,7 +113,7 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
                           comicSourceModel: this,
                         ),
                     settings: const RouteSettings(name: 'ComicDetailPage')));
-          }));
+          }, item['id'].toString()));
         }
       }
     } catch (e, s) {
@@ -537,15 +536,24 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (String key in response.data['commentIds']) {
-          var commentKey = key.split(',').first;
-          var item = response.data['comments'][commentKey];
-          data.add(ComicCommentEntity(
-              ImageEntity(ImageType.network, item['avatar_url'],
-                  imageHeaders: {"referer": "https://i.dmzj.com"}),
-              item['content'],
-              item['id'].toString(),
-              item['nickname'],
-              int.parse(item['like_amount'].toString())));
+          ComicCommentEntity? parent;
+          var commentKeyList = key.split(',');
+          for(var commentKey in commentKeyList){
+            var item = response.data['comments'][commentKey];
+            var entity = ComicCommentEntity(
+                ImageEntity(ImageType.network, item['avatar_url'],
+                    imageHeaders: {"referer": "https://i.dmzj.com"}),
+                item['content'],
+                item['id'].toString(),
+                item['nickname'],
+                int.parse(item['like_amount'].toString()), []);
+            if(parent == null){
+              parent = entity;
+            }else{
+              parent.subComments.add(entity);
+            }
+          }
+          data.add(parent!);
         }
       }
     } catch (e, s) {
