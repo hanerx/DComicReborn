@@ -3,6 +3,7 @@ import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/view/settings/about_page.dart';
 import 'package:dcomic/view/settings/account_manage_page.dart';
 import 'package:dcomic/view/settings/debug_page.dart';
+import 'package:dcomic/view/settings/source_manage_page.dart';
 import 'package:dcomic/view/settings/viewer_setting_page.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
@@ -56,6 +57,13 @@ class _MainSettingPageState extends State<MainSettingPage> {
               leading: const Icon(Icons.ad_units_outlined),
               title: Text(S.of(context).SourceSettings),
               subtitle: Text(S.of(context).SourceSettingsDescription),
+              onTap: (){
+                Provider.of<NavigatorProvider>(context, listen: false)
+                    .getNavigator(context, NavigatorType.defaultNavigator)
+                    ?.push(MaterialPageRoute(
+                    builder: (context) => const SourceManagePage(),
+                    settings: const RouteSettings(name: 'SourceManagePage')));
+              },
             ),
             ListTile(
               leading: const Icon(Icons.account_box),

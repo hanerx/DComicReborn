@@ -123,7 +123,7 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
   }
 
   @override
-  Future<void> init() async {
+  Future<void> initModel() async {
     _accountModel.parent ??= this;
     await super.init();
   }
@@ -782,7 +782,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
               .getOrCreateConfigByKey('uid', parent!.type.sourceId));
           databaseUId.set(response.data['data']['uid']);
           await databaseInstance.modelConfigDao.updateConfig(databaseUId);
-          await init();
+          await initAccount();
           return true;
         } else {
           throw response.data['msg'];
@@ -809,12 +809,12 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
     _avatar = null;
     _username = null;
     _nickname = null;
-    await init();
+    await initAccount();
     return true;
   }
 
   @override
-  Future<void> init() async {
+  Future<void> initAccount() async {
     var databaseInstance = await DatabaseInstance.instance;
     _isLogin = (await databaseInstance.modelConfigDao
             .getOrCreateConfigByKey('isLogin', parent!.type.sourceId))

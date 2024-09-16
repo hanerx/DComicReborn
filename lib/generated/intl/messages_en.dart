@@ -42,7 +42,16 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m7(Ping) => "Ping: ${Ping} ms";
 
-  static String m8(modes) => "${Intl.select(modes, {
+  static String m8(sourceId) => "${Intl.select(sourceId, {
+            'BaseComicSource':
+                'A Base Class, If you see it, Please report an issue.',
+            'dmzj': 'DMZJ Source, The Tear of Ages.',
+            'copymanga': 'Copy Managa, Powerful but may not connectable.',
+            'zaimanhua': 'ZaiManHua Source, Maybe New Home?',
+            'other': 'Bug!!!!!',
+          })}";
+
+  static String m9(modes) => "${Intl.select(modes, {
             'ranking': 'Ranking',
             'latestUpdate': 'Latest Update',
             'other': 'Unknown',
@@ -172,11 +181,14 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Settings About Comic Reader"),
         "RequireLogin": MessageLookupByLibrary.simpleMessage(
             "This Page Needs User Info, Please Login"),
+        "SourceProviderDesc": m8,
+        "SourceProviderSettingEmpty": MessageLookupByLibrary.simpleMessage(
+            "No Extra Options for this Source Provider"),
         "SourceSettings":
             MessageLookupByLibrary.simpleMessage("Source Settings"),
         "SourceSettingsDescription":
             MessageLookupByLibrary.simpleMessage("Manage Comic Source"),
-        "TimeOrRankFilterEntityModes": m8,
+        "TimeOrRankFilterEntityModes": m9,
         "TimeOrRankFilterEntityName":
             MessageLookupByLibrary.simpleMessage("SortType"),
         "UnknownScreen": MessageLookupByLibrary.simpleMessage(

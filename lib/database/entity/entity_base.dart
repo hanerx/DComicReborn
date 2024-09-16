@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 class EntityBase{
@@ -12,6 +14,8 @@ class EntityBase{
           return int.parse(value);
         case double:
           return double.parse(value);
+        case Map:
+          return jsonDecode(value);
         default:
           return value;
       }
@@ -27,6 +31,9 @@ class EntityBase{
         case bool:
           return value?'1':'0';
         default:
+          if(value is Map){
+            return jsonEncode(value);
+          }
           if(value is Enum){
             return value.index.toString();
           }

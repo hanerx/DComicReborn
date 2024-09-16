@@ -114,7 +114,7 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
   }
 
   @override
-  Future<void> init() async {
+  Future<void> initModel() async {
     _accountModel.parent ??= this;
     return super.init();
   }
@@ -522,7 +522,7 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
               .getOrCreateConfigByKey('token', parent!.type.sourceId));
           databaseUId.set(data['token']);
           await databaseInstance.modelConfigDao.updateConfig(databaseUId);
-          await init();
+          await initAccount();
           notifyListeners();
           return true;
         } else if (response.data['code'] == 210) {
@@ -579,7 +579,7 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
   String? get username => _username;
 
   @override
-  Future<void> init() async {
+  Future<void> initAccount() async {
     var databaseInstance = await DatabaseInstance.instance;
     var databaseIsLogin = (await databaseInstance.modelConfigDao
         .getOrCreateConfigByKey('isLogin', parent!.type.sourceId));

@@ -93,4 +93,6 @@ class RequestHandlers{
   static CopyMangaRequestHandler copyMangaRequestHandler=CopyMangaRequestHandler();
 
   static ZaiManHuaRequestHandler zaiManHuaRequestHandler=ZaiManHuaRequestHandler();
+  static ZaiManHuaMobileRequestHandler zaiManHuaMobileRequestHandler=ZaiManHuaMobileRequestHandler();
+  static ZaiManHuaAccountRequestHandler zaiManHuaAccountRequestHandler=ZaiManHuaAccountRequestHandler();
 }

@@ -35,7 +35,7 @@ abstract class ComicMappingDao {
   Future<List<ComicMappingEntity>> getAllComicMappingEntity();
 
   @Query(
-      'SELECT * FROM ComicMappingEntity WHERE `comicId`= :comicId AND `sourceProviderName`= :sourceProviderName AND `targetProviderName`= :targetProviderName')
+      'SELECT * FROM ComicMappingEntity WHERE `comicId` = :comicId AND `sourceProviderName` = :sourceProviderName AND `targetProviderName` = :targetProviderName')
   Future<ComicMappingEntity?> getComicMappingByComicId(
       String comicId, String sourceProviderName, String targetProviderName);
 
@@ -52,6 +52,7 @@ abstract class ComicMappingDao {
     if (result == null) {
       result ??= ComicMappingEntity.createComicMappingEntity(comicId, sourceProviderName, targetProviderName);
       await insertComicMapping(result);
+      result = await getComicMappingByComicId(comicId, sourceProviderName, targetProviderName)??result;
     }
     return result;
   }

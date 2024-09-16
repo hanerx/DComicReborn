@@ -11,10 +11,10 @@ class CopyMangaRequestHandler extends RequestHandler {
 
   Future<Options> setHeader([Map<String, dynamic>? headers]) async {
     headers ??= {};
-    if ((await (await DatabaseInstance.instance)
-            .modelConfigDao
-            .getConfigByKeyAndModel('isLogin', 'copymanga'))
-        ?.get<bool>()) {
+    var databaseInstance = await DatabaseInstance.instance;
+    var isLoginEntity = await databaseInstance.modelConfigDao
+        .getConfigByKeyAndModel('isLogin', 'copymanga');
+    if (isLoginEntity!=null&&isLoginEntity.get<bool>()) {
       String token = (await (await DatabaseInstance.instance)
                   .modelConfigDao
                   .getConfigByKeyAndModel('token', 'copymanga'))

@@ -76,6 +76,7 @@ abstract class ComicHistoryDao {
     if (result == null) {
       result ??= ComicHistoryEntity.createComicHistoryEntity(comicId, providerName: sourceModel);
       await insertComicHistory(result);
+      result = await getComicHistoryByComicId(comicId,sourceModel)??result;
     }
     return result;
   }

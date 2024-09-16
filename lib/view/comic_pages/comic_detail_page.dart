@@ -8,6 +8,7 @@ import 'package:dcomic/utils/custom_theme.dart';
 import 'package:dcomic/view/comic_viewer/comic_viewer_page.dart';
 import 'package:dcomic/view/components/comment_card.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
+import 'package:dcomic/view/popup_pages/search_dialog.dart';
 import 'package:direct_select_flutter/direct_select_container.dart';
 import 'package:direct_select_flutter/direct_select_item.dart';
 import 'package:direct_select_flutter/direct_select_list.dart';
@@ -33,6 +34,7 @@ class ComicDetailPage extends StatefulWidget {
 }
 
 class _ComicDetailPageState extends State<ComicDetailPage> {
+  final EasyRefreshController _easyRefreshController = EasyRefreshController();
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -79,7 +81,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
         ),
         endDrawer: _buildEndDrawer(context),
         body: Container(
-            color: Theme.of(context).colorScheme.surfaceVariant,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             child: ExtendedNestedScrollView(
               onlyOneScrollInBody: true,
               pinnedHeaderSliverHeightBuilder: () {
@@ -130,6 +132,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                 ];
               },
               body: EasyRefresh(
+                controller: _easyRefreshController,
                 header: ClassicHeader(
                     safeArea: false,
                     backgroundColor: Theme.of(context).colorScheme.primary,
@@ -384,8 +387,20 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
             ),
           ),
           IconButton(
-            onPressed: () {
-
+            onPressed: () async{
+              var activeModel = Provider.of<ComicSourceProvider>(
+                  context, listen: false)
+                  .activeModel;
+              await Provider.of<ComicDetailPageController>(context, listen: false).bindComicId(widget.comicId, await showDialog(
+                  context: context,
+                  builder: (context) => StatefulBuilder(
+                      builder: (context, state) {
+                        return SearchDialog(
+                          sourceModel: activeModel,
+                          title: widget.title,
+                          comicId: widget.comicId,
+                        );
+                      })));
             },
             icon: Icon(
               Icons.refresh,

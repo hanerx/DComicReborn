@@ -49,6 +49,7 @@ abstract class ConfigDao {
     if (result == null) {
       result ??= ConfigEntity.createConfigEntity(key, value);
       await insertConfig(result);
+      result = await getConfigByKey(key) ?? result;
     }
     return result;
   }

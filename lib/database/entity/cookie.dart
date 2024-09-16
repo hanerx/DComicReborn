@@ -26,7 +26,7 @@ abstract class CookieDao {
   @Query('SELECT * FROM CookieEntity')
   Future<List<CookieEntity>> getAllCookies();
 
-  @Query('SELECT * FROM CookieEntity WHERE `key` = :key LIMIT 1')
+  @Query('SELECT * FROM CookieEntity WHERE `key` = :key')
   Future<CookieEntity?> getCookieByKey(String key);
 
   @Insert(onConflict: OnConflictStrategy.replace)

@@ -28,7 +28,7 @@ class ComicSourceEntity {
   }
 }
 
-enum ComicHistorySourceType{ network, local}
+enum ComicHistorySourceType { network, local }
 
 abstract class BaseComicSourceModel extends BaseModel {
   BaseComicHomepageModel? get homepage => null;
@@ -42,31 +42,32 @@ abstract class BaseComicSourceModel extends BaseModel {
   Future<List<ComicListItemEntity>> searchComicDetail(String keyword,
       {int page = 0});
 
-  Future<List<ListItemEntity>> getComicHistory(ComicHistorySourceType sourceType, {int page=0}) async{
-    if(sourceType == ComicHistorySourceType.local && page == 0){
+  Future<List<ListItemEntity>> getComicHistory(
+      ComicHistorySourceType sourceType,
+      {int page = 0}) async {
+    if (sourceType == ComicHistorySourceType.local && page == 0) {
       try {
         List<ListItemEntity> data = [];
         var databaseInstance = await DatabaseInstance.instance;
         var comicHistoryEntityList = await databaseInstance.comicHistoryDao
             .getComicHistoryByProvider(type.sourceId);
-        for(var entity in comicHistoryEntityList){
-          data.add(ListItemEntity(entity.title,
-              ImageEntity(entity.coverType, entity.cover), {
-                Icons.history: date_format.formatDate(
-                    entity.timestamp!,
-                    [date_format.yyyy, '-', date_format.mm, '-', date_format.dd]),
-                Icons.history_edu: entity.lastChapterTitle
-              }, (context) {
-                Provider.of<NavigatorProvider>(context, listen: false)
-                    .getNavigator(context, NavigatorType.defaultNavigator)
-                    ?.push(MaterialPageRoute(
+        for (var entity in comicHistoryEntityList) {
+          data.add(ListItemEntity(
+              entity.title, ImageEntity(entity.coverType, entity.cover), {
+            Icons.history: date_format.formatDate(entity.timestamp!,
+                [date_format.yyyy, '-', date_format.mm, '-', date_format.dd]),
+            Icons.history_edu: entity.lastChapterTitle
+          }, (context) {
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
                     builder: (context) => ComicDetailPage(
-                      title: entity.title,
-                      comicId: entity.comicId,
-                      comicSourceModel: this,
-                    ),
+                          title: entity.title,
+                          comicId: entity.comicId,
+                          comicSourceModel: this,
+                        ),
                     settings: const RouteSettings(name: 'ComicDetailPage')));
-              }));
+          }));
         }
         return data;
       } catch (e, s) {
@@ -76,41 +77,62 @@ abstract class BaseComicSourceModel extends BaseModel {
     return [];
   }
 
-  @override
-  Future<void> init() async {
+  Future<void> initModel() async {
     if (accountModel != null) {
-      await accountModel!.init();
+      await accountModel!.initAccount();
     }
   }
 
-  Future<BaseComicDetailModel?> searchAndGetComicDetail(String comicId, String title, BaseComicSourceModel sourceModel) async{
-    if(sourceModel == this){
+  Future<BaseComicDetailModel?> searchAndGetComicDetail(
+      String comicId, String title, BaseComicSourceModel sourceModel) async {
+    if (sourceModel == this) {
       return await getComicDetail(comicId, title);
     }
     var databaseInstance = await DatabaseInstance.instance;
     var comicMappingEntity = await databaseInstance.comicMappingDao
-        .getOrCreateConfigByComicId(comicId, sourceModel.type.sourceId, type.sourceId);
-    if(comicMappingEntity.resultComicId.isEmpty){
+        .getOrCreateConfigByComicId(
+            comicId, sourceModel.type.sourceId, type.sourceId);
+    if (comicMappingEntity.resultComicId.isEmpty) {
       var searchResultList = await searchComicDetail(title);
-      if(searchResultList.length == 1){
+      if (searchResultList.length == 1) {
         comicMappingEntity.resultComicId = searchResultList.first.comicId;
-        await databaseInstance.comicMappingDao.updateComicMapping(comicMappingEntity);
-      }else{
-        for(var item in searchResultList){
+        await databaseInstance.comicMappingDao
+            .updateComicMapping(comicMappingEntity);
+      } else {
+        for (var item in searchResultList) {
           var sourceTitle = await ChineseConverter.convert(item.title, T2S());
           var targetTitle = await ChineseConverter.convert(title, T2S());
-          if(sourceTitle == targetTitle){
+          if (sourceTitle == targetTitle) {
             comicMappingEntity.resultComicId = item.comicId;
-            await databaseInstance.comicMappingDao.updateComicMapping(comicMappingEntity);
+            await databaseInstance.comicMappingDao
+                .updateComicMapping(comicMappingEntity);
             break;
           }
         }
       }
     }
-    if(comicMappingEntity.resultComicId.isNotEmpty){
+    if (comicMappingEntity.resultComicId.isNotEmpty) {
       return await getComicDetail(comicMappingEntity.resultComicId, title);
     }
     return null;
+  }
+
+  Future<void> bindComicIdFromSourceModel(String comicId, String targetComicId, BaseComicSourceModel sourceModel) async{
+    var databaseInstance = await DatabaseInstance.instance;
+    var comicMappingEntity = await databaseInstance.comicMappingDao
+        .getOrCreateConfigByComicId(
+        comicId, sourceModel.type.sourceId, type.sourceId);
+    comicMappingEntity.resultComicId = targetComicId;
+    await databaseInstance.comicMappingDao
+        .updateComicMapping(comicMappingEntity);
+  }
+
+  Widget getSourceSettingWidget(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.hourglass_empty),
+      title: Text(S.of(context).SourceProviderSettingEmpty),
+      dense: true,
+    );
   }
 }
 
@@ -242,8 +264,7 @@ abstract class BaseComicAccountModel extends BaseModel {
 
   String? get username;
 
-  @override
-  Future<void> init();
+  Future<void> initAccount();
 
   Future<bool> login(String username, String password);
 
@@ -350,8 +371,8 @@ class ComicCommentEntity {
   final int likes;
   List<ComicCommentEntity> subComments = [];
 
-  ComicCommentEntity(
-      this.avatar, this.comment, this.commentId, this.nickname, this.likes, this.subComments);
+  ComicCommentEntity(this.avatar, this.comment, this.commentId, this.nickname,
+      this.likes, this.subComments);
 }
 
 class CarouselEntity {
@@ -389,8 +410,9 @@ class ListItemEntity {
   ListItemEntity(this.title, this.cover, this.details, this.onTap);
 }
 
-class ComicListItemEntity extends ListItemEntity{
+class ComicListItemEntity extends ListItemEntity {
   final String comicId;
-  ComicListItemEntity(super.title, super.cover, super.details, super.onTap, this.comicId);
 
+  ComicListItemEntity(
+      super.title, super.cover, super.details, super.onTap, this.comicId);
 }

@@ -17,10 +17,10 @@ class _SearchPageState extends State<SearchPage> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
         create: (_) => ComicSearchPageController(Provider.of<ComicSourceProvider>(context)
-            .sources),
+            .orderedSources),
     builder: (context, child) => DefaultTabController(
         length: Provider.of<ComicSourceProvider>(context)
-            .sources
+            .orderedSources
             .length,
         child: Scaffold(
           appBar: AppBar(
@@ -33,6 +33,7 @@ class _SearchPageState extends State<SearchPage> {
             actions: [
               IconButton(
                   onPressed: () async {
+                    FocusScope.of(context).unfocus();
                     await Provider.of<ComicSearchPageController>(
                         context,
                         listen: false)
@@ -45,7 +46,7 @@ class _SearchPageState extends State<SearchPage> {
               isScrollable: true,
               tabs: [
                 for (var item in Provider.of<ComicSourceProvider>(context)
-                    .sources)
+                    .orderedSources)
                   Tab(
                     text: item.type.sourceName,
                   )
@@ -54,7 +55,7 @@ class _SearchPageState extends State<SearchPage> {
           ),
           body: TabBarView(children: [
             for (var item in Provider.of<ComicSourceProvider>(context)
-                .sources)
+                .orderedSources)
               EasyRefresh(
                   onRefresh: () async {
                     await Provider.of<ComicSearchPageController>(
@@ -71,7 +72,7 @@ class _SearchPageState extends State<SearchPage> {
                   refreshOnStart: true,
                   child: Container(
                     height: double.infinity,
-                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: GridView.builder(
                       shrinkWrap: true,
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
