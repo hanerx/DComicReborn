@@ -6,21 +6,32 @@ part of 'database_common.dart';
 // FloorGenerator
 // **************************************************************************
 
+abstract class $DComicDatabaseBuilderContract {
+  /// Adds migrations to the builder.
+  $DComicDatabaseBuilderContract addMigrations(List<Migration> migrations);
+
+  /// Adds a database [Callback] to the builder.
+  $DComicDatabaseBuilderContract addCallback(Callback callback);
+
+  /// Creates the database and initializes it.
+  Future<DComicDatabase> build();
+}
+
 // ignore: avoid_classes_with_only_static_members
 class $FloorDComicDatabase {
   /// Creates a database builder for a persistent database.
   /// Once a database is built, you should keep a reference to it and re-use it.
-  static _$DComicDatabaseBuilder databaseBuilder(String name) =>
+  static $DComicDatabaseBuilderContract databaseBuilder(String name) =>
       _$DComicDatabaseBuilder(name);
 
   /// Creates a database builder for an in memory database.
   /// Information stored in an in memory database disappears when the process is killed.
   /// Once a database is built, you should keep a reference to it and re-use it.
-  static _$DComicDatabaseBuilder inMemoryDatabaseBuilder() =>
+  static $DComicDatabaseBuilderContract inMemoryDatabaseBuilder() =>
       _$DComicDatabaseBuilder(null);
 }
 
-class _$DComicDatabaseBuilder {
+class _$DComicDatabaseBuilder implements $DComicDatabaseBuilderContract {
   _$DComicDatabaseBuilder(this.name);
 
   final String? name;
@@ -29,19 +40,19 @@ class _$DComicDatabaseBuilder {
 
   Callback? _callback;
 
-  /// Adds migrations to the builder.
-  _$DComicDatabaseBuilder addMigrations(List<Migration> migrations) {
+  @override
+  $DComicDatabaseBuilderContract addMigrations(List<Migration> migrations) {
     _migrations.addAll(migrations);
     return this;
   }
 
-  /// Adds a database [Callback] to the builder.
-  _$DComicDatabaseBuilder addCallback(Callback callback) {
+  @override
+  $DComicDatabaseBuilderContract addCallback(Callback callback) {
     _callback = callback;
     return this;
   }
 
-  /// Creates the database and initializes it.
+  @override
   Future<DComicDatabase> build() async {
     final path = name != null
         ? await sqfliteDatabaseFactory.getDatabasePath(name!)
@@ -77,7 +88,7 @@ class _$DComicDatabase extends DComicDatabase {
     Callback? callback,
   ]) async {
     final databaseOptions = sqflite.OpenDatabaseOptions(
-      version: 3,
+      version: 4,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
         await callback?.onConfigure?.call(database);
@@ -337,8 +348,7 @@ class _$CookieDao extends CookieDao {
 
   @override
   Future<CookieEntity?> getCookieByKey(String key) async {
-    return _queryAdapter.query(
-        'SELECT * FROM CookieEntity WHERE `key` = ?1 LIMIT 1',
+    return _queryAdapter.query('SELECT * FROM CookieEntity WHERE `key` = ?1',
         mapper: (Map<String, Object?> row) => CookieEntity(
             row['id'] as int?, row['key'] as String, row['value'] as String),
         arguments: [key]);
@@ -415,7 +425,7 @@ class _$ModelConfigDao extends ModelConfigDao {
     String sourceModel,
   ) async {
     return _queryAdapter.query(
-        'SELECT * FROM ModelConfigEntity WHERE `key` = ?1 AND `sourceModel` = ?2 LIMIT 1',
+        'SELECT * FROM ModelConfigEntity WHERE `key` = ?1 AND `sourceModel` = ?2',
         mapper: (Map<String, Object?> row) => ModelConfigEntity(row['id'] as int?, row['key'] as String, row['value'] as String?, row['sourceModel'] as String?),
         arguments: [key, sourceModel]);
   }
@@ -423,13 +433,13 @@ class _$ModelConfigDao extends ModelConfigDao {
   @override
   Future<void> insertConfig(ModelConfigEntity configEntity) async {
     await _modelConfigEntityInsertionAdapter.insert(
-        configEntity, OnConflictStrategy.abort);
+        configEntity, OnConflictStrategy.replace);
   }
 
   @override
   Future<void> updateConfig(ModelConfigEntity configEntity) async {
     await _modelConfigEntityUpdateAdapter.update(
-        configEntity, OnConflictStrategy.abort);
+        configEntity, OnConflictStrategy.replace);
   }
 }
 
@@ -489,7 +499,7 @@ class _$ComicMappingDao extends ComicMappingDao {
     String targetProviderName,
   ) async {
     return _queryAdapter.query(
-        'SELECT * FROM ComicMappingEntity WHERE `comicId`= ?1 AND `sourceProviderName`= ?2 AND `targetProviderName`= ?3',
+        'SELECT * FROM ComicMappingEntity WHERE `comicId` = ?1 AND `sourceProviderName` = ?2 AND `targetProviderName` = ?3',
         mapper: (Map<String, Object?> row) => ComicMappingEntity(row['id'] as int?, row['comicId'] as String, row['sourceProviderName'] as String, row['targetProviderName'] as String, row['resultComicId'] as String),
         arguments: [comicId, sourceProviderName, targetProviderName]);
   }

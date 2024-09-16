@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/entity/config.dart';
 import 'package:dcomic/providers/base_provider.dart';
@@ -7,8 +9,14 @@ import 'package:dcomic/providers/models/dmzj/dmzj_source_model.dart';
 import 'package:dcomic/providers/models/zaimanhua/zaimanhua_source_model.dart';
 
 class ComicSourceProvider extends BaseProvider {
-  List<BaseComicSourceModel> sources = [DMZJComicSourceModel(),CopyMangaComicSourceModel(),ZaiManHuaSourceModel()];
+  List<BaseComicSourceModel> sources = [
+    DMZJComicSourceModel(),
+    CopyMangaComicSourceModel(),
+    ZaiManHuaSourceModel()
+  ];
   ConfigEntity? _activeHomeModelIndexEntity;
+  ConfigEntity? _sortOrderEntity;
+  Map sortOrder = {};
 
   @override
   Future<void> init() async {
@@ -16,14 +24,20 @@ class ComicSourceProvider extends BaseProvider {
     _activeHomeModelIndexEntity = await database.configDao
         .getOrCreateConfigByKey('activeHomeModelIndex', value: 0);
     activeHomeModelIndex = _activeHomeModelIndexEntity?.get<int>();
+    int idx = 0;
     for (var sourceModel in sources) {
       logger.i('init source model: ${sourceModel.type}');
       sourceModel.init();
+      sortOrder[sourceModel.type.sourceId] = idx;
+      idx++;
     }
+    _sortOrderEntity = await database.configDao
+        .getOrCreateConfigByKey('sourceModelSortOrder', value: sortOrder);
+    sortOrder = _sortOrderEntity?.get<Map>();
     notifyListeners();
   }
 
-  void callNotify(){
+  void callNotify() {
     notifyListeners();
   }
 
@@ -40,6 +54,9 @@ class ComicSourceProvider extends BaseProvider {
         result.add(element);
       }
     }
+    result.sort((a, b) =>
+        sortOrder[a.type.sourceId] ??
+        0.compareTo(sortOrder[b.type.sourceId] ?? 0));
     return result;
   }
 
@@ -50,7 +67,40 @@ class ComicSourceProvider extends BaseProvider {
         result.add(element);
       }
     }
+    result.sort((a, b) =>
+        sortOrder[a.type.sourceId] ??
+        0.compareTo(sortOrder[b.type.sourceId] ?? 0));
     return result;
+  }
+
+  List<BaseComicSourceModel> get orderedSources {
+    List<BaseComicSourceModel> result = [];
+    for (var element in sources) {
+      result.add(element);
+    }
+    result.sort((a, b) =>
+        sortOrder[a.type.sourceId] ??
+        0.compareTo(sortOrder[b.type.sourceId] ?? 0));
+    return result;
+  }
+
+  void swapOrder(int oldIndex, int newIndex) {
+    oldIndex = min(oldIndex, orderedSources.length - 1);
+    newIndex = min(newIndex, orderedSources.length - 1);
+    var oldSource = orderedSources[oldIndex];
+    var newSource = orderedSources[newIndex];
+    var newActiveHomeModel = activeHomeModel;
+    var newActiveModel = activeModel;
+    sortOrder[oldSource.type.sourceId] = newIndex;
+    sortOrder[newSource.type.sourceId] = oldIndex;
+    if (_sortOrderEntity != null) {
+      _sortOrderEntity!.set(sortOrder);
+      DatabaseInstance.instance
+          .then((value) => value.configDao.updateConfig(_sortOrderEntity!));
+    }
+    activeHomeModel = newActiveHomeModel;
+    activeModel = newActiveModel;
+    notifyListeners();
   }
 
   int get activeHomeModelIndex =>
@@ -60,9 +110,10 @@ class ComicSourceProvider extends BaseProvider {
     if (-1 < index && index < hasHomepageSources.length) {
       _activeHomeModel = hasHomepageSources[index];
       _activeHomeModelIndex = index;
-      if(_activeHomeModelIndexEntity!=null){
+      if (_activeHomeModelIndexEntity != null) {
         _activeHomeModelIndexEntity!.set(index);
-        DatabaseInstance.instance.then((value) => value.configDao.updateConfig(_activeHomeModelIndexEntity!));
+        DatabaseInstance.instance.then((value) =>
+            value.configDao.updateConfig(_activeHomeModelIndexEntity!));
       }
       notifyListeners();
     }
@@ -75,9 +126,10 @@ class ComicSourceProvider extends BaseProvider {
     if (hasHomepageSources.contains(baseComicSourceModel)) {
       _activeHomeModel = baseComicSourceModel;
       _activeHomeModelIndex = hasHomepageSources.indexOf(baseComicSourceModel);
-      if(_activeHomeModelIndexEntity!=null){
+      if (_activeHomeModelIndexEntity != null) {
         _activeHomeModelIndexEntity!.set(_activeHomeModelIndex);
-        DatabaseInstance.instance.then((value) => value.configDao.updateConfig(_activeHomeModelIndexEntity!));
+        DatabaseInstance.instance.then((value) =>
+            value.configDao.updateConfig(_activeHomeModelIndexEntity!));
       }
       notifyListeners();
     }

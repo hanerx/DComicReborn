@@ -87,13 +87,13 @@ abstract class ModelConfigDao {
   @Query('SELECT * FROM ModelConfigEntity')
   Future<List<ModelConfigEntity>> getAllConfig();
 
-  @Query('SELECT * FROM ModelConfigEntity WHERE `key` = :key AND `sourceModel` = :sourceModel LIMIT 1')
+  @Query('SELECT * FROM ModelConfigEntity WHERE `key` = :key AND `sourceModel` = :sourceModel')
   Future<ModelConfigEntity?> getConfigByKeyAndModel(String key,String sourceModel);
 
-  @insert
+  @Insert(onConflict: OnConflictStrategy.replace)
   Future<void> insertConfig(ModelConfigEntity configEntity);
 
-  @update
+  @Update(onConflict: OnConflictStrategy.replace)
   Future<void> updateConfig(ModelConfigEntity configEntity);
 
   Future<ModelConfigEntity> getOrCreateConfigByKey(String key,String sourceModel,
@@ -102,6 +102,7 @@ abstract class ModelConfigDao {
     if (result == null) {
       result ??= ModelConfigEntity.createConfigEntity(key, value,sourceModel);
       await insertConfig(result);
+      result = await getConfigByKeyAndModel(key,sourceModel)??result;
     }
     return result;
   }

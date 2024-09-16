@@ -38,7 +38,15 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m5(Reason) => "登录失败: ${Reason}.";
 
-  static String m8(modes) => "${Intl.select(modes, {
+  static String m8(sourceId) => "${Intl.select(sourceId, {
+            'BaseComicSource': '所有漫画源的基类，如果你看到这玩意了，说明作者冲晕过去了，请提交issue',
+            'dmzj': '大妈之家，现在可以认为是赛博墓碑',
+            'copymanga': '拷贝漫画，资源齐全但是评论有向8u靠拢的趋势，而且你不一定能连上',
+            'zaimanhua': '再漫画，新出的不知道是哪位的部将',
+            'other': '出bug力!',
+          })}";
+
+  static String m9(modes) => "${Intl.select(modes, {
             'ranking': '热度',
             'latestUpdate': '更新',
             'other': '未知',
@@ -147,10 +155,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "ReaderSettingsDescription":
             MessageLookupByLibrary.simpleMessage("漫画阅读器通用设置"),
         "RequireLogin": MessageLookupByLibrary.simpleMessage("本界面需要用户数据，请先登录"),
+        "SourceProviderDesc": m8,
+        "SourceProviderSettingEmpty":
+            MessageLookupByLibrary.simpleMessage("该漫画源暂无更多设置选项"),
         "SourceSettings": MessageLookupByLibrary.simpleMessage("漫画源设置"),
         "SourceSettingsDescription":
             MessageLookupByLibrary.simpleMessage("管理漫画源"),
-        "TimeOrRankFilterEntityModes": m8,
+        "TimeOrRankFilterEntityModes": m9,
         "TimeOrRankFilterEntityName":
             MessageLookupByLibrary.simpleMessage("排序方式"),
         "UnknownScreen":

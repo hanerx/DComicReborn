@@ -961,6 +961,34 @@ class S {
       args: [],
     );
   }
+
+  /// `{sourceId, select, BaseComicSource{A Base Class, If you see it, Please report an issue.} dmzj{DMZJ Source, The Tear of Ages.} copymanga{Copy Managa, Powerful but may not connectable.} zaimanhua{ZaiManHua Source, Maybe New Home?} other{Bug!!!!!}}`
+  String SourceProviderDesc(Object sourceId) {
+    return Intl.select(
+      sourceId,
+      {
+        'BaseComicSource':
+            'A Base Class, If you see it, Please report an issue.',
+        'dmzj': 'DMZJ Source, The Tear of Ages.',
+        'copymanga': 'Copy Managa, Powerful but may not connectable.',
+        'zaimanhua': 'ZaiManHua Source, Maybe New Home?',
+        'other': 'Bug!!!!!',
+      },
+      name: 'SourceProviderDesc',
+      desc: '',
+      args: [sourceId],
+    );
+  }
+
+  /// `No Extra Options for this Source Provider`
+  String get SourceProviderSettingEmpty {
+    return Intl.message(
+      'No Extra Options for this Source Provider',
+      name: 'SourceProviderSettingEmpty',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

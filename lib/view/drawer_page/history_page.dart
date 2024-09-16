@@ -27,10 +27,10 @@ class _HistoryPageState extends State<HistoryPage>{
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
         create: (_) => ComicHistoryPageController(Provider.of<ComicSourceProvider>(context)
-            .sources),
+            .orderedSources),
         builder: (context, child) => DefaultTabController(
             length: Provider.of<ComicSourceProvider>(context)
-                .sources
+                .orderedSources
                 .length,
             child: Scaffold(
               appBar: AppBar(
@@ -60,7 +60,7 @@ class _HistoryPageState extends State<HistoryPage>{
               ),
               body: TabBarView(children: [
                 for (var item in Provider.of<ComicSourceProvider>(context)
-                    .sources)
+                    .orderedSources)
                   EasyRefresh(
                       onRefresh: () async {
                         await Provider.of<ComicHistoryPageController>(

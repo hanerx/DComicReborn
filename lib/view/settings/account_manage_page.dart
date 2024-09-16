@@ -23,7 +23,7 @@ class _AccountManagePageState extends State<AccountManagePage> {
           title: Text(S.of(context).AccountSettings),
         ),
         body: Container(
-          color: Theme.of(context).colorScheme.surfaceVariant,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           child: EasyRefresh(
             onRefresh: () {
               Provider.of<ComicSourceProvider>(context, listen: false)
@@ -45,15 +45,21 @@ class _AccountManagePageState extends State<AccountManagePage> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     leading: SizedBox(
-                            height: 50,
-                            width: 50,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(5),
-                              child: sourceModel.accountModel?.avatar != null
-                                  ? DComicImage(
-                                  sourceModel.accountModel!.avatar!,errorMessageOverflow: TextOverflow.ellipsis,): const FlutterLogo(),
-                            ),
-                          ),
+                      height: 50,
+                      width: 50,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(5),
+                        child: sourceModel.accountModel?.avatar != null
+                            ? DComicImage(
+                                sourceModel.accountModel!.avatar!,
+                                errorMessageOverflow: TextOverflow.ellipsis,
+                                showErrorMessage: false,
+                                errorLogoSize: 48,
+                                fit: BoxFit.cover,
+                              )
+                            : const FlutterLogo(),
+                      ),
+                    ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

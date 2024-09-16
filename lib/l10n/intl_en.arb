@@ -142,5 +142,12 @@
   "ViewerSettingVerticalSize": "Click Area Size(Vertical)",
   "ViewerSettingThemeColor": "Theme Color",
   "ViewerSettingUseMaterial3Design": "Use Material 3 Design",
-  "ViewerSettingUseMaterial3DesignSubTitle": "Maybe not bad?"
+  "ViewerSettingUseMaterial3DesignSubTitle": "Maybe not bad?",
+  "SourceProviderDesc": "{sourceId, select, BaseComicSource{A Base Class, If you see it, Please report an issue.} dmzj{DMZJ Source, The Tear of Ages.} copymanga{Copy Managa, Powerful but may not connectable.} zaimanhua{ZaiManHua Source, Maybe New Home?} other{Bug!!!!!}}",
+  "@SourceProviderDesc": {
+    "placeholders": {
+      "sourceId": {}
+    }
+  },
+  "SourceProviderSettingEmpty": "No Extra Options for this Source Provider"
 }

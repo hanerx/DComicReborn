@@ -22,7 +22,7 @@ class ComicDetailPageController extends BaseProvider {
 
   List<ComicCommentEntity> get comments => _comments;
 
-  ComicDetailPageController(this.comicSourceModel){
+  ComicDetailPageController(this.comicSourceModel) {
     sourceModel = comicSourceModel;
   }
 
@@ -36,7 +36,8 @@ class ComicDetailPageController extends BaseProvider {
       Provider.of<ComicSourceProvider>(context, listen: false).activeModel =
           comicSourceModel!;
     }
-    detailModel = await comicSourceModel?.searchAndGetComicDetail(comicId, title, sourceModel!);
+    detailModel = await comicSourceModel?.searchAndGetComicDetail(
+        comicId, title, sourceModel!);
     await detailModel?.init();
     _isLoading = false;
     notifyListeners();
@@ -112,5 +113,17 @@ class ComicDetailPageController extends BaseProvider {
   set nest(bool value) {
     _nest = value;
     notifyListeners();
+  }
+
+  Future<void> bindComicId(String comicId, String? targetComicId) async {
+    if(targetComicId !=null){
+      await comicSourceModel?.bindComicIdFromSourceModel(
+          comicId, targetComicId, sourceModel!);
+      detailModel = await comicSourceModel?.searchAndGetComicDetail(
+          comicId, title, sourceModel!);
+      await detailModel?.init();
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

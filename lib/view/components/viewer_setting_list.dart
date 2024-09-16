@@ -4,6 +4,7 @@ import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/utils/theme_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:provider/provider.dart';
 
 class ViewerSettingList extends StatelessWidget {
@@ -136,7 +137,7 @@ class ViewerSettingList extends StatelessWidget {
         ),
       ),
       ListTile(
-        leading: const Icon(Icons.bug_report_outlined),
+        leading: const Icon(FontAwesome5.google),
         title: Text(S.of(context).ViewerSettingUseMaterial3Design),
         subtitle: Text(S.of(context).ViewerSettingUseMaterial3DesignSubTitle),
         trailing: Switch(
