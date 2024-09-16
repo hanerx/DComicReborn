@@ -12,7 +12,6 @@ import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/source_provider.dart';
-import 'package:dcomic/utils/theme_utils.dart';
 import 'package:dcomic/view/components/left_drawer.dart';
 import 'package:dcomic/view/homepage/homepage.dart';
 import 'package:easy_refresh/easy_refresh.dart';
@@ -21,7 +20,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:provider/provider.dart';
 
 Future<void> main() async {
