@@ -177,6 +177,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "ViewerSettingUseMaterial3DesignSubTitle":
             MessageLookupByLibrary.simpleMessage("好像关了也不难看欸"),
         "ViewerSettingVerticalSize":
-            MessageLookupByLibrary.simpleMessage("点击区域大小（垂直）")
+            MessageLookupByLibrary.simpleMessage("点击区域大小（垂直）"),
+        "ZaiManHuaLoginPasswordHint":
+            MessageLookupByLibrary.simpleMessage("你的拷贝漫画账号密码"),
+        "ZaiManHuaTitle": MessageLookupByLibrary.simpleMessage("再漫画")
       };
 }

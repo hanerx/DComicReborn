@@ -77,7 +77,7 @@ class ZaiManHuaSourceModel extends BaseComicSourceModel {
   @override
   Future<void> initModel() async{
     _accountModel.parent ??= this;
-    return super.init();
+    return super.initModel();
   }
 
   @override
@@ -120,7 +120,7 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
                     children: [
                       Center(
                         child: Text(
-                          S.of(context).DMZJTitle,
+                          S.of(context).ZaiManHuaTitle,
                           style: Theme.of(context).textTheme.headlineMedium,
                         ),
                       ),
@@ -157,7 +157,7 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
                                       S.of(context).DMZJLoginPassword,
                                       prefixIcon: const Icon(Icons.lock),
                                       hintText:
-                                      S.of(context).DMZJLoginPasswordHint),
+                                      S.of(context).ZaiManHuaLoginPasswordHint),
                                 ),
                               )
                             ],

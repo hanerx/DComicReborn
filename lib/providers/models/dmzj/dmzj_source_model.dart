@@ -125,7 +125,7 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
   @override
   Future<void> initModel() async {
     _accountModel.parent ??= this;
-    await super.init();
+    await super.initModel();
   }
 
   @override

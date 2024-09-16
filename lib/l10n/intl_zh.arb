@@ -146,5 +146,7 @@
       "sourceId": {}
     }
   },
-  "SourceProviderSettingEmpty": "该漫画源暂无更多设置选项"
+  "SourceProviderSettingEmpty": "该漫画源暂无更多设置选项",
+  "ZaiManHuaTitle": "再漫画",
+  "ZaiManHuaLoginPasswordHint": "你的拷贝漫画账号密码"
 }

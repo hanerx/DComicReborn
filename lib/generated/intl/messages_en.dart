@@ -206,6 +206,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "ViewerSettingUseMaterial3DesignSubTitle":
             MessageLookupByLibrary.simpleMessage("Maybe not bad?"),
         "ViewerSettingVerticalSize":
-            MessageLookupByLibrary.simpleMessage("Click Area Size(Vertical)")
+            MessageLookupByLibrary.simpleMessage("Click Area Size(Vertical)"),
+        "ZaiManHuaLoginPasswordHint":
+            MessageLookupByLibrary.simpleMessage("Your ZaiManHua Password!"),
+        "ZaiManHuaTitle": MessageLookupByLibrary.simpleMessage("ZaiManHua")
       };
 }

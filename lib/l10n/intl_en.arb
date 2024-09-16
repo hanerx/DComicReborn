@@ -149,5 +149,7 @@
       "sourceId": {}
     }
   },
-  "SourceProviderSettingEmpty": "No Extra Options for this Source Provider"
+  "SourceProviderSettingEmpty": "No Extra Options for this Source Provider",
+  "ZaiManHuaTitle": "ZaiManHua",
+  "ZaiManHuaLoginPasswordHint": "Your ZaiManHua Password!"
 }

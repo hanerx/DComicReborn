@@ -116,7 +116,7 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
   @override
   Future<void> initModel() async {
     _accountModel.parent ??= this;
-    return super.init();
+    return super.initModel();
   }
 
   @override

@@ -989,6 +989,26 @@ class S {
       args: [],
     );
   }
+
+  /// `ZaiManHua`
+  String get ZaiManHuaTitle {
+    return Intl.message(
+      'ZaiManHua',
+      name: 'ZaiManHuaTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your ZaiManHua Password!`
+  String get ZaiManHuaLoginPasswordHint {
+    return Intl.message(
+      'Your ZaiManHua Password!',
+      name: 'ZaiManHuaLoginPasswordHint',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
