@@ -35,6 +35,7 @@ class ComicDetailPage extends StatefulWidget {
 
 class _ComicDetailPageState extends State<ComicDetailPage> {
   final EasyRefreshController _easyRefreshController = EasyRefreshController();
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -48,7 +49,51 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       builder: (context, child) => DirectSelectContainer(
           child: Scaffold(
         floatingActionButton: FloatingActionButton(
-          onPressed: () {},
+          onPressed: () {
+            if(Provider.of<ComicDetailPageController>(context, listen: false).chapters.isEmpty){
+              return ;
+            }
+            var resultChapters = Provider.of<ComicDetailPageController>(context, listen: false).chapters.values.first;
+            var resultChapter = resultChapters.reversed.toList().first;
+            for (var data in Provider.of<ComicDetailPageController>(context, listen: false).chapters.values){
+              for(var item in data){
+                if(item.chapterId == Provider.of<ComicDetailPageController>(context, listen: false).latestChapterId){
+                  resultChapter = item;
+                  resultChapters = data;
+                  break;
+                }
+              }
+            }
+
+            var detailModel = Provider.of<ComicDetailPageController>(
+                context,
+                listen: false)
+                .detailModel!;
+            var chapters = Provider.of<ComicDetailPageController>(
+                context,
+                listen: false)
+                .reverse
+                ? resultChapters.reversed.toList()
+                : resultChapters;
+            Provider.of<ComicDetailPageController>(context,
+                listen: false)
+                .addComicHistory(
+                resultChapter.chapterId, resultChapter.title);
+            Provider.of<NavigatorProvider>(context, listen: false)
+                .getNavigator(context, NavigatorType.defaultNavigator)
+                ?.push(MaterialPageRoute(
+                builder: (context) => ComicViewerPage(
+                    detailModel: detailModel,
+                    chapters: chapters,
+                    chapterId: resultChapter.chapterId),
+                settings:
+                const RouteSettings(name: 'ComicViewerPage')))
+                .then((value) async {
+              await Provider.of<ComicDetailPageController>(context,
+                  listen: false)
+                  .refresh(context, widget.comicId, widget.title);
+            });
+          },
           shape: const CircleBorder(),
           child: const Icon(Icons.play_arrow),
         ),
@@ -303,7 +348,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                                       : S.of(context).ComicDetailPageListMode),
                                   style: ButtonStyle(
                                       foregroundColor:
-                                          MaterialStateProperty.all(
+                                          WidgetStateProperty.all(
                                               Theme.of(context)
                                                   .colorScheme
                                                   .secondary)),
@@ -338,7 +383,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                                               .ComicDetailPagePositiveMode),
                                   style: ButtonStyle(
                                       foregroundColor:
-                                          MaterialStateProperty.all(
+                                          WidgetStateProperty.all(
                                               Theme.of(context)
                                                   .colorScheme
                                                   .secondary)),
@@ -387,20 +432,24 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
             ),
           ),
           IconButton(
-            onPressed: () async{
-              var activeModel = Provider.of<ComicSourceProvider>(
-                  context, listen: false)
-                  .activeModel;
-              await Provider.of<ComicDetailPageController>(context, listen: false).bindComicId(widget.comicId, await showDialog(
-                  context: context,
-                  builder: (context) => StatefulBuilder(
-                      builder: (context, state) {
-                        return SearchDialog(
-                          sourceModel: activeModel,
-                          title: widget.title,
-                          comicId: widget.comicId,
-                        );
-                      })));
+            onPressed: () async {
+              var activeModel =
+                  Provider.of<ComicSourceProvider>(context, listen: false)
+                      .activeModel;
+              await Provider.of<ComicDetailPageController>(context,
+                      listen: false)
+                  .bindComicId(
+                      widget.comicId,
+                      await showDialog(
+                          context: context,
+                          builder: (context) =>
+                              StatefulBuilder(builder: (context, state) {
+                                return SearchDialog(
+                                  sourceModel: activeModel,
+                                  title: widget.title,
+                                  comicId: widget.comicId,
+                                );
+                              })));
             },
             icon: Icon(
               Icons.refresh,
@@ -442,14 +491,16 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                         ),
                       );
                     }),
-            onItemSelectedListener: (item, index, context) async{
+            onItemSelectedListener: (item, index, context) async {
               ScaffoldMessenger.of(context)
                   .showSnackBar(SnackBar(content: Text(item.type.sourceName)));
               Provider.of<ComicSourceProvider>(context, listen: false)
                   .activeModel = item;
               Provider.of<ComicDetailPageController>(context, listen: false)
                   .comicSourceModel = item;
-              await Provider.of<ComicDetailPageController>(context, listen: false).refresh(context, widget.comicId, widget.title);
+              await Provider.of<ComicDetailPageController>(context,
+                      listen: false)
+                  .refresh(context, widget.comicId, widget.title);
             },
             focusedItemDecoration: BoxDecoration(
               border: BorderDirectional(
@@ -549,7 +600,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                                 chapterId: data[index].chapterId),
                             settings:
                                 const RouteSettings(name: 'ComicViewerPage')))
-                        .then((value) async{
+                        .then((value) async {
                       await Provider.of<ComicDetailPageController>(context,
                               listen: false)
                           .refresh(context, widget.comicId, widget.title);
@@ -571,31 +622,41 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: data.length,
-        itemBuilder: (context, index) => ListTile(
-          title: Text(data[index].title),
-          subtitle: Text(S.of(context).ComicDetailPageChapterEntitySubtitle(
-              formatdate.formatDate(data[index].uploadTime,
-                  [formatdate.yyyy, '-', formatdate.mm, '-', formatdate.dd]),
-              data[index].chapterId)),
-          onTap: () {
-            var detailModel =
-                Provider.of<ComicDetailPageController>(context, listen: false)
-                    .detailModel!;
-            var chapters =
-                Provider.of<ComicDetailPageController>(context, listen: false)
-                        .reverse
-                    ? data.reversed.toList()
-                    : data;
-            Provider.of<NavigatorProvider>(context, listen: false)
-                .getNavigator(context, NavigatorType.defaultNavigator)
-                ?.push(MaterialPageRoute(
-                    builder: (context) => ComicViewerPage(
-                        detailModel: detailModel,
-                        chapters: chapters,
-                        chapterId: data[index].chapterId),
-                    settings: const RouteSettings(name: 'ComicViewerPage')));
-          },
-        ),
+        itemBuilder: (context, index) {
+          bool isLatestChapter = data[index].chapterId ==
+              Provider.of<ComicDetailPageController>(context).latestChapterId;
+          return ListTile(
+            title: Text(
+              data[index].title,
+              style: TextStyle(
+                  color: isLatestChapter
+                      ? Theme.of(context).colorScheme.error
+                      : null),
+            ),
+            subtitle: Text(S.of(context).ComicDetailPageChapterEntitySubtitle(
+                formatdate.formatDate(data[index].uploadTime,
+                    [formatdate.yyyy, '-', formatdate.mm, '-', formatdate.dd]),
+                data[index].chapterId)),
+            onTap: () {
+              var detailModel =
+                  Provider.of<ComicDetailPageController>(context, listen: false)
+                      .detailModel!;
+              var chapters =
+                  Provider.of<ComicDetailPageController>(context, listen: false)
+                          .reverse
+                      ? data.reversed.toList()
+                      : data;
+              Provider.of<NavigatorProvider>(context, listen: false)
+                  .getNavigator(context, NavigatorType.defaultNavigator)
+                  ?.push(MaterialPageRoute(
+                      builder: (context) => ComicViewerPage(
+                          detailModel: detailModel,
+                          chapters: chapters,
+                          chapterId: data[index].chapterId),
+                      settings: const RouteSettings(name: 'ComicViewerPage')));
+            },
+          );
+        },
       );
     }
   }
@@ -730,10 +791,11 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                                             context)
                                         .comments[index];
                                 return CommentCard(
-                                    avatar: item.avatar,
-                                    nickname: item.nickname,
-                                    comment: item.comment,
-                                    subComments: item.subComments,);
+                                  avatar: item.avatar,
+                                  nickname: item.nickname,
+                                  comment: item.comment,
+                                  subComments: item.subComments,
+                                );
                               }),
                         ),
                       )))

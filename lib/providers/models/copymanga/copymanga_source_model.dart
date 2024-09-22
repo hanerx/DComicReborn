@@ -4,6 +4,7 @@ import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
+import 'package:dcomic/providers/page_controllers/comic_favorite_page_controller.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
@@ -50,31 +51,33 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
   }
 
   @override
-  Future<List<ListItemEntity>> getComicHistory(ComicHistorySourceType sourceType, {int page=0}) async {
-    if(sourceType == ComicHistorySourceType.local){
+  Future<List<ListItemEntity>> getComicHistory(
+      ComicHistorySourceType sourceType,
+      {int page = 0}) async {
+    if (sourceType == ComicHistorySourceType.local) {
       return super.getComicHistory(sourceType, page: page);
-    }else if(sourceType == ComicHistorySourceType.network){
+    } else if (sourceType == ComicHistorySourceType.network) {
       List<ListItemEntity> data = [];
-      var response = await RequestHandlers.copyMangaRequestHandler
-          .getHistory(page: page);
+      var response =
+          await RequestHandlers.copyMangaRequestHandler.getHistory(page: page);
       if ((response.statusCode == 200 || response.statusCode == 304) &&
           response.data['code'] == 200) {
         var responseData = response.data['results']['list'];
         for (var item in responseData) {
-          data.add(ListItemEntity(
-              item['comic']['name'], ImageEntity(ImageType.network, item['comic']['cover']), {
+          data.add(ListItemEntity(item['comic']['name'],
+              ImageEntity(ImageType.network, item['comic']['cover']), {
             Icons.history: item['comic']['last_chapter_name'],
             Icons.history_edu: item['last_chapter_name']
           }, (context) {
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(
-                builder: (context) => ComicDetailPage(
-                  title: item['comic']['name'],
-                  comicId: item['comic']['path_word'],
-                  comicSourceModel: this,
-                ),
-                settings: const RouteSettings(name: 'ComicDetailPage')));
+                    builder: (context) => ComicDetailPage(
+                          title: item['comic']['name'],
+                          comicId: item['comic']['path_word'],
+                          comicSourceModel: this,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
           }));
         }
       }
@@ -95,7 +98,8 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
       for (var item in responseData) {
         data.add(ComicListItemEntity(
             item['name'], ImageEntity(ImageType.network, item['cover']), {
-          Icons.supervisor_account_rounded: item['author'].map((e) => e['name']).toList().join('/'),
+          Icons.supervisor_account_rounded:
+              item['author'].map((e) => e['name']).toList().join('/'),
           Icons.local_fire_department: item['popular'].toString()
         }, (context) {
           Provider.of<NavigatorProvider>(context, listen: false)
@@ -284,8 +288,9 @@ class CopyMangaComicChapterDetailModel extends BaseComicChapterDetailModel {
           .getChapterComments(chapterId);
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (var item in response.data['results']['list']) {
-          data.add(
-              ChapterCommentEntity(item['id'].toString(), item['comment'], 1, avatar: ImageEntity(ImageType.network, item['user_avatar'])));
+          data.add(ChapterCommentEntity(
+              item['id'].toString(), item['comment'], 1,
+              avatar: ImageEntity(ImageType.network, item['user_avatar'])));
         }
       }
     } catch (e, s) {
@@ -389,12 +394,11 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                                       isDense: true,
                                       border: const OutlineInputBorder(
                                           gapPadding: 1),
-                                      labelText:
-                                      S.of(context).CopyMangaToken,
-                                      prefixIcon: const Icon(Icons.token_outlined),
-                                      hintText: S
-                                          .of(context)
-                                          .CopyMangaTokenHint),
+                                      labelText: S.of(context).CopyMangaToken,
+                                      prefixIcon:
+                                          const Icon(Icons.token_outlined),
+                                      hintText:
+                                          S.of(context).CopyMangaTokenHint),
                                 ),
                               )
                             ],
@@ -479,7 +483,7 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
         List list = response.data['results']['list'];
         List comicRawList = list.map<Map>((e) => e['comic']).toList();
         for (var rawData in comicRawList) {
-          data.add(GridItemEntity(
+          data.add(GridItemEntityWithStatus(
               rawData['name'],
               rawData['last_chapter_name'],
               ImageEntity(
@@ -494,8 +498,14 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                           comicId: rawData['path_word'].toString(),
                           comicSourceModel: parent,
                         ),
-                    settings: const RouteSettings(name: 'ComicDetailPage')));
-          }));
+                    settings: const RouteSettings(name: 'ComicDetailPage')))
+                .then((value) {
+              if (context.mounted) {
+                Provider.of<ComicFavoritePageController>(context, listen: false)
+                    .refresh();
+              }
+            });
+          }, DateTime.parse(rawData['datetime_updated']), rawData['path_word'].toString()));
         }
       }
     } catch (e, s) {

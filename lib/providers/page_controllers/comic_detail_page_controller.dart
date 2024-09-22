@@ -39,6 +39,9 @@ class ComicDetailPageController extends BaseProvider {
     detailModel = await comicSourceModel?.searchAndGetComicDetail(
         comicId, title, sourceModel!);
     await detailModel?.init();
+    if(comicSourceModel?.accountModel!=null){
+      await comicSourceModel?.accountModel?.addSubscribeState(detailModel!.comicId);
+    }
     _isLoading = false;
     notifyListeners();
   }

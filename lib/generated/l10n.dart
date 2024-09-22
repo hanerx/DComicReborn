@@ -1009,6 +1009,66 @@ class S {
       args: [],
     );
   }
+
+  /// `App is Up to Date`
+  String get CheckUpdateUpToDate {
+    return Intl.message(
+      'App is Up to Date',
+      name: 'CheckUpdateUpToDate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Release Light Up {version}`
+  String ReleaseInfoTitle(Object version) {
+    return Intl.message(
+      'Release Light Up $version',
+      name: 'ReleaseInfoTitle',
+      desc: '',
+      args: [version],
+    );
+  }
+
+  /// `Download`
+  String get ReleaseInfoDownload {
+    return Intl.message(
+      'Download',
+      name: 'ReleaseInfoDownload',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Latest Release`
+  String get SettingPageShowReleaseInfo {
+    return Intl.message(
+      'Latest Release',
+      name: 'SettingPageShowReleaseInfo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No Valid Release Info`
+  String get SettingPageFailToGetReleaseInfo {
+    return Intl.message(
+      'No Valid Release Info',
+      name: 'SettingPageFailToGetReleaseInfo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `NEW`
+  String get NewComicBadge {
+    return Intl.message(
+      'NEW',
+      name: 'NewComicBadge',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

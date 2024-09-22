@@ -52,7 +52,7 @@ class CopyMangaRequestHandler extends RequestHandler {
 
   Future<Response> search(String keyword, {int page = 0, int limit=12}) async {
     return dio.get(
-        '/api/kb/web/searchba/comics?offset=${page*limit}&platform=2&limit=$limit&q=$keyword&q_type=');
+        '/api/kb/web/searchbc/comics?offset=${page*limit}&platform=2&limit=$limit&q=$keyword&q_type=');
   }
 
   Future<Response> login(String username, String password) async {

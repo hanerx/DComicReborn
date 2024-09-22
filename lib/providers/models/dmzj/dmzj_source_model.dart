@@ -6,6 +6,7 @@ import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/protobuf/comic.pb.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
+import 'package:dcomic/providers/page_controllers/comic_favorite_page_controller.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
@@ -40,16 +41,18 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
   }
 
   @override
-  Future<List<ListItemEntity>> getComicHistory(ComicHistorySourceType sourceType, {int page=0}) async {
-    if(sourceType == ComicHistorySourceType.local){
+  Future<List<ListItemEntity>> getComicHistory(
+      ComicHistorySourceType sourceType,
+      {int page = 0}) async {
+    if (sourceType == ComicHistorySourceType.local) {
       return super.getComicHistory(sourceType, page: page);
-    }else if(sourceType == ComicHistorySourceType.network){
-      if(accountModel == null || accountModel?.uid == null){
+    } else if (sourceType == ComicHistorySourceType.network) {
+      if (accountModel == null || accountModel?.uid == null) {
         return [];
       }
       List<ListItemEntity> data = [];
-      var response =
-      await RequestHandlers.dmzjInterfaceRequestHandler.getHistory(accountModel!.uid!, page);
+      var response = await RequestHandlers.dmzjInterfaceRequestHandler
+          .getHistory(accountModel!.uid!, page);
       try {
         if ((response.statusCode == 200 || response.statusCode == 304)) {
           var responseData = jsonDecode(response.data);
@@ -62,18 +65,24 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
                   Icons.history: date_format.formatDate(
                       DateTime.fromMicrosecondsSinceEpoch(
                           item['viewing_time'] * 1000000),
-                      [date_format.yyyy, '-', date_format.mm, '-', date_format.dd]),
+                      [
+                        date_format.yyyy,
+                        '-',
+                        date_format.mm,
+                        '-',
+                        date_format.dd
+                      ]),
                   Icons.history_edu: item['chapter_name']
                 }, (context) {
               Provider.of<NavigatorProvider>(context, listen: false)
                   .getNavigator(context, NavigatorType.defaultNavigator)
                   ?.push(MaterialPageRoute(
-                  builder: (context) => ComicDetailPage(
-                    title: item['comic_name'],
-                    comicId: item['comic_id'].toString(),
-                    comicSourceModel: this,
-                  ),
-                  settings: const RouteSettings(name: 'ComicDetailPage')));
+                      builder: (context) => ComicDetailPage(
+                            title: item['comic_name'],
+                            comicId: item['comic_id'].toString(),
+                            comicSourceModel: this,
+                          ),
+                      settings: const RouteSettings(name: 'ComicDetailPage')));
             }));
           }
         }
@@ -538,7 +547,7 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
         for (String key in response.data['commentIds']) {
           ComicCommentEntity? parent;
           var commentKeyList = key.split(',');
-          for(var commentKey in commentKeyList){
+          for (var commentKey in commentKeyList) {
             var item = response.data['comments'][commentKey];
             var entity = ComicCommentEntity(
                 ImageEntity(ImageType.network, item['avatar_url'],
@@ -546,10 +555,11 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
                 item['content'],
                 item['id'].toString(),
                 item['nickname'],
-                int.parse(item['like_amount'].toString()), []);
-            if(parent == null){
+                int.parse(item['like_amount'].toString()),
+                []);
+            if (parent == null) {
               parent = entity;
-            }else{
+            } else {
               parent.subComments.add(entity);
             }
           }
@@ -916,7 +926,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
           .getSubscribe(int.parse(uid!), page);
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (var rawData in response.data) {
-          data.add(GridItemEntity(
+          data.add(GridItemEntityWithStatus(
               rawData['name'],
               rawData['sub_update'],
               ImageEntity(ImageType.network, rawData['sub_img'],
@@ -929,8 +939,14 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                           comicId: rawData['id'].toString(),
                           comicSourceModel: parent,
                         ),
-                    settings: const RouteSettings(name: 'ComicDetailPage')));
-          }));
+                    settings: const RouteSettings(name: 'ComicDetailPage')))
+                .then((value) {
+                  if(context.mounted){
+                    Provider.of<ComicFavoritePageController>(context, listen: false).refresh();
+                  }
+            });
+          }, DateTime.fromMillisecondsSinceEpoch(rawData['sub_uptime'] * 1000),
+              rawData['id'].toString()));
         }
       }
     } catch (e, s) {

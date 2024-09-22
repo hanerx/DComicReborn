@@ -26,9 +26,20 @@ class _SearchPageState extends State<SearchPage> {
           appBar: AppBar(
             elevation: 0,
             title: TextField(
+              textInputAction: TextInputAction.search,
                 onChanged: (text){
                   Provider.of<ComicSearchPageController>(context,listen: false).pendingKeyword = text;
                 },
+              onSubmitted: (text) async {
+                Provider.of<ComicSearchPageController>(context,
+                    listen: false)
+                    .pendingKeyword = text;
+                FocusScope.of(context).unfocus();
+                await Provider.of<ComicSearchPageController>(
+                    context,
+                    listen: false)
+                    .search();
+              },
             ),
             actions: [
               IconButton(

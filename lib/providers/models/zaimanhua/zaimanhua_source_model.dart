@@ -4,6 +4,7 @@ import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
+import 'package:dcomic/providers/page_controllers/comic_favorite_page_controller.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
@@ -75,17 +76,16 @@ class ZaiManHuaSourceModel extends BaseComicSourceModel {
   BaseComicHomepageModel? get homepage => ZaiManHuaHomepageModel(this);
 
   @override
-  Future<void> initModel() async{
+  Future<void> initModel() async {
     _accountModel.parent ??= this;
     return super.initModel();
   }
 
   @override
   BaseComicAccountModel? get accountModel => _accountModel;
-
 }
 
-class ZaiManHuaAccountModel extends BaseComicAccountModel{
+class ZaiManHuaAccountModel extends BaseComicAccountModel {
   bool _isLoading = true;
   bool _isLogin = false;
   ZaiManHuaSourceModel? parent;
@@ -137,11 +137,11 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
                                       border: const OutlineInputBorder(
                                           gapPadding: 1),
                                       labelText:
-                                      S.of(context).DMZJLoginUsername,
+                                          S.of(context).DMZJLoginUsername,
                                       prefixIcon:
-                                      const Icon(Icons.account_circle),
+                                          const Icon(Icons.account_circle),
                                       hintText:
-                                      S.of(context).DMZJLoginUsernameHint),
+                                          S.of(context).DMZJLoginUsernameHint),
                                 ),
                               ),
                               Padding(
@@ -154,10 +154,11 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
                                       border: const OutlineInputBorder(
                                           gapPadding: 1),
                                       labelText:
-                                      S.of(context).DMZJLoginPassword,
+                                          S.of(context).DMZJLoginPassword,
                                       prefixIcon: const Icon(Icons.lock),
-                                      hintText:
-                                      S.of(context).ZaiManHuaLoginPasswordHint),
+                                      hintText: S
+                                          .of(context)
+                                          .ZaiManHuaLoginPasswordHint),
                                 ),
                               )
                             ],
@@ -182,9 +183,9 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
                                 return;
                               }
                               Provider.of<NavigatorProvider>(context,
-                                  listen: false)
+                                      listen: false)
                                   .getNavigator(
-                                  context, NavigatorType.defaultNavigator)
+                                      context, NavigatorType.defaultNavigator)
                                   ?.pop();
                             }
                           }
@@ -195,20 +196,20 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
                           }
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content:
-                            Text(S.of(context).CommonLoginLoginFailed(e)),
+                                Text(S.of(context).CommonLoginLoginFailed(e)),
                           ));
                         }
                       },
                       icon: const Icon(FontAwesome5.arrow_right),
                       label: Text(S.of(context).CommonLoginLogin),
                       style: ButtonStyle(
-                          shape: MaterialStateProperty.all(
+                          shape: WidgetStateProperty.all(
                               const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(3),
-                                    bottomLeft: Radius.circular(3),
-                                  ))),
-                          padding: MaterialStateProperty.all(
+                            topLeft: Radius.circular(3),
+                            bottomLeft: Radius.circular(3),
+                          ))),
+                          padding: WidgetStateProperty.all(
                               const EdgeInsets.only(
                                   top: 10, left: 10, bottom: 10))),
                     ))
@@ -221,10 +222,11 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
   }
 
   @override
-  Future<bool> getIfSubscribed(String comicId) async{
+  Future<bool> getIfSubscribed(String comicId) async {
     try {
-      var response = await RequestHandlers.zaiManHuaMobileRequestHandler.checkIfSubscribe(comicId);
-      if ((response.statusCode == 200 || response.statusCode == 304)){
+      var response = await RequestHandlers.zaiManHuaMobileRequestHandler
+          .checkIfSubscribe(comicId);
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
         return response.data['data']['isSub'];
       }
     } catch (e, s) {
@@ -234,14 +236,16 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
   }
 
   @override
-  Future<List<GridItemEntity>> getSubscribeComics({int page = 0}) async{
+  Future<List<GridItemEntity>> getSubscribeComics({int page = 0}) async {
     List<GridItemEntity> data = [];
     try {
-      var response = await RequestHandlers.zaiManHuaMobileRequestHandler.getSubscribe(page: page);
-      if ((response.statusCode == 200 || response.statusCode == 304) && response.data['errno'] == 0) {
+      var response = await RequestHandlers.zaiManHuaMobileRequestHandler
+          .getSubscribe(page: page);
+      if ((response.statusCode == 200 || response.statusCode == 304) &&
+          response.data['errno'] == 0) {
         List list = response.data['data']['subList'];
         for (var rawData in list) {
-          data.add(GridItemEntity(
+          data.add(GridItemEntityWithStatus(
               rawData['title'],
               rawData['last_update_chapter_name'],
               ImageEntity(
@@ -251,13 +255,19 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(
-                builder: (context) => ComicDetailPage(
-                  title: rawData['title'],
-                  comicId: rawData['id'].toString(),
-                  comicSourceModel: parent,
-                ),
-                settings: const RouteSettings(name: 'ComicDetailPage')));
-          }));
+                    builder: (context) => ComicDetailPage(
+                          title: rawData['title'],
+                          comicId: rawData['id'].toString(),
+                          comicSourceModel: parent,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')))
+                .then((value) {
+              if (context.mounted) {
+                Provider.of<ComicFavoritePageController>(context, listen: false)
+                    .refresh();
+              }
+            });
+          }, DateTime.fromMillisecondsSinceEpoch(rawData['last_updatetime'] * 1000), rawData['id'].toString()));
         }
       }
     } catch (e, s) {
@@ -267,8 +277,9 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
   }
 
   @override
-  Future<bool> login(String username, String password) async{
-    var response = await RequestHandlers.zaiManHuaAccountRequestHandler.login(username, password);
+  Future<bool> login(String username, String password) async {
+    var response = await RequestHandlers.zaiManHuaAccountRequestHandler
+        .login(username, password);
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         if (response.data['errno'] == 0) {
@@ -311,7 +322,7 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
   }
 
   @override
-  Future<bool> logout() async{
+  Future<bool> logout() async {
     var databaseInstance = await DatabaseInstance.instance;
     var databaseIsLogin = await databaseInstance.modelConfigDao
         .getOrCreateConfigByKey('isLogin', parent!.type.sourceId);
@@ -332,11 +343,12 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
   String? get nickname => _nickname;
 
   @override
-  Future<bool> subscribeComic(String comicId) async{
+  Future<bool> subscribeComic(String comicId) async {
     try {
-      var response = await RequestHandlers.zaiManHuaMobileRequestHandler.addComicSubScribe(comicId);
-      if ((response.statusCode == 200 || response.statusCode == 304)){
-        return response.data['errno']==0;
+      var response = await RequestHandlers.zaiManHuaMobileRequestHandler
+          .addComicSubScribe(comicId);
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        return response.data['errno'] == 0;
       }
     } catch (e, s) {
       logger.e(e, error: e, stackTrace: s);
@@ -348,11 +360,12 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
   String? get uid => _uid;
 
   @override
-  Future<bool> unsubscribeComic(String comicId) async{
+  Future<bool> unsubscribeComic(String comicId) async {
     try {
-      var response = await RequestHandlers.zaiManHuaMobileRequestHandler.cancelComicSubScribe(comicId);
-      if ((response.statusCode == 200 || response.statusCode == 304)){
-        return response.data['errno']==0;
+      var response = await RequestHandlers.zaiManHuaMobileRequestHandler
+          .cancelComicSubScribe(comicId);
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        return response.data['errno'] == 0;
       }
     } catch (e, s) {
       logger.e(e, error: e, stackTrace: s);
@@ -370,30 +383,30 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel{
   bool get isLogin => _isLogin;
 
   @override
-  Future<void> initAccount() async{
+  Future<void> initAccount() async {
     var databaseInstance = await DatabaseInstance.instance;
     _isLogin = (await databaseInstance.modelConfigDao
-        .getOrCreateConfigByKey('isLogin', parent!.type.sourceId))
+            .getOrCreateConfigByKey('isLogin', parent!.type.sourceId))
         .get<bool>();
     _uid = (await databaseInstance.modelConfigDao
-        .getOrCreateConfigByKey('uid', parent!.type.sourceId))
+            .getOrCreateConfigByKey('uid', parent!.type.sourceId))
         .get<String>();
     if (_isLogin && _uid!.isNotEmpty) {
-    _username = (await databaseInstance.modelConfigDao
-        .getOrCreateConfigByKey('username', parent!.type.sourceId))
-        .get<String>();
-    _nickname = (await databaseInstance.modelConfigDao
-        .getOrCreateConfigByKey('nickname', parent!.type.sourceId))
-        .get<String>();
-    var avatarUrl = (await databaseInstance.modelConfigDao
-        .getOrCreateConfigByKey('avatar', parent!.type.sourceId))
-        .get<String>();
-    _avatar = ImageEntity(ImageType.network, avatarUrl);
-    token = (await databaseInstance.modelConfigDao
-        .getOrCreateConfigByKey('token', parent!.type.sourceId))
-        .get<String>();
+      _username = (await databaseInstance.modelConfigDao
+              .getOrCreateConfigByKey('username', parent!.type.sourceId))
+          .get<String>();
+      _nickname = (await databaseInstance.modelConfigDao
+              .getOrCreateConfigByKey('nickname', parent!.type.sourceId))
+          .get<String>();
+      var avatarUrl = (await databaseInstance.modelConfigDao
+              .getOrCreateConfigByKey('avatar', parent!.type.sourceId))
+          .get<String>();
+      _avatar = ImageEntity(ImageType.network, avatarUrl);
+      token = (await databaseInstance.modelConfigDao
+              .getOrCreateConfigByKey('token', parent!.type.sourceId))
+          .get<String>();
     } else {
-    _isLogin = false;
+      _isLogin = false;
     }
     _isLoading = false;
   }
@@ -408,8 +421,8 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
   @override
   Future<List<HomepageCardEntity>> getHomepageCard() async {
     List<HomepageCardEntity> data = [];
-    Response response =
-    await RequestHandlers.zaiManHuaMobileRequestHandler.getMainPageRecommend();
+    Response response = await RequestHandlers.zaiManHuaMobileRequestHandler
+        .getMainPageRecommend();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (var rawData in jsonDecode(response.data)) {
@@ -423,20 +436,20 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
                 rawItem['sub_title'],
                 ImageEntity(ImageType.network, rawItem['cover'],
                     imageHeaders: {"referer": "https://i.dmzj.com"}),
-                    (context) {
-                  if (rawItem['type'] == 1) {
-                    Provider.of<NavigatorProvider>(context, listen: false)
-                        .getNavigator(context, NavigatorType.defaultNavigator)
-                        ?.push(MaterialPageRoute(
+                (context) {
+              if (rawItem['type'] == 1) {
+                Provider.of<NavigatorProvider>(context, listen: false)
+                    .getNavigator(context, NavigatorType.defaultNavigator)
+                    ?.push(MaterialPageRoute(
                         builder: (context) => ComicDetailPage(
-                          title: rawItem['title'],
-                          comicId: rawItem['obj_id'].toString(),
-                          comicSourceModel: parent,
-                        ),
+                              title: rawItem['title'],
+                              comicId: rawItem['obj_id'].toString(),
+                              comicSourceModel: parent,
+                            ),
                         settings:
-                        const RouteSettings(name: 'ComicDetailPage')));
-                  }
-                }));
+                            const RouteSettings(name: 'ComicDetailPage')));
+              }
+            }));
           }
           data.add(HomepageCardEntity(
               rawData['title'], null, (context) {}, children));
@@ -451,8 +464,8 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
   @override
   Future<List<CarouselEntity>> getHomepageCarousel() async {
     List<CarouselEntity> data = [];
-    Response response =
-    await RequestHandlers.zaiManHuaMobileRequestHandler.getMainPageRecommend();
+    Response response = await RequestHandlers.zaiManHuaMobileRequestHandler
+        .getMainPageRecommend();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         var rawData = jsonDecode(response.data)[0];
@@ -465,12 +478,12 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
               Provider.of<NavigatorProvider>(context, listen: false)
                   .getNavigator(context, NavigatorType.defaultNavigator)
                   ?.push(MaterialPageRoute(
-                  builder: (context) => ComicDetailPage(
-                    title: rawItem['title'],
-                    comicId: rawItem['obj_id'].toString(),
-                    comicSourceModel: parent,
-                  ),
-                  settings: const RouteSettings(name: 'ComicDetailPage')));
+                      builder: (context) => ComicDetailPage(
+                            title: rawItem['title'],
+                            comicId: rawItem['obj_id'].toString(),
+                            comicSourceModel: parent,
+                          ),
+                      settings: const RouteSettings(name: 'ComicDetailPage')));
             }
           }));
         }
@@ -485,26 +498,24 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
   Future<List<GridItemEntity>> getCategoryList() async {
     List<GridItemEntity> data = [];
     Response response =
-    await RequestHandlers.zaiManHuaMobileRequestHandler.getCategory();
+        await RequestHandlers.zaiManHuaMobileRequestHandler.getCategory();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         List result = [];
         result = response.data['data']['cateList'];
         for (var rawData in result) {
-          data.add(GridItemEntity(
-              rawData['title'],
-              null,
+          data.add(GridItemEntity(rawData['title'], null,
               ImageEntity(ImageType.network, rawData['cover']), (context) {
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(
-                builder: (context) => ComicCategoryDetailPage(
-                  categoryId: rawData['tagId'].toString(),
-                  sourceModel: parent,
-                  categoryTitle: rawData['title'],
-                ),
-                settings:
-                const RouteSettings(name: 'ComicCategoryDetailPage')));
+                    builder: (context) => ComicCategoryDetailPage(
+                          categoryId: rawData['tagId'].toString(),
+                          sourceModel: parent,
+                          categoryTitle: rawData['title'],
+                        ),
+                    settings:
+                        const RouteSettings(name: 'ComicCategoryDetailPage')));
           }));
         }
       }
@@ -522,32 +533,24 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
           .getRankList(page: page);
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (var rawItem in response.data['data']) {
-          data.add(ListItemEntity(
-              rawItem['title'],
-              ImageEntity(ImageType.network, rawItem['cover']),
-              {
-                Icons.supervisor_account_rounded: rawItem['authors']??'未知',
-                Icons.apps: rawItem['types'],
-                Icons.history_edu: date_format.formatDate(
-                    DateTime.fromMicrosecondsSinceEpoch(
-                        rawItem['last_updatetime'] * 1000000),
-                    [
-                      date_format.yyyy,
-                      '-',
-                      date_format.mm,
-                      '-',
-                      date_format.dd
-                    ])
-              }, (context) {
+          data.add(ListItemEntity(rawItem['title'],
+              ImageEntity(ImageType.network, rawItem['cover']), {
+            Icons.supervisor_account_rounded: rawItem['authors'] ?? '未知',
+            Icons.apps: rawItem['types'],
+            Icons.history_edu: date_format.formatDate(
+                DateTime.fromMicrosecondsSinceEpoch(
+                    rawItem['last_updatetime'] * 1000000),
+                [date_format.yyyy, '-', date_format.mm, '-', date_format.dd])
+          }, (context) {
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(
-                builder: (context) => ComicDetailPage(
-                  title: rawItem['title'],
-                  comicId: rawItem['comic_id'].toString(),
-                  comicSourceModel: parent,
-                ),
-                settings: const RouteSettings(name: 'ComicDetailPage')));
+                    builder: (context) => ComicDetailPage(
+                          title: rawItem['title'],
+                          comicId: rawItem['comic_id'].toString(),
+                          comicSourceModel: parent,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
           }));
         }
       }
@@ -566,32 +569,24 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
           .getLatestList(page: page);
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (var rawItem in response.data['data']) {
-          data.add(ListItemEntity(
-              rawItem['title'],
-              ImageEntity(ImageType.network, rawItem['cover']),
-              {
-                Icons.supervisor_account_rounded: rawItem['authors'],
-                Icons.apps: rawItem['types'],
-                Icons.history_edu: date_format.formatDate(
-                    DateTime.fromMicrosecondsSinceEpoch(
-                        rawItem['last_updatetime'] * 1000000),
-                    [
-                      date_format.yyyy,
-                      '-',
-                      date_format.mm,
-                      '-',
-                      date_format.dd
-                    ])
-              }, (context) {
+          data.add(ListItemEntity(rawItem['title'],
+              ImageEntity(ImageType.network, rawItem['cover']), {
+            Icons.supervisor_account_rounded: rawItem['authors'],
+            Icons.apps: rawItem['types'],
+            Icons.history_edu: date_format.formatDate(
+                DateTime.fromMicrosecondsSinceEpoch(
+                    rawItem['last_updatetime'] * 1000000),
+                [date_format.yyyy, '-', date_format.mm, '-', date_format.dd])
+          }, (context) {
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(
-                builder: (context) => ComicDetailPage(
-                  title: rawItem['title'],
-                  comicId: rawItem['comic_id'].toString(),
-                  comicSourceModel: parent,
-                ),
-                settings: const RouteSettings(name: 'ComicDetailPage')));
+                    builder: (context) => ComicDetailPage(
+                          title: rawItem['title'],
+                          comicId: rawItem['comic_id'].toString(),
+                          comicSourceModel: parent,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
           }));
         }
       }
@@ -608,44 +603,36 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
   @override
   Future<List<ListItemEntity>> getCategoryDetailList(
       {required String categoryId,
-        required Map<String, dynamic> categoryFilter,
-        int page = 0,
-        int categoryType = 0}) async {
+      required Map<String, dynamic> categoryFilter,
+      int page = 0,
+      int categoryType = 0}) async {
     List<ListItemEntity> data = [];
     try {
       var response = await RequestHandlers.zaiManHuaMobileRequestHandler
           .getCategoryDetail(int.parse(categoryId),
-          page: page,
-          type:
-          TimeOrRankEnum.values.indexOf(categoryFilter['TimeOrRank']));
+              page: page,
+              type:
+                  TimeOrRankEnum.values.indexOf(categoryFilter['TimeOrRank']));
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (var rawItem in response.data['data']['comicList']) {
-          data.add(ListItemEntity(
-              rawItem['name'],
-              ImageEntity(ImageType.network, rawItem['cover']),
-              {
-                Icons.supervisor_account_rounded: rawItem['authorTagList'].map((e)=>e['tagName']).join('/'),
-                Icons.apps: rawItem['types'],
-                Icons.history_edu: date_format.formatDate(
-                    DateTime.fromMicrosecondsSinceEpoch(
-                        rawItem['last_updatetime'] * 1000000),
-                    [
-                      date_format.yyyy,
-                      '-',
-                      date_format.mm,
-                      '-',
-                      date_format.dd
-                    ])
-              }, (context) {
+          data.add(ListItemEntity(rawItem['name'],
+              ImageEntity(ImageType.network, rawItem['cover']), {
+            Icons.supervisor_account_rounded: rawItem['authors'],
+            Icons.apps: rawItem['types'],
+            Icons.history_edu: date_format.formatDate(
+                DateTime.fromMicrosecondsSinceEpoch(
+                    rawItem['last_updatetime'] * 1000000),
+                [date_format.yyyy, '-', date_format.mm, '-', date_format.dd])
+          }, (context) {
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(
-                builder: (context) => ComicDetailPage(
-                  title: rawItem['name'],
-                  comicId: rawItem['id'].toString(),
-                  comicSourceModel: parent,
-                ),
-                settings: const RouteSettings(name: 'ComicDetailPage')));
+                    builder: (context) => ComicDetailPage(
+                          title: rawItem['name'],
+                          comicId: rawItem['id'].toString(),
+                          comicSourceModel: parent,
+                        ),
+                    settings: const RouteSettings(name: 'ComicDetailPage')));
           }));
         }
       }
@@ -661,12 +648,12 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
   final Map rawData;
   final ZaiManHuaSourceModel sourceModel;
 
-  bool _isSubscribe=false;
+  bool _isSubscribe = false;
 
   ZaiManHuaComicDetailModel(this.rawData, this.sourceModel);
 
   @override
-  Future<void> init() async{
+  Future<void> init() async {
     super.init();
     _isSubscribe = await parent.accountModel!.getIfSubscribed(comicId);
   }
@@ -692,13 +679,13 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(
-                builder: (context) => ComicCategoryDetailPage(
-                  categoryId: e['tag_id'].toString(),
-                  sourceModel: parent,
-                  categoryTitle: e['tag_name'],
-                ),
-                settings:
-                const RouteSettings(name: 'ComicCategoryDetailPage')));
+                    builder: (context) => ComicCategoryDetailPage(
+                          categoryId: e['tag_id'].toString(),
+                          sourceModel: parent,
+                          categoryTitle: e['tag_name'],
+                        ),
+                    settings:
+                        const RouteSettings(name: 'ComicCategoryDetailPage')));
           }))
       .toList();
 
@@ -709,13 +696,13 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(
-                builder: (context) => ComicCategoryDetailPage(
-                  categoryId: e['tag_id'].toString(),
-                  sourceModel: parent,
-                  categoryTitle: e['tag_name'],
-                ),
-                settings:
-                const RouteSettings(name: 'ComicCategoryDetailPage')));
+                    builder: (context) => ComicCategoryDetailPage(
+                          categoryId: e['tag_id'].toString(),
+                          sourceModel: parent,
+                          categoryTitle: e['tag_name'],
+                        ),
+                    settings:
+                        const RouteSettings(name: 'ComicCategoryDetailPage')));
           }))
       .toList();
 
@@ -825,9 +812,9 @@ class ZaiManHuaComicChapterDetailModel extends BaseComicChapterDetailModel {
   String get chapterId => rawData['chapter_id'].toString();
 
   @override
-  Future<List<ChapterCommentEntity>> getChapterComments() {
-    // TODO: implement getChapterComments
-    throw UnimplementedError();
+  Future<List<ChapterCommentEntity>> getChapterComments() async {
+    // TODO
+    return [];
   }
 
   @override
