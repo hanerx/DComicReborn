@@ -74,9 +74,12 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                 _pageController.animateToPage(0,
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeIn);
-                _itemScrollController.scrollTo(index: 0,
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeIn);
+                if (_itemScrollController.isAttached) {
+                  _itemScrollController.scrollTo(
+                      index: 0,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeIn);
+                }
               },
               onLoad: () async {
                 await Provider.of<ComicViewerPageController>(context,
@@ -85,9 +88,12 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                 _pageController.animateToPage(0,
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeIn);
-                _itemScrollController.scrollTo(index: 0,
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeIn);
+                if (_itemScrollController.isAttached) {
+                  _itemScrollController.scrollTo(
+                      index: 0,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeIn);
+                }
               },
               child: Stack(
                 children: [
@@ -148,7 +154,7 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
       var index = items
           .where((ItemPosition position) => position.itemTrailingEdge > 0)
           .reduce((ItemPosition min, ItemPosition position) =>
-      position.itemTrailingEdge < min.itemTrailingEdge ? position : min)
+              position.itemTrailingEdge < min.itemTrailingEdge ? position : min)
           .index;
       Provider.of<ComicViewerPageController>(context, listen: false)
           .currentPage = index;
@@ -215,37 +221,38 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
   }
 
   Widget _buildPrePageButton(BuildContext context) {
-    if (Provider.of<ConfigProvider>(context)
-        .readDirection ==
-        ReadDirectionType.vertical){
+    if (Provider.of<ConfigProvider>(context).readDirection ==
+        ReadDirectionType.vertical) {
       return Positioned(
           left: 0,
           right: 0,
           top: 0,
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: () async{
+            onTap: () async {
               if (Provider.of<ComicViewerPageController>(context, listen: false)
-                  .currentPage >
+                      .currentPage >
                   0) {
-                _itemScrollController.scrollTo(
-                    index: Provider.of<ComicViewerPageController>(context,
-                        listen: false)
-                        .currentPage -
-                        1,
-                    duration: const Duration(milliseconds: 200));
+                if (_itemScrollController.isAttached) {
+                  _itemScrollController.scrollTo(
+                      index: Provider.of<ComicViewerPageController>(context,
+                                  listen: false)
+                              .currentPage -
+                          1,
+                      duration: const Duration(milliseconds: 200));
+                }
               } else {
                 await _easyRefreshController.callRefresh();
               }
             },
             child: SizedBox(
-              height: Provider.of<ConfigProvider>(context).verticalClickAreaSize,
-              child:
-              Provider.of<ConfigProvider>(context).drawDebugWidget
+              height:
+                  Provider.of<ConfigProvider>(context).verticalClickAreaSize,
+              child: Provider.of<ConfigProvider>(context).drawDebugWidget
                   ? Container(
-                color: Color.lerp(Theme.of(context).colorScheme.primary,
-                    Colors.transparent, 0.5),
-              )
+                      color: Color.lerp(Theme.of(context).colorScheme.primary,
+                          Colors.transparent, 0.5),
+                    )
                   : null,
             ),
           ));
@@ -257,8 +264,9 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () {
-            if(Provider.of<ConfigProvider>(context, listen: false)
-                .readDirection == ReadDirectionType.right){
+            if (Provider.of<ConfigProvider>(context, listen: false)
+                    .readDirection ==
+                ReadDirectionType.right) {
               if (_pageController.position.pixels !=
                   _pageController.position.maxScrollExtent) {
                 _pageController.nextPage(
@@ -267,7 +275,7 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
               } else {
                 _easyRefreshController.callLoad();
               }
-            }else{
+            } else {
               if (_pageController.position.pixels !=
                   _pageController.position.minScrollExtent) {
                 _pageController.previousPage(
@@ -280,21 +288,19 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
           },
           child: SizedBox(
             width: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
-            child:
-                Provider.of<ConfigProvider>(context).drawDebugWidget
-                    ? Container(
-                        color: Color.lerp(Theme.of(context).colorScheme.primary,
-                            Colors.transparent, 0.5),
-                      )
-                    : null,
+            child: Provider.of<ConfigProvider>(context).drawDebugWidget
+                ? Container(
+                    color: Color.lerp(Theme.of(context).colorScheme.primary,
+                        Colors.transparent, 0.5),
+                  )
+                : null,
           ),
         ));
   }
 
   Widget _buildNextPageButton(BuildContext context) {
-    if (Provider.of<ConfigProvider>(context)
-        .readDirection ==
-        ReadDirectionType.vertical){
+    if (Provider.of<ConfigProvider>(context).readDirection ==
+        ReadDirectionType.vertical) {
       return Positioned(
           right: 0,
           left: 0,
@@ -303,30 +309,32 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
             behavior: HitTestBehavior.translucent,
             onTap: () async {
               if (Provider.of<ComicViewerPageController>(context, listen: false)
-                  .currentPage <
+                      .currentPage <
                   Provider.of<ComicViewerPageController>(context, listen: false)
-                      .chapterDetailModel!
-                      .pages
-                      .length -
+                          .chapterDetailModel!
+                          .pages
+                          .length -
                       1) {
-                _itemScrollController.scrollTo(
-                    index: Provider.of<ComicViewerPageController>(context,
-                        listen: false)
-                        .currentPage +
-                        1,
-                    duration: const Duration(milliseconds: 200));
+                if (_itemScrollController.isAttached) {
+                  _itemScrollController.scrollTo(
+                      index: Provider.of<ComicViewerPageController>(context,
+                                  listen: false)
+                              .currentPage +
+                          1,
+                      duration: const Duration(milliseconds: 200));
+                }
               } else {
                 await _easyRefreshController.callLoad();
               }
             },
             child: SizedBox(
-              height: Provider.of<ConfigProvider>(context).verticalClickAreaSize,
-              child:
-              Provider.of<ConfigProvider>(context).drawDebugWidget
+              height:
+                  Provider.of<ConfigProvider>(context).verticalClickAreaSize,
+              child: Provider.of<ConfigProvider>(context).drawDebugWidget
                   ? Container(
-                color: Color.lerp(Theme.of(context).colorScheme.primary,
-                    Colors.transparent, 0.5),
-              )
+                      color: Color.lerp(Theme.of(context).colorScheme.primary,
+                          Colors.transparent, 0.5),
+                    )
                   : null,
             ),
           ));
@@ -338,8 +346,9 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () {
-            if(Provider.of<ConfigProvider>(context, listen: false)
-                .readDirection == ReadDirectionType.left){
+            if (Provider.of<ConfigProvider>(context, listen: false)
+                    .readDirection ==
+                ReadDirectionType.left) {
               if (_pageController.position.pixels !=
                   _pageController.position.maxScrollExtent) {
                 _pageController.nextPage(
@@ -348,7 +357,7 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
               } else {
                 _easyRefreshController.callLoad();
               }
-            }else{
+            } else {
               if (_pageController.position.pixels !=
                   _pageController.position.minScrollExtent) {
                 _pageController.previousPage(
@@ -361,21 +370,19 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
           },
           child: SizedBox(
             width: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
-            child:
-                Provider.of<ConfigProvider>(context).drawDebugWidget
-                    ? Container(
-                        color: Color.lerp(Theme.of(context).colorScheme.primary,
-                            Colors.transparent, 0.5),
-                      )
-                    : null,
+            child: Provider.of<ConfigProvider>(context).drawDebugWidget
+                ? Container(
+                    color: Color.lerp(Theme.of(context).colorScheme.primary,
+                        Colors.transparent, 0.5),
+                  )
+                : null,
           ),
         ));
   }
 
   Widget _buildShowButton(BuildContext context) {
-    if (Provider.of<ConfigProvider>(context)
-        .readDirection ==
-        ReadDirectionType.vertical){
+    if (Provider.of<ConfigProvider>(context).readDirection ==
+        ReadDirectionType.vertical) {
       return Positioned(
           right: 0,
           left: 0,
@@ -385,19 +392,17 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
             behavior: HitTestBehavior.translucent,
             onTap: () {
               Provider.of<ComicViewerPageController>(context, listen: false)
-                  .showToolBar =
-              !Provider.of<ComicViewerPageController>(context, listen: false)
+                  .showToolBar = !Provider.of<ComicViewerPageController>(
+                      context,
+                      listen: false)
                   .showToolBar;
             },
             child: SizedBox(
-              child:
-              Provider.of<ConfigProvider>(context).drawDebugWidget
+              child: Provider.of<ConfigProvider>(context).drawDebugWidget
                   ? Container(
-                color: Color.lerp(
-                    Theme.of(context).colorScheme.tertiary,
-                    Colors.transparent,
-                    0.5),
-              )
+                      color: Color.lerp(Theme.of(context).colorScheme.tertiary,
+                          Colors.transparent, 0.5),
+                    )
                   : null,
             ),
           ));
@@ -416,15 +421,12 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                     .showToolBar;
           },
           child: SizedBox(
-            child:
-                Provider.of<ConfigProvider>(context).drawDebugWidget
-                    ? Container(
-                        color: Color.lerp(
-                            Theme.of(context).colorScheme.tertiary,
-                            Colors.transparent,
-                            0.5),
-                      )
-                    : null,
+            child: Provider.of<ConfigProvider>(context).drawDebugWidget
+                ? Container(
+                    color: Color.lerp(Theme.of(context).colorScheme.tertiary,
+                        Colors.transparent, 0.5),
+                  )
+                : null,
           ),
         ));
   }
@@ -595,13 +597,22 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                                         child: ActionChip(
                                             onPressed: () {},
                                             avatar: CircleAvatar(
-                                              child: item.avatar == null?Text(
-                                                "${Provider.of<ComicViewerPageController>(context).maxLikes > 100 ? (item.likes / Provider.of<ComicViewerPageController>(context).maxLikes * 100).toInt() : item.likes}",
-                                                style: const TextStyle(
-                                                    fontSize: 13),
-                                              ): DComicImage(item.avatar!),
+                                              child: item.avatar == null
+                                                  ? Text(
+                                                      "${Provider.of<ComicViewerPageController>(context).maxLikes > 100 ? (item.likes / Provider.of<ComicViewerPageController>(context).maxLikes * 100).toInt() : item.likes}",
+                                                      style: const TextStyle(
+                                                          fontSize: 13),
+                                                    )
+                                                  : DComicImage(item.avatar!),
                                             ),
-                                            label: TextScroll(item.comment, velocity: const Velocity(pixelsPerSecond: Offset(40, 0)),pauseBetween: const Duration(seconds: 3),),
+                                            label: TextScroll(
+                                              item.comment,
+                                              velocity: const Velocity(
+                                                  pixelsPerSecond:
+                                                      Offset(40, 0)),
+                                              pauseBetween:
+                                                  const Duration(seconds: 3),
+                                            ),
                                             backgroundColor: Color.lerp(
                                                 Theme.of(context)
                                                     .colorScheme

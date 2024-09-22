@@ -146,5 +146,18 @@
       "sourceId": {}
     }
   },
-  "SourceProviderSettingEmpty": "该漫画源暂无更多设置选项"
+  "SourceProviderSettingEmpty": "该漫画源暂无更多设置选项",
+  "ZaiManHuaTitle": "再漫画",
+  "ZaiManHuaLoginPasswordHint": "你的拷贝漫画账号密码",
+  "CheckUpdateUpToDate": "没有更新",
+  "ReleaseInfoTitle": "版本点亮： {version}",
+  "@ReleaseInfoTitle": {
+    "placeholders": {
+      "version": {}
+    }
+  },
+  "ReleaseInfoDownload": "下载",
+  "SettingPageShowReleaseInfo": "最近更新",
+  "SettingPageFailToGetReleaseInfo": "没有可用的更新数据",
+  "NewComicBadge": "新"
 }

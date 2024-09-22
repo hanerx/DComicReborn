@@ -149,5 +149,18 @@
       "sourceId": {}
     }
   },
-  "SourceProviderSettingEmpty": "No Extra Options for this Source Provider"
+  "SourceProviderSettingEmpty": "No Extra Options for this Source Provider",
+  "ZaiManHuaTitle": "ZaiManHua",
+  "ZaiManHuaLoginPasswordHint": "Your ZaiManHua Password!",
+  "CheckUpdateUpToDate": "App is Up to Date",
+  "ReleaseInfoTitle": "Release Light Up {version}",
+  "@ReleaseInfoTitle": {
+    "placeholders": {
+      "version": {}
+    }
+  },
+  "ReleaseInfoDownload": "Download",
+  "SettingPageShowReleaseInfo": "Latest Release",
+  "SettingPageFailToGetReleaseInfo": "No Valid Release Info",
+  "NewComicBadge": "NEW"
 }

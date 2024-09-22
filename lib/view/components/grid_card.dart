@@ -1,3 +1,4 @@
+import 'package:badges/badges.dart' as badges;
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:flutter/material.dart';
@@ -88,9 +89,10 @@ class GridCardItem extends StatelessWidget {
   final String? subtitle;
   final ImageEntity image;
   final void Function()? onTap;
+  final Map<badges.BadgePosition, String Function(BuildContext)>? badgeMaps;
 
   const GridCardItem(
-      {super.key, this.title, this.subtitle, required this.image, this.onTap});
+      {super.key, this.title, this.subtitle, required this.image, this.onTap, this.badgeMaps});
 
   @override
   Widget build(BuildContext context) {
@@ -99,12 +101,7 @@ class GridCardItem extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(5),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(3),
-          child: Column(
-            children: _buildColumn(context),
-          ),
-        ),
+        child: _buildBadge(context),
       ),
     );
   }
@@ -137,6 +134,36 @@ class GridCardItem extends StatelessWidget {
       ));
     }
     return list;
+  }
+
+  Widget _buildBadge(BuildContext context){
+    if(badgeMaps==null){
+      return Padding(
+        padding: const EdgeInsets.all(3),
+        child: Column(
+          children: _buildColumn(context),
+        ),
+      );
+    }
+    Widget child = Padding(
+      padding: const EdgeInsets.all(3),
+      child: Column(
+        children: _buildColumn(context),
+      ),
+    );
+    for(var tuple in badgeMaps!.entries){
+      child = badges.Badge(
+        badgeContent: Text(tuple.value(context), style: TextStyle(color: Theme.of(context).cardColor),),
+        position: tuple.key,
+        badgeStyle: badges.BadgeStyle(
+          shape: badges.BadgeShape.square,
+          borderRadius: BorderRadius.circular(4),
+          badgeColor: Theme.of(context).colorScheme.error.withAlpha(200),
+        ),
+        child: child,
+      );
+    }
+    return child;
   }
 }
 

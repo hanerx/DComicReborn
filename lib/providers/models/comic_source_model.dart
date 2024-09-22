@@ -1,3 +1,4 @@
+import 'package:badges/badges.dart';
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/base_model.dart';
@@ -264,6 +265,8 @@ abstract class BaseComicAccountModel extends BaseModel {
 
   String? get username;
 
+  BaseComicSourceModel? get parent;
+
   Future<void> initAccount();
 
   Future<bool> login(String username, String password);
@@ -279,6 +282,37 @@ abstract class BaseComicAccountModel extends BaseModel {
   Future<bool> unsubscribeComic(String comicId);
 
   Future<List<GridItemEntity>> getSubscribeComics({int page = 0});
+
+  Future<List<GridItemEntity>> getSubscribeStateComics({int page=0}) async {
+    List<GridItemEntity> data = await getSubscribeComics(page: page);
+    var databaseInstance = await DatabaseInstance.instance;
+    for(var item in data){
+      if(item is GridItemEntityWithStatus){
+        var comicSubscribeState = await databaseInstance.comicSubscribeStateDao.getOrCreateConfigByComicId(item.comicId, parent!.type.sourceId);
+        if(comicSubscribeState.timestamp!=null){
+          if(comicSubscribeState.timestamp!.isBefore(item.lastUpdateTimestamp)){
+            item.badges??={};
+            item.badges?.addAll({
+              BadgePosition.topEnd(top: -5, end: -5): (context) => S.of(context).NewComicBadge
+            });
+          }
+        }else{
+          item.badges??={};
+          item.badges?.addAll({
+            BadgePosition.topEnd(top: -5, end: -5): (context) => S.of(context).NewComicBadge
+          });
+        }
+      }
+    }
+    return data;
+  }
+
+  Future<void> addSubscribeState(String comicId) async{
+    var databaseInstance = await DatabaseInstance.instance;
+    var comicSubscribeState = await databaseInstance.comicSubscribeStateDao.getOrCreateConfigByComicId(comicId, parent!.type.sourceId);
+    comicSubscribeState.timestamp = DateTime.now();
+    await databaseInstance.comicSubscribeStateDao.updateComicSubscribeState(comicSubscribeState);
+  }
 }
 
 abstract class BaseComicHomepageModel extends BaseModel {
@@ -397,8 +431,17 @@ class GridItemEntity {
   final String? subtitle;
   final ImageEntity cover;
   final void Function(BuildContext context)? onTap;
+  Map<BadgePosition, String Function(BuildContext context)>? badges;
 
-  GridItemEntity(this.title, this.subtitle, this.cover, this.onTap);
+  GridItemEntity(this.title, this.subtitle, this.cover, this.onTap, {this.badges});
+}
+
+class GridItemEntityWithStatus extends GridItemEntity {
+  final String comicId;
+  final DateTime lastUpdateTimestamp;
+
+  GridItemEntityWithStatus(super.title, super.subtitle, super.cover, super.onTap, this.lastUpdateTimestamp, this.comicId);
+
 }
 
 class ListItemEntity {

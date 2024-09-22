@@ -82,13 +82,15 @@ class _$DComicDatabase extends DComicDatabase {
 
   ComicMappingDao? _comicMappingDaoInstance;
 
+  ComicSubscribeStateDao? _comicSubscribeStateDaoInstance;
+
   Future<sqflite.Database> open(
     String path,
     List<Migration> migrations, [
     Callback? callback,
   ]) async {
     final databaseOptions = sqflite.OpenDatabaseOptions(
-      version: 4,
+      version: 5,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
         await callback?.onConfigure?.call(database);
@@ -113,6 +115,8 @@ class _$DComicDatabase extends DComicDatabase {
             'CREATE TABLE IF NOT EXISTS `ModelConfigEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT, `sourceModel` TEXT)');
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `ComicMappingEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `sourceProviderName` TEXT NOT NULL, `targetProviderName` TEXT NOT NULL, `resultComicId` TEXT NOT NULL)');
+        await database.execute(
+            'CREATE TABLE IF NOT EXISTS `ComicSubscribeStateEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `timestamp` INTEGER, `providerName` TEXT NOT NULL)');
 
         await callback?.onCreate?.call(database, version);
       },
@@ -146,6 +150,12 @@ class _$DComicDatabase extends DComicDatabase {
   ComicMappingDao get comicMappingDao {
     return _comicMappingDaoInstance ??=
         _$ComicMappingDao(database, changeListener);
+  }
+
+  @override
+  ComicSubscribeStateDao get comicSubscribeStateDao {
+    return _comicSubscribeStateDaoInstance ??=
+        _$ComicSubscribeStateDao(database, changeListener);
   }
 }
 
@@ -514,6 +524,91 @@ class _$ComicMappingDao extends ComicMappingDao {
   Future<void> updateComicMapping(ComicMappingEntity comicMappingEntity) async {
     await _comicMappingEntityUpdateAdapter.update(
         comicMappingEntity, OnConflictStrategy.replace);
+  }
+}
+
+class _$ComicSubscribeStateDao extends ComicSubscribeStateDao {
+  _$ComicSubscribeStateDao(
+    this.database,
+    this.changeListener,
+  )   : _queryAdapter = QueryAdapter(database),
+        _comicSubscribeStateEntityInsertionAdapter = InsertionAdapter(
+            database,
+            'ComicSubscribeStateEntity',
+            (ComicSubscribeStateEntity item) => <String, Object?>{
+                  'id': item.id,
+                  'comicId': item.comicId,
+                  'timestamp':
+                      _dateTimeNullableConverter.encode(item.timestamp),
+                  'providerName': item.providerName
+                }),
+        _comicSubscribeStateEntityUpdateAdapter = UpdateAdapter(
+            database,
+            'ComicSubscribeStateEntity',
+            ['id'],
+            (ComicSubscribeStateEntity item) => <String, Object?>{
+                  'id': item.id,
+                  'comicId': item.comicId,
+                  'timestamp':
+                      _dateTimeNullableConverter.encode(item.timestamp),
+                  'providerName': item.providerName
+                });
+
+  final sqflite.DatabaseExecutor database;
+
+  final StreamController<String> changeListener;
+
+  final QueryAdapter _queryAdapter;
+
+  final InsertionAdapter<ComicSubscribeStateEntity>
+      _comicSubscribeStateEntityInsertionAdapter;
+
+  final UpdateAdapter<ComicSubscribeStateEntity>
+      _comicSubscribeStateEntityUpdateAdapter;
+
+  @override
+  Future<List<ComicSubscribeStateEntity>>
+      getAllComicSubscribeStateEntity() async {
+    return _queryAdapter.queryList('SELECT * FROM ComicSubscribeStateEntity',
+        mapper: (Map<String, Object?> row) => ComicSubscribeStateEntity(
+            row['id'] as int?,
+            row['comicId'] as String,
+            _dateTimeNullableConverter.decode(row['timestamp'] as int?),
+            row['providerName'] as String));
+  }
+
+  @override
+  Future<ComicSubscribeStateEntity?> getComicSubscribeStateByComicId(
+    String comicId,
+    String providerName,
+  ) async {
+    return _queryAdapter.query(
+        'SELECT * FROM ComicSubscribeStateEntity WHERE `comicId`= ?1 AND `providerName`= ?2',
+        mapper: (Map<String, Object?> row) => ComicSubscribeStateEntity(row['id'] as int?, row['comicId'] as String, _dateTimeNullableConverter.decode(row['timestamp'] as int?), row['providerName'] as String),
+        arguments: [comicId, providerName]);
+  }
+
+  @override
+  Future<List<ComicSubscribeStateEntity>> getComicSubscribeStateByProvider(
+      String providerName) async {
+    return _queryAdapter.queryList(
+        'SELECT * FROM ComicSubscribeStateEntity WHERE `providerName`= ?1 GROUP BY comicId',
+        mapper: (Map<String, Object?> row) => ComicSubscribeStateEntity(row['id'] as int?, row['comicId'] as String, _dateTimeNullableConverter.decode(row['timestamp'] as int?), row['providerName'] as String),
+        arguments: [providerName]);
+  }
+
+  @override
+  Future<void> insertComicSubscribeState(
+      ComicSubscribeStateEntity comicSubscribeStateEntity) async {
+    await _comicSubscribeStateEntityInsertionAdapter.insert(
+        comicSubscribeStateEntity, OnConflictStrategy.replace);
+  }
+
+  @override
+  Future<void> updateComicSubscribeState(
+      ComicSubscribeStateEntity comicSubscribeStateEntity) async {
+    await _comicSubscribeStateEntityUpdateAdapter.update(
+        comicSubscribeStateEntity, OnConflictStrategy.replace);
   }
 }
 

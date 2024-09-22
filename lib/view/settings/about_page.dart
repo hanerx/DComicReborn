@@ -107,16 +107,53 @@ class _AboutPageState extends State<AboutPage> {
                         padding: EdgeInsets.all(10),
                         child: Icon(Icons.system_update)),
                     title: Text(S.of(context).AboutPageCheckForUpdate),
-                    subtitle: Text(Provider.of<VersionProvider>(context).currentVersion),
-                    onTap: () {},
+                    subtitle: Text(
+                        Provider.of<VersionProvider>(context).currentVersion),
+                    onTap: () async {
+                      if (await Provider.of<VersionProvider>(context,
+                              listen: false)
+                          .checkUpdate()) {
+                        if (context.mounted) {
+                          await showReleaseInfo(context);
+                        }
+                      } else {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(S.of(context).CheckUpdateUpToDate),
+                          ));
+                        }
+                      }
+                    },
                   ),
                   ListTile(
                     leading: const Padding(
                         padding: EdgeInsets.all(10),
                         child: Icon(FontAwesome5.git_alt)),
                     title: Text(S.of(context).AboutPageUpdateChannel),
-                    subtitle: Text(S.of(context).AboutPageUpdateChannelModes(Provider.of<VersionProvider>(context).channel.name)),
-                    onTap: () {},
+                    subtitle: Text(S.of(context).AboutPageUpdateChannelModes(
+                        Provider.of<VersionProvider>(context).channel.name)),
+                    onTap: () {
+                      var index = UpdateChannel.values.indexOf(
+                          Provider.of<VersionProvider>(context, listen: false)
+                              .channel);
+                      index++;
+                      if (index >= UpdateChannel.values.length) {
+                        index = 0;
+                      }
+                      Provider.of<VersionProvider>(context, listen: false)
+                          .channel = UpdateChannel.values[index];
+                    },
+                  ),
+                  ListTile(
+                    leading: const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: Icon(Icons.new_releases)),
+                    title: Text(S.of(context).SettingPageShowReleaseInfo),
+                    subtitle: Text(
+                        Provider.of<VersionProvider>(context).latestVersion),
+                    onTap: () async {
+                      await showReleaseInfo(context);
+                    },
                   ),
                 ],
               ),
@@ -131,9 +168,13 @@ class _AboutPageState extends State<AboutPage> {
                         child: Icon(FontAwesome5.github_alt)),
                     title: Text(S.of(context).AboutPageGithub),
                     subtitle: Text(S.of(context).AboutPageGithubUrl),
-                    onTap: () async{
-                      if(await url_string_launcher.canLaunchUrlString(S.of(context).AboutPageGithubUrl)){
-                        url_string_launcher.launchUrlString(S.of(context).AboutPageGithubUrl);
+                    onTap: () async {
+                      if (await url_string_launcher.canLaunchUrlString(
+                          S.of(context).AboutPageGithubUrl)) {
+                        if (context.mounted) {
+                          url_string_launcher.launchUrlString(
+                              S.of(context).AboutPageGithubUrl);
+                        }
                       }
                     },
                   ),
@@ -161,9 +202,10 @@ class _AboutPageState extends State<AboutPage> {
                     onTap: () {
                       showAboutDialog(
                           context: context,
-                          applicationVersion:
-                              Provider.of<VersionProvider>(context,listen: false)
-                                  .currentVersion,
+                          applicationVersion: Provider.of<VersionProvider>(
+                                  context,
+                                  listen: false)
+                              .currentVersion,
                           children: [
                             Text(
                                 S.of(context).AboutPageAboutDialogueDescription)
@@ -177,6 +219,52 @@ class _AboutPageState extends State<AboutPage> {
         ),
       ),
     );
+  }
+
+  Future<void> showReleaseInfo(BuildContext context) async {
+    ReleaseInfo? releaseInfo =
+        await Provider.of<VersionProvider>(context, listen: false)
+            .getLatestUpdateInfo();
+    if (releaseInfo != null) {
+      if (context.mounted) {
+        showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+                  title:
+                      Text(S.of(context).ReleaseInfoTitle(releaseInfo.version)),
+                  content: Text(releaseInfo.desc),
+                  actions: [
+                    TextButton(
+                        onPressed: () async {
+                          if (await url_string_launcher
+                              .canLaunchUrlString(releaseInfo.releaseUrl)) {
+                            if (context.mounted) {
+                              url_string_launcher
+                                  .launchUrlString(releaseInfo.releaseUrl);
+                            }
+                          }
+                        },
+                        child: Text(S.of(context).AboutPageGithub)),
+                    TextButton(
+                        onPressed: () async {
+                          if (await url_string_launcher
+                              .canLaunchUrlString(releaseInfo.updateUrl)) {
+                            if (context.mounted) {
+                              url_string_launcher
+                                  .launchUrlString(releaseInfo.updateUrl);
+                            }
+                          }
+                        },
+                        child: Text(S.of(context).ReleaseInfoDownload))
+                  ],
+                ));
+      }
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(S.of(context).SettingPageFailToGetReleaseInfo)));
+      }
+    }
   }
 }
 

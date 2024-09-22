@@ -83,6 +83,7 @@ class _FavoritePageState extends State<FavoritePage> {
                                           item.onTap!(context);
                                         }
                                       },
+                                      badgeMaps: item.badges,
                                     )
                                 ],
                               ))),
@@ -103,7 +104,7 @@ class _FavoritePageState extends State<FavoritePage> {
                                       settings: const RouteSettings(
                                           name: 'AccountLoginPage')))
                                   .then((value) =>
-                                      Provider.of<ComicSourceProvider>(context)
+                                      Provider.of<ComicSourceProvider>(context, listen: false)
                                           .callNotify());
                             },
                             child: Text(S.of(context).JumpToLogin))

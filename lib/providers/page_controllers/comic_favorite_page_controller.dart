@@ -10,13 +10,13 @@ class ComicFavoritePageController extends BaseProvider{
 
   Future<void> refresh()async{
     _page=0;
-    data=await sourceModel.accountModel!.getSubscribeComics(page:_page);
+    data=await sourceModel.accountModel!.getSubscribeStateComics(page:_page);
     notifyListeners();
   }
 
   Future<void> load()async{
     _page++;
-    data+=await sourceModel.accountModel!.getSubscribeComics(page:_page);
+    data+=await sourceModel.accountModel!.getSubscribeStateComics(page:_page);
     notifyListeners();
   }
 }

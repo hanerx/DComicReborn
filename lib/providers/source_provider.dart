@@ -27,7 +27,7 @@ class ComicSourceProvider extends BaseProvider {
     int idx = 0;
     for (var sourceModel in sources) {
       logger.i('init source model: ${sourceModel.type}');
-      sourceModel.init();
+      sourceModel.initModel();
       sortOrder[sourceModel.type.sourceId] = idx;
       idx++;
     }

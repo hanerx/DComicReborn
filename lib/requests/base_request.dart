@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dcomic/requests/copymanga/copymanga_request.dart';
 import 'package:dcomic/requests/dmzj/dmzj_request.dart';
+import 'package:dcomic/requests/github/github_request.dart';
 import 'package:dcomic/requests/zaimanhua/zaimanhua_request.dart';
 import 'package:dcomic/utils/db_cookie_jar.dart';
 import 'package:dio/dio.dart';
@@ -95,4 +96,6 @@ class RequestHandlers{
   static ZaiManHuaRequestHandler zaiManHuaRequestHandler=ZaiManHuaRequestHandler();
   static ZaiManHuaMobileRequestHandler zaiManHuaMobileRequestHandler=ZaiManHuaMobileRequestHandler();
   static ZaiManHuaAccountRequestHandler zaiManHuaAccountRequestHandler=ZaiManHuaAccountRequestHandler();
+
+  static GithubRequestHandler githubRequestHandler=GithubRequestHandler();
 }

@@ -42,7 +42,9 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m7(Ping) => "Ping: ${Ping} ms";
 
-  static String m8(sourceId) => "${Intl.select(sourceId, {
+  static String m8(version) => "Release Light Up ${version}";
+
+  static String m9(sourceId) => "${Intl.select(sourceId, {
             'BaseComicSource':
                 'A Base Class, If you see it, Please report an issue.',
             'dmzj': 'DMZJ Source, The Tear of Ages.',
@@ -51,7 +53,7 @@ class MessageLookup extends MessageLookupByLibrary {
             'other': 'Bug!!!!!',
           })}";
 
-  static String m9(modes) => "${Intl.select(modes, {
+  static String m10(modes) => "${Intl.select(modes, {
             'ranking': 'Ranking',
             'latestUpdate': 'Latest Update',
             'other': 'Unknown',
@@ -88,6 +90,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "AccountSettingsDescription": MessageLookupByLibrary.simpleMessage(
             "Manage All Comic Source With Account"),
         "AppName": MessageLookupByLibrary.simpleMessage("DComic"),
+        "CheckUpdateUpToDate":
+            MessageLookupByLibrary.simpleMessage("App is Up to Date"),
         "ComicDetailPageAuthor":
             MessageLookupByLibrary.simpleMessage("Author: "),
         "ComicDetailPageBindComicId":
@@ -175,20 +179,27 @@ class MessageLookup extends MessageLookupByLibrary {
         "MainPageHome": MessageLookupByLibrary.simpleMessage("Home"),
         "MainPageLatest": MessageLookupByLibrary.simpleMessage("Latest"),
         "MainPageRank": MessageLookupByLibrary.simpleMessage("Rank"),
+        "NewComicBadge": MessageLookupByLibrary.simpleMessage("NEW"),
         "ReaderSettings":
             MessageLookupByLibrary.simpleMessage("Reader Settings"),
         "ReaderSettingsDescription":
             MessageLookupByLibrary.simpleMessage("Settings About Comic Reader"),
+        "ReleaseInfoDownload": MessageLookupByLibrary.simpleMessage("Download"),
+        "ReleaseInfoTitle": m8,
         "RequireLogin": MessageLookupByLibrary.simpleMessage(
             "This Page Needs User Info, Please Login"),
-        "SourceProviderDesc": m8,
+        "SettingPageFailToGetReleaseInfo":
+            MessageLookupByLibrary.simpleMessage("No Valid Release Info"),
+        "SettingPageShowReleaseInfo":
+            MessageLookupByLibrary.simpleMessage("Latest Release"),
+        "SourceProviderDesc": m9,
         "SourceProviderSettingEmpty": MessageLookupByLibrary.simpleMessage(
             "No Extra Options for this Source Provider"),
         "SourceSettings":
             MessageLookupByLibrary.simpleMessage("Source Settings"),
         "SourceSettingsDescription":
             MessageLookupByLibrary.simpleMessage("Manage Comic Source"),
-        "TimeOrRankFilterEntityModes": m9,
+        "TimeOrRankFilterEntityModes": m10,
         "TimeOrRankFilterEntityName":
             MessageLookupByLibrary.simpleMessage("SortType"),
         "UnknownScreen": MessageLookupByLibrary.simpleMessage(
@@ -206,6 +217,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "ViewerSettingUseMaterial3DesignSubTitle":
             MessageLookupByLibrary.simpleMessage("Maybe not bad?"),
         "ViewerSettingVerticalSize":
-            MessageLookupByLibrary.simpleMessage("Click Area Size(Vertical)")
+            MessageLookupByLibrary.simpleMessage("Click Area Size(Vertical)"),
+        "ZaiManHuaLoginPasswordHint":
+            MessageLookupByLibrary.simpleMessage("Your ZaiManHua Password!"),
+        "ZaiManHuaTitle": MessageLookupByLibrary.simpleMessage("ZaiManHua")
       };
 }

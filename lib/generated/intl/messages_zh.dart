@@ -38,7 +38,9 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m5(Reason) => "登录失败: ${Reason}.";
 
-  static String m8(sourceId) => "${Intl.select(sourceId, {
+  static String m8(version) => "版本点亮： ${version}";
+
+  static String m9(sourceId) => "${Intl.select(sourceId, {
             'BaseComicSource': '所有漫画源的基类，如果你看到这玩意了，说明作者冲晕过去了，请提交issue',
             'dmzj': '大妈之家，现在可以认为是赛博墓碑',
             'copymanga': '拷贝漫画，资源齐全但是评论有向8u靠拢的趋势，而且你不一定能连上',
@@ -46,7 +48,7 @@ class MessageLookup extends MessageLookupByLibrary {
             'other': '出bug力!',
           })}";
 
-  static String m9(modes) => "${Intl.select(modes, {
+  static String m10(modes) => "${Intl.select(modes, {
             'ranking': '热度',
             'latestUpdate': '更新',
             'other': '未知',
@@ -79,6 +81,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "AccountSettingsDescription":
             MessageLookupByLibrary.simpleMessage("设置多账户漫画源"),
         "AppName": MessageLookupByLibrary.simpleMessage("DComic"),
+        "CheckUpdateUpToDate": MessageLookupByLibrary.simpleMessage("没有更新"),
         "ComicDetailPageAuthor": MessageLookupByLibrary.simpleMessage("作者: "),
         "ComicDetailPageBindComicId":
             MessageLookupByLibrary.simpleMessage("绑定漫画ID: "),
@@ -151,17 +154,24 @@ class MessageLookup extends MessageLookupByLibrary {
         "MainPageHome": MessageLookupByLibrary.simpleMessage("主页"),
         "MainPageLatest": MessageLookupByLibrary.simpleMessage("最近"),
         "MainPageRank": MessageLookupByLibrary.simpleMessage("排行"),
+        "NewComicBadge": MessageLookupByLibrary.simpleMessage("新"),
         "ReaderSettings": MessageLookupByLibrary.simpleMessage("阅读器设置"),
         "ReaderSettingsDescription":
             MessageLookupByLibrary.simpleMessage("漫画阅读器通用设置"),
+        "ReleaseInfoDownload": MessageLookupByLibrary.simpleMessage("下载"),
+        "ReleaseInfoTitle": m8,
         "RequireLogin": MessageLookupByLibrary.simpleMessage("本界面需要用户数据，请先登录"),
-        "SourceProviderDesc": m8,
+        "SettingPageFailToGetReleaseInfo":
+            MessageLookupByLibrary.simpleMessage("没有可用的更新数据"),
+        "SettingPageShowReleaseInfo":
+            MessageLookupByLibrary.simpleMessage("最近更新"),
+        "SourceProviderDesc": m9,
         "SourceProviderSettingEmpty":
             MessageLookupByLibrary.simpleMessage("该漫画源暂无更多设置选项"),
         "SourceSettings": MessageLookupByLibrary.simpleMessage("漫画源设置"),
         "SourceSettingsDescription":
             MessageLookupByLibrary.simpleMessage("管理漫画源"),
-        "TimeOrRankFilterEntityModes": m9,
+        "TimeOrRankFilterEntityModes": m10,
         "TimeOrRankFilterEntityName":
             MessageLookupByLibrary.simpleMessage("排序方式"),
         "UnknownScreen":
@@ -177,6 +187,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "ViewerSettingUseMaterial3DesignSubTitle":
             MessageLookupByLibrary.simpleMessage("好像关了也不难看欸"),
         "ViewerSettingVerticalSize":
-            MessageLookupByLibrary.simpleMessage("点击区域大小（垂直）")
+            MessageLookupByLibrary.simpleMessage("点击区域大小（垂直）"),
+        "ZaiManHuaLoginPasswordHint":
+            MessageLookupByLibrary.simpleMessage("你的拷贝漫画账号密码"),
+        "ZaiManHuaTitle": MessageLookupByLibrary.simpleMessage("再漫画")
       };
 }
