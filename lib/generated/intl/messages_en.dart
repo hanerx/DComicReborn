@@ -20,12 +20,8 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'en';
 
-  static String m0(modes) => "${Intl.select(modes, {
-            'release': 'Release',
-            'beta': 'Beta',
-            'develop': 'Develop',
-            'other': 'Unknown',
-          })}";
+  static String m0(modes) =>
+      "${Intl.select(modes, {'release': 'Release', 'beta': 'Beta', 'develop': 'Develop', 'other': 'Unknown'})}";
 
   static String m1(nickname) => "Nickname: ${nickname}";
 
@@ -44,182 +40,227 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m8(version) => "Release Light Up ${version}";
 
-  static String m9(sourceId) => "${Intl.select(sourceId, {
-            'BaseComicSource':
-                'A Base Class, If you see it, Please report an issue.',
-            'dmzj': 'DMZJ Source, The Tear of Ages.',
-            'copymanga': 'Copy Managa, Powerful but may not connectable.',
-            'zaimanhua': 'ZaiManHua Source, Maybe New Home?',
-            'other': 'Bug!!!!!',
-          })}";
+  static String m9(sourceId) =>
+      "${Intl.select(sourceId, {'BaseComicSource': 'A Base Class, If you see it, Please report an issue.', 'dmzj': 'DMZJ Source, The Tear of Ages.', 'copymanga': 'Copy Managa, Powerful but may not connectable.', 'zaimanhua': 'ZaiManHua Source, Maybe New Home?', 'other': 'Bug!!!!!'})}";
 
-  static String m10(modes) => "${Intl.select(modes, {
-            'ranking': 'Ranking',
-            'latestUpdate': 'Latest Update',
-            'other': 'Unknown',
-          })}";
+  static String m10(modes) =>
+      "${Intl.select(modes, {'ranking': 'Ranking', 'latestUpdate': 'Latest Update', 'other': 'Unknown'})}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
-        "AboutPageAbout": MessageLookupByLibrary.simpleMessage("About"),
-        "AboutPageAboutDialogueDescription":
-            MessageLookupByLibrary.simpleMessage(
-                "DComic 00Q[T], reborn of the DComic."),
-        "AboutPageAboutSubtitle":
-            MessageLookupByLibrary.simpleMessage("About DComicReborn"),
-        "AboutPageChangeLog":
-            MessageLookupByLibrary.simpleMessage("Change Log"),
-        "AboutPageChangeLogSubtitle":
-            MessageLookupByLibrary.simpleMessage("Change Log For Each Version"),
-        "AboutPageCheckForUpdate":
-            MessageLookupByLibrary.simpleMessage("Check For Update"),
-        "AboutPageGithub": MessageLookupByLibrary.simpleMessage("Github"),
-        "AboutPageGithubUrl": MessageLookupByLibrary.simpleMessage(
-            "https://github.com/hanerx/DComicReborn"),
-        "AboutPageUpdateChannel":
-            MessageLookupByLibrary.simpleMessage("Update Channel"),
-        "AboutPageUpdateChannelModes": m0,
-        "AboutSettings": MessageLookupByLibrary.simpleMessage("About"),
-        "AboutSettingsDescription":
-            MessageLookupByLibrary.simpleMessage("About DComic"),
-        "AccountManagePageSubtitleNickname": m1,
-        "AccountManagePageSubtitleUID": m2,
-        "AccountManagePageSubtitleUsername": m3,
-        "AccountSettings":
-            MessageLookupByLibrary.simpleMessage("Account Settings"),
-        "AccountSettingsDescription": MessageLookupByLibrary.simpleMessage(
-            "Manage All Comic Source With Account"),
-        "AppName": MessageLookupByLibrary.simpleMessage("DComic"),
-        "CheckUpdateUpToDate":
-            MessageLookupByLibrary.simpleMessage("App is Up to Date"),
-        "ComicDetailPageAuthor":
-            MessageLookupByLibrary.simpleMessage("Author: "),
-        "ComicDetailPageBindComicId":
-            MessageLookupByLibrary.simpleMessage("Bind ComicID: "),
-        "ComicDetailPageCategory":
-            MessageLookupByLibrary.simpleMessage("Category: "),
-        "ComicDetailPageChapterEntitySubtitle": m4,
-        "ComicDetailPageComments":
-            MessageLookupByLibrary.simpleMessage("Comments"),
-        "ComicDetailPageGridMode": MessageLookupByLibrary.simpleMessage("Grid"),
-        "ComicDetailPageListMode": MessageLookupByLibrary.simpleMessage("List"),
-        "ComicDetailPageOriginalComicId":
-            MessageLookupByLibrary.simpleMessage("Origin ComicID: "),
-        "ComicDetailPagePositiveMode":
-            MessageLookupByLibrary.simpleMessage("Positive"),
-        "ComicDetailPageReverseMode":
-            MessageLookupByLibrary.simpleMessage("Reverse"),
-        "ComicViewerPageComments":
-            MessageLookupByLibrary.simpleMessage("Comments"),
-        "ComicViewerPageDirectory":
-            MessageLookupByLibrary.simpleMessage("Directory"),
-        "CommonLoginLogin": MessageLookupByLibrary.simpleMessage("Login"),
-        "CommonLoginLoginFailed": m5,
-        "CommonLoginLogout": MessageLookupByLibrary.simpleMessage("Logout"),
-        "CopyMangaLoginPasswordHint":
-            MessageLookupByLibrary.simpleMessage("Your CopyManga Password!"),
-        "CopyMangaLoginUsernameHint":
-            MessageLookupByLibrary.simpleMessage("Username"),
-        "CopyMangaTitle": MessageLookupByLibrary.simpleMessage("CopyManga"),
-        "CopyMangaToken": MessageLookupByLibrary.simpleMessage("Token"),
-        "CopyMangaTokenHint": MessageLookupByLibrary.simpleMessage(
-            "Use Token to Login(No need input password or username if you are using token login)"),
-        "DMZJLoginPassword": MessageLookupByLibrary.simpleMessage("Password"),
-        "DMZJLoginPasswordHint":
-            MessageLookupByLibrary.simpleMessage("Your DMZJ Password!"),
-        "DMZJLoginQQLogin": MessageLookupByLibrary.simpleMessage("QQ Login"),
-        "DMZJLoginUsername": MessageLookupByLibrary.simpleMessage("Username"),
-        "DMZJLoginUsernameHint":
-            MessageLookupByLibrary.simpleMessage("Email/Username/PhoneNumber"),
-        "DMZJTitle": MessageLookupByLibrary.simpleMessage("DMZJ"),
-        "DatabaseDebugPageTitle":
-            MessageLookupByLibrary.simpleMessage("Database Debug Page"),
-        "DebugPageNetworkCheck":
-            MessageLookupByLibrary.simpleMessage("Network Check"),
-        "DebugPageNetworkCheckDescription": MessageLookupByLibrary.simpleMessage(
-            "Just check network by ping baidu.com, maybe change to more useful page in future."),
-        "DebugPagePingFailedDescription": m6,
-        "DebugPagePingFailedTitle":
-            MessageLookupByLibrary.simpleMessage("Ping Failed!"),
-        "DebugPagePingSuccessDescription": m7,
-        "DebugPagePingSuccessTitle":
-            MessageLookupByLibrary.simpleMessage("Ping Success!"),
-        "DebugPagePrintModelDatabase": MessageLookupByLibrary.simpleMessage(
-            "Try Print All Database Content"),
-        "DebugPagePrintModelDatabaseDescription":
-            MessageLookupByLibrary.simpleMessage(
-                "Try Print All Database Content to Log"),
-        "DebugPageTryCrash": MessageLookupByLibrary.simpleMessage("Try Crash"),
-        "DebugPageTryCrashDescription": MessageLookupByLibrary.simpleMessage(
-            "Try call a crash to test firebase collection method."),
-        "DebugSettings": MessageLookupByLibrary.simpleMessage("Debug Settings"),
-        "DebugSettingsDescription": MessageLookupByLibrary.simpleMessage(
-            "Debug Settings (Some may not work)"),
-        "DownloadSettings":
-            MessageLookupByLibrary.simpleMessage("Download Settings"),
-        "DownloadSettingsDescription":
-            MessageLookupByLibrary.simpleMessage("Manage Local File Settings"),
-        "DrawerDownloads": MessageLookupByLibrary.simpleMessage("Downloads"),
-        "DrawerEmail": MessageLookupByLibrary.simpleMessage("DComic 00Q[T]"),
-        "DrawerFavorite": MessageLookupByLibrary.simpleMessage("Favorite"),
-        "DrawerHistory": MessageLookupByLibrary.simpleMessage("History"),
-        "DrawerSetting": MessageLookupByLibrary.simpleMessage("Setting"),
-        "Empty": MessageLookupByLibrary.simpleMessage("No more Information"),
-        "ExperimentalSettings":
-            MessageLookupByLibrary.simpleMessage("Experimental Settings"),
-        "ExperimentalSettingsDescription": MessageLookupByLibrary.simpleMessage(
-            "DComic 00Q[T] Trans-Arm, Quantum Burst!"),
-        "ImageTypeNotSupport":
-            MessageLookupByLibrary.simpleMessage("Unknown Image Type"),
-        "JumpToLogin":
-            MessageLookupByLibrary.simpleMessage("Jump To Login Page"),
-        "Loading": MessageLookupByLibrary.simpleMessage("Loading..."),
-        "LoginPageTitle": MessageLookupByLibrary.simpleMessage("Login"),
-        "MainPageCategory": MessageLookupByLibrary.simpleMessage("Category"),
-        "MainPageHome": MessageLookupByLibrary.simpleMessage("Home"),
-        "MainPageLatest": MessageLookupByLibrary.simpleMessage("Latest"),
-        "MainPageRank": MessageLookupByLibrary.simpleMessage("Rank"),
-        "NewComicBadge": MessageLookupByLibrary.simpleMessage("NEW"),
-        "ReaderSettings":
-            MessageLookupByLibrary.simpleMessage("Reader Settings"),
-        "ReaderSettingsDescription":
-            MessageLookupByLibrary.simpleMessage("Settings About Comic Reader"),
-        "ReleaseInfoDownload": MessageLookupByLibrary.simpleMessage("Download"),
-        "ReleaseInfoTitle": m8,
-        "RequireLogin": MessageLookupByLibrary.simpleMessage(
-            "This Page Needs User Info, Please Login"),
-        "SettingPageFailToGetReleaseInfo":
-            MessageLookupByLibrary.simpleMessage("No Valid Release Info"),
-        "SettingPageShowReleaseInfo":
-            MessageLookupByLibrary.simpleMessage("Latest Release"),
-        "SourceProviderDesc": m9,
-        "SourceProviderSettingEmpty": MessageLookupByLibrary.simpleMessage(
-            "No Extra Options for this Source Provider"),
-        "SourceSettings":
-            MessageLookupByLibrary.simpleMessage("Source Settings"),
-        "SourceSettingsDescription":
-            MessageLookupByLibrary.simpleMessage("Manage Comic Source"),
-        "TimeOrRankFilterEntityModes": m10,
-        "TimeOrRankFilterEntityName":
-            MessageLookupByLibrary.simpleMessage("SortType"),
-        "UnknownScreen": MessageLookupByLibrary.simpleMessage(
-            "Your Screen Size is not support, please connect author."),
-        "ViewerSettingAlign":
-            MessageLookupByLibrary.simpleMessage("Read Direction"),
-        "ViewerSettingDebugView":
-            MessageLookupByLibrary.simpleMessage("Show Click Area"),
-        "ViewerSettingHorizontalSize":
-            MessageLookupByLibrary.simpleMessage("Click Area Size(Horizontal)"),
-        "ViewerSettingThemeColor":
-            MessageLookupByLibrary.simpleMessage("Theme Color"),
-        "ViewerSettingUseMaterial3Design":
-            MessageLookupByLibrary.simpleMessage("Use Material 3 Design"),
-        "ViewerSettingUseMaterial3DesignSubTitle":
-            MessageLookupByLibrary.simpleMessage("Maybe not bad?"),
-        "ViewerSettingVerticalSize":
-            MessageLookupByLibrary.simpleMessage("Click Area Size(Vertical)"),
-        "ZaiManHuaLoginPasswordHint":
-            MessageLookupByLibrary.simpleMessage("Your ZaiManHua Password!"),
-        "ZaiManHuaTitle": MessageLookupByLibrary.simpleMessage("ZaiManHua")
-      };
+    "AboutPageAbout": MessageLookupByLibrary.simpleMessage("About"),
+    "AboutPageAboutDialogueDescription": MessageLookupByLibrary.simpleMessage(
+      "DComic 00Q[T], reborn of the DComic.",
+    ),
+    "AboutPageAboutSubtitle": MessageLookupByLibrary.simpleMessage(
+      "About DComicReborn",
+    ),
+    "AboutPageChangeLog": MessageLookupByLibrary.simpleMessage("Change Log"),
+    "AboutPageChangeLogSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Change Log For Each Version",
+    ),
+    "AboutPageCheckForUpdate": MessageLookupByLibrary.simpleMessage(
+      "Check For Update",
+    ),
+    "AboutPageGithub": MessageLookupByLibrary.simpleMessage("Github"),
+    "AboutPageGithubUrl": MessageLookupByLibrary.simpleMessage(
+      "https://github.com/hanerx/DComicReborn",
+    ),
+    "AboutPageUpdateChannel": MessageLookupByLibrary.simpleMessage(
+      "Update Channel",
+    ),
+    "AboutPageUpdateChannelModes": m0,
+    "AboutSettings": MessageLookupByLibrary.simpleMessage("About"),
+    "AboutSettingsDescription": MessageLookupByLibrary.simpleMessage(
+      "About DComic",
+    ),
+    "AccountManagePageSubtitleNickname": m1,
+    "AccountManagePageSubtitleUID": m2,
+    "AccountManagePageSubtitleUsername": m3,
+    "AccountSettings": MessageLookupByLibrary.simpleMessage("Account Settings"),
+    "AccountSettingsDescription": MessageLookupByLibrary.simpleMessage(
+      "Manage All Comic Source With Account",
+    ),
+    "AppName": MessageLookupByLibrary.simpleMessage("DComic"),
+    "CheckUpdateUpToDate": MessageLookupByLibrary.simpleMessage(
+      "App is Up to Date",
+    ),
+    "ComicDetailPageAuthor": MessageLookupByLibrary.simpleMessage("Author: "),
+    "ComicDetailPageBindComicId": MessageLookupByLibrary.simpleMessage(
+      "Bind ComicID: ",
+    ),
+    "ComicDetailPageCategory": MessageLookupByLibrary.simpleMessage(
+      "Category: ",
+    ),
+    "ComicDetailPageChapterEntitySubtitle": m4,
+    "ComicDetailPageComments": MessageLookupByLibrary.simpleMessage("Comments"),
+    "ComicDetailPageGridMode": MessageLookupByLibrary.simpleMessage("Grid"),
+    "ComicDetailPageListMode": MessageLookupByLibrary.simpleMessage("List"),
+    "ComicDetailPageOriginalComicId": MessageLookupByLibrary.simpleMessage(
+      "Origin ComicID: ",
+    ),
+    "ComicDetailPagePositiveMode": MessageLookupByLibrary.simpleMessage(
+      "Positive",
+    ),
+    "ComicDetailPageReverseMode": MessageLookupByLibrary.simpleMessage(
+      "Reverse",
+    ),
+    "ComicViewerPageComments": MessageLookupByLibrary.simpleMessage("Comments"),
+    "ComicViewerPageDirectory": MessageLookupByLibrary.simpleMessage(
+      "Directory",
+    ),
+    "CommonLoginLogin": MessageLookupByLibrary.simpleMessage("Login"),
+    "CommonLoginLoginFailed": m5,
+    "CommonLoginLogout": MessageLookupByLibrary.simpleMessage("Logout"),
+    "CopyMangaLoginPasswordHint": MessageLookupByLibrary.simpleMessage(
+      "Your CopyManga Password!",
+    ),
+    "CopyMangaLoginUsernameHint": MessageLookupByLibrary.simpleMessage(
+      "Username",
+    ),
+    "CopyMangaTitle": MessageLookupByLibrary.simpleMessage("CopyManga"),
+    "CopyMangaToken": MessageLookupByLibrary.simpleMessage("Token"),
+    "CopyMangaTokenHint": MessageLookupByLibrary.simpleMessage(
+      "Use Token to Login(No need input password or username if you are using token login)",
+    ),
+    "DMZJLoginPassword": MessageLookupByLibrary.simpleMessage("Password"),
+    "DMZJLoginPasswordHint": MessageLookupByLibrary.simpleMessage(
+      "Your DMZJ Password!",
+    ),
+    "DMZJLoginQQLogin": MessageLookupByLibrary.simpleMessage("QQ Login"),
+    "DMZJLoginUsername": MessageLookupByLibrary.simpleMessage("Username"),
+    "DMZJLoginUsernameHint": MessageLookupByLibrary.simpleMessage(
+      "Email/Username/PhoneNumber",
+    ),
+    "DMZJTitle": MessageLookupByLibrary.simpleMessage("DMZJ"),
+    "DatabaseDebugPageTitle": MessageLookupByLibrary.simpleMessage(
+      "Database Debug Page",
+    ),
+    "DebugPageNetworkCheck": MessageLookupByLibrary.simpleMessage(
+      "Network Check",
+    ),
+    "DebugPageNetworkCheckDescription": MessageLookupByLibrary.simpleMessage(
+      "Just check network by ping baidu.com, maybe change to more useful page in future.",
+    ),
+    "DebugPagePingFailedDescription": m6,
+    "DebugPagePingFailedTitle": MessageLookupByLibrary.simpleMessage(
+      "Ping Failed!",
+    ),
+    "DebugPagePingSuccessDescription": m7,
+    "DebugPagePingSuccessTitle": MessageLookupByLibrary.simpleMessage(
+      "Ping Success!",
+    ),
+    "DebugPagePrintModelDatabase": MessageLookupByLibrary.simpleMessage(
+      "Try Print All Database Content",
+    ),
+    "DebugPagePrintModelDatabaseDescription":
+        MessageLookupByLibrary.simpleMessage(
+          "Try Print All Database Content to Log",
+        ),
+    "DebugPageShowSplashDescription": MessageLookupByLibrary.simpleMessage(
+      "Show Splash Page",
+    ),
+    "DebugPageShowSplashTitle": MessageLookupByLibrary.simpleMessage(
+      "Show Splash Page",
+    ),
+    "DebugPageTryCrash": MessageLookupByLibrary.simpleMessage("Try Crash"),
+    "DebugPageTryCrashDescription": MessageLookupByLibrary.simpleMessage(
+      "Try call a crash to test firebase collection method.",
+    ),
+    "DebugSettings": MessageLookupByLibrary.simpleMessage("Debug Settings"),
+    "DebugSettingsDescription": MessageLookupByLibrary.simpleMessage(
+      "Debug Settings (Some may not work)",
+    ),
+    "DownloadSettings": MessageLookupByLibrary.simpleMessage(
+      "Download Settings",
+    ),
+    "DownloadSettingsDescription": MessageLookupByLibrary.simpleMessage(
+      "Manage Local File Settings",
+    ),
+    "DrawerDownloads": MessageLookupByLibrary.simpleMessage("Downloads"),
+    "DrawerEmail": MessageLookupByLibrary.simpleMessage("DComic 00Q[T]"),
+    "DrawerFavorite": MessageLookupByLibrary.simpleMessage("Favorite"),
+    "DrawerHistory": MessageLookupByLibrary.simpleMessage("History"),
+    "DrawerSetting": MessageLookupByLibrary.simpleMessage("Setting"),
+    "Empty": MessageLookupByLibrary.simpleMessage("No more Information"),
+    "ExperimentalSettings": MessageLookupByLibrary.simpleMessage(
+      "Experimental Settings",
+    ),
+    "ExperimentalSettingsDescription": MessageLookupByLibrary.simpleMessage(
+      "DComic 00Q[T] Trans-Arm, Quantum Burst!",
+    ),
+    "ImageTypeNotSupport": MessageLookupByLibrary.simpleMessage(
+      "Unknown Image Type",
+    ),
+    "JumpToLogin": MessageLookupByLibrary.simpleMessage("Jump To Login Page"),
+    "Loading": MessageLookupByLibrary.simpleMessage("Loading..."),
+    "LoginPageTitle": MessageLookupByLibrary.simpleMessage("Login"),
+    "MainPageCategory": MessageLookupByLibrary.simpleMessage("Category"),
+    "MainPageHome": MessageLookupByLibrary.simpleMessage("Home"),
+    "MainPageLatest": MessageLookupByLibrary.simpleMessage("Latest"),
+    "MainPageRank": MessageLookupByLibrary.simpleMessage("Rank"),
+    "NewComicBadge": MessageLookupByLibrary.simpleMessage("NEW"),
+    "ReaderSettings": MessageLookupByLibrary.simpleMessage("Reader Settings"),
+    "ReaderSettingsDescription": MessageLookupByLibrary.simpleMessage(
+      "Settings About Comic Reader",
+    ),
+    "ReleaseInfoDownload": MessageLookupByLibrary.simpleMessage("Download"),
+    "ReleaseInfoTitle": m8,
+    "RequireLogin": MessageLookupByLibrary.simpleMessage(
+      "This Page Needs User Info, Please Login",
+    ),
+    "RequireLoginForToken": MessageLookupByLibrary.simpleMessage(
+      "No Token Found, Maybe Need To Login.",
+    ),
+    "SettingPageFailToGetReleaseInfo": MessageLookupByLibrary.simpleMessage(
+      "No Valid Release Info",
+    ),
+    "SettingPageShowReleaseInfo": MessageLookupByLibrary.simpleMessage(
+      "Latest Release",
+    ),
+    "SourceProviderDesc": m9,
+    "SourceProviderSettingEmpty": MessageLookupByLibrary.simpleMessage(
+      "No Extra Options for this Source Provider",
+    ),
+    "SourceSettings": MessageLookupByLibrary.simpleMessage("Source Settings"),
+    "SourceSettingsDescription": MessageLookupByLibrary.simpleMessage(
+      "Manage Comic Source",
+    ),
+    "TimeOrRankFilterEntityModes": m10,
+    "TimeOrRankFilterEntityName": MessageLookupByLibrary.simpleMessage(
+      "SortType",
+    ),
+    "TokenCopied": MessageLookupByLibrary.simpleMessage(
+      "Token has been copied to clipboard",
+    ),
+    "TokenCopy": MessageLookupByLibrary.simpleMessage("Copy Token"),
+    "TokenLogin": MessageLookupByLibrary.simpleMessage("Login with Token"),
+    "UnknownScreen": MessageLookupByLibrary.simpleMessage(
+      "Your Screen Size is not support, please connect author.",
+    ),
+    "ViewerSettingAlign": MessageLookupByLibrary.simpleMessage(
+      "Read Direction",
+    ),
+    "ViewerSettingDebugView": MessageLookupByLibrary.simpleMessage(
+      "Show Click Area",
+    ),
+    "ViewerSettingHorizontalSize": MessageLookupByLibrary.simpleMessage(
+      "Click Area Size(Horizontal)",
+    ),
+    "ViewerSettingThemeColor": MessageLookupByLibrary.simpleMessage(
+      "Theme Color",
+    ),
+    "ViewerSettingUseMaterial3Design": MessageLookupByLibrary.simpleMessage(
+      "Use Material 3 Design",
+    ),
+    "ViewerSettingUseMaterial3DesignSubTitle":
+        MessageLookupByLibrary.simpleMessage("Maybe not bad?"),
+    "ViewerSettingVerticalSize": MessageLookupByLibrary.simpleMessage(
+      "Click Area Size(Vertical)",
+    ),
+    "ZaiManHuaLoginPasswordHint": MessageLookupByLibrary.simpleMessage(
+      "Your ZaiManHua Password!",
+    ),
+    "ZaiManHuaTitle": MessageLookupByLibrary.simpleMessage("ZaiManHua"),
+  };
 }

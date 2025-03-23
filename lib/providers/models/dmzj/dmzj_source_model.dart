@@ -731,13 +731,13 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                       icon: const Icon(FontAwesome5.arrow_right),
                       label: Text(S.of(context).CommonLoginLogin),
                       style: ButtonStyle(
-                          shape: MaterialStateProperty.all(
+                          shape: WidgetStateProperty.all(
                               const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(3),
                             bottomLeft: Radius.circular(3),
                           ))),
-                          padding: MaterialStateProperty.all(
+                          padding: WidgetStateProperty.all(
                               const EdgeInsets.only(
                                   top: 10, left: 10, bottom: 10))),
                     ))
@@ -756,14 +756,14 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                       label: Text(S.of(context).DMZJLoginQQLogin),
                       style: ButtonStyle(
                           backgroundColor:
-                              MaterialStateProperty.all(Colors.cyan),
-                          shape: MaterialStateProperty.all(
+                              WidgetStateProperty.all(Colors.cyan),
+                          shape: WidgetStateProperty.all(
                               const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(3),
                             bottomLeft: Radius.circular(3),
                           ))),
-                          padding: MaterialStateProperty.all(
+                          padding: WidgetStateProperty.all(
                               const EdgeInsets.only(
                                   top: 10, left: 10, bottom: 10))),
                     ))

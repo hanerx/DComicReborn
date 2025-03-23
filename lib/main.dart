@@ -5,6 +5,7 @@ import 'package:dcomic/view/drawer_page/search_page.dart';
 import 'package:dcomic/view/homepage/category_page.dart';
 import 'package:dcomic/view/homepage/latest_page.dart';
 import 'package:dcomic/view/homepage/rank_page.dart';
+import 'package:dcomic/view/splash_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart';
@@ -102,6 +103,9 @@ class MainFramework extends StatefulWidget {
 class _MainFrameworkState extends State<MainFramework> {
   @override
   Widget build(BuildContext context) {
+    if(Provider.of<ComicSourceProvider>(context).isLoading){
+      return SplashPage();
+    }
     return ChangeNotifierProvider<AppBarProvider>(
         create: (_) => AppBarProvider(context),
         builder: (context, child) => DefaultTabController(

@@ -134,6 +134,8 @@
       }
     }
   },
+  "DebugPageShowSplashTitle": "Show Splash Page",
+  "DebugPageShowSplashDescription": "Show Splash Page",
   "CopyMangaToken": "Token",
   "CopyMangaTokenHint": "Use Token to Login(No need input password or username if you are using token login)",
   "ViewerSettingAlign": "Read Direction",
@@ -162,5 +164,9 @@
   "ReleaseInfoDownload": "Download",
   "SettingPageShowReleaseInfo": "Latest Release",
   "SettingPageFailToGetReleaseInfo": "No Valid Release Info",
-  "NewComicBadge": "NEW"
+  "NewComicBadge": "NEW",
+  "TokenCopied": "Token has been copied to clipboard",
+  "TokenLogin": "Login with Token",
+  "TokenCopy": "Copy Token",
+  "RequireLoginForToken": "No Token Found, Maybe Need To Login."
 }

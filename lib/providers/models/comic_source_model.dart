@@ -6,9 +6,9 @@ import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_open_chinese_convert/flutter_open_chinese_convert.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:date_format/date_format.dart' as date_format;
+import 'package:pinyin/pinyin.dart';
 import 'package:provider/provider.dart';
 
 class ComicSourceEntity {
@@ -101,8 +101,8 @@ abstract class BaseComicSourceModel extends BaseModel {
             .updateComicMapping(comicMappingEntity);
       } else {
         for (var item in searchResultList) {
-          var sourceTitle = await ChineseConverter.convert(item.title, T2S());
-          var targetTitle = await ChineseConverter.convert(title, T2S());
+          var sourceTitle = ChineseHelper.convertToSimplifiedChinese(item.title);
+          var targetTitle = ChineseHelper.convertToSimplifiedChinese(title);
           if (sourceTitle == targetTitle) {
             comicMappingEntity.resultComicId = item.comicId;
             await databaseInstance.comicMappingDao
@@ -272,6 +272,12 @@ abstract class BaseComicAccountModel extends BaseModel {
   Future<bool> login(String username, String password);
 
   Future<bool> logout();
+
+  Future<bool> loginWithToken(String token) {
+    throw UnimplementedError();
+  }
+
+  String? get token => null;
 
   Widget buildLoginWidget(BuildContext context);
 

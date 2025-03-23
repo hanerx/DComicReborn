@@ -5,6 +5,7 @@ import 'package:dcomic/providers/page_controllers/debug_database_page_controller
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/utils/firbaselogoutput.dart';
 import 'package:dcomic/view/components/empty_widget.dart';
+import 'package:dcomic/view/splash_page.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -88,6 +89,18 @@ class _DebugPageState extends State<DebugPage> {
                       settings:
                           const RouteSettings(name: 'DatabaseDebugPage')));
             },
+          ),
+          ListTile(
+            leading: const Icon(Icons.open_in_browser),
+            title: Text(S.of(context).DebugPageShowSplashTitle),
+            subtitle: Text(S.of(context).DebugPageShowSplashDescription),
+            onTap: () async {
+              Provider.of<NavigatorProvider>(context, listen: false)
+                  .getNavigator(context, NavigatorType.defaultNavigator)
+                  ?.push(MaterialPageRoute(
+                      builder: (context) => const SplashPage(),
+                      settings: const RouteSettings(name: 'SplashPage')));
+            },
           )
         ],
       ),
@@ -153,17 +166,17 @@ class _DatabaseDebugPage extends State<DatabaseDebugPage> {
                                               context)
                                           .tableData[e]
                                           .map<DataRow>((row) => DataRow(
-                                                cells: row.values
-                                                    .map<DataCell>((value) =>
-                                                        DataCell(Text(
-                                                            value.toString())))
-                                                    .toList(),
-                                                onLongPress: (){
-                                                  Provider.of<
-                                                      DatabaseDebugPageController>(
-                                                      context, listen: false).delete(row, e);
-                                                }
-                                              ))
+                                              cells: row.values
+                                                  .map<DataCell>((value) =>
+                                                      DataCell(Text(
+                                                          value.toString())))
+                                                  .toList(),
+                                              onLongPress: () {
+                                                Provider.of<DatabaseDebugPageController>(
+                                                        context,
+                                                        listen: false)
+                                                    .delete(row, e);
+                                              }))
                                           .toList(),
                                     ),
                                   ))),

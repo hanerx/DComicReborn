@@ -18,17 +18,20 @@ class S {
   static S? _current;
 
   static S get current {
-    assert(_current != null,
-        'No instance of S was loaded. Try to initialize the S delegate before accessing S.current.');
+    assert(
+      _current != null,
+      'No instance of S was loaded. Try to initialize the S delegate before accessing S.current.',
+    );
     return _current!;
   }
 
   static const AppLocalizationDelegate delegate = AppLocalizationDelegate();
 
   static Future<S> load(Locale locale) {
-    final name = (locale.countryCode?.isEmpty ?? false)
-        ? locale.languageCode
-        : locale.toString();
+    final name =
+        (locale.countryCode?.isEmpty ?? false)
+            ? locale.languageCode
+            : locale.toString();
     final localeName = Intl.canonicalizedLocale(name);
     return initializeMessages(localeName).then((_) {
       Intl.defaultLocale = localeName;
@@ -41,8 +44,10 @@ class S {
 
   static S of(BuildContext context) {
     final instance = S.maybeOf(context);
-    assert(instance != null,
-        'No instance of S present in the widget tree. Did you add S.delegate in localizationsDelegates?');
+    assert(
+      instance != null,
+      'No instance of S present in the widget tree. Did you add S.delegate in localizationsDelegates?',
+    );
     return instance!;
   }
 
@@ -52,12 +57,7 @@ class S {
 
   /// `DComic`
   String get AppName {
-    return Intl.message(
-      'DComic',
-      name: 'AppName',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('DComic', name: 'AppName', desc: '', args: []);
   }
 
   /// `DComic 00Q[T]`
@@ -82,12 +82,7 @@ class S {
 
   /// `Home`
   String get MainPageHome {
-    return Intl.message(
-      'Home',
-      name: 'MainPageHome',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Home', name: 'MainPageHome', desc: '', args: []);
   }
 
   /// `Category`
@@ -102,22 +97,12 @@ class S {
 
   /// `Rank`
   String get MainPageRank {
-    return Intl.message(
-      'Rank',
-      name: 'MainPageRank',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Rank', name: 'MainPageRank', desc: '', args: []);
   }
 
   /// `Latest`
   String get MainPageLatest {
-    return Intl.message(
-      'Latest',
-      name: 'MainPageLatest',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Latest', name: 'MainPageLatest', desc: '', args: []);
   }
 
   /// `Unknown Image Type`
@@ -132,12 +117,7 @@ class S {
 
   /// `Loading...`
   String get Loading {
-    return Intl.message(
-      'Loading...',
-      name: 'Loading',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Loading...', name: 'Loading', desc: '', args: []);
   }
 
   /// `No more Information`
@@ -172,22 +152,12 @@ class S {
 
   /// `Favorite`
   String get DrawerFavorite {
-    return Intl.message(
-      'Favorite',
-      name: 'DrawerFavorite',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Favorite', name: 'DrawerFavorite', desc: '', args: []);
   }
 
   /// `History`
   String get DrawerHistory {
-    return Intl.message(
-      'History',
-      name: 'DrawerHistory',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('History', name: 'DrawerHistory', desc: '', args: []);
   }
 
   /// `Downloads`
@@ -202,12 +172,7 @@ class S {
 
   /// `Setting`
   String get DrawerSetting {
-    return Intl.message(
-      'Setting',
-      name: 'DrawerSetting',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Setting', name: 'DrawerSetting', desc: '', args: []);
   }
 
   /// `Reader Settings`
@@ -272,12 +237,7 @@ class S {
 
   /// `About`
   String get AboutSettings {
-    return Intl.message(
-      'About',
-      name: 'AboutSettings',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('About', name: 'AboutSettings', desc: '', args: []);
   }
 
   /// `About DComic`
@@ -458,12 +418,7 @@ class S {
 
   /// `Github`
   String get AboutPageGithub {
-    return Intl.message(
-      'Github',
-      name: 'AboutPageGithub',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Github', name: 'AboutPageGithub', desc: '', args: []);
   }
 
   /// `https://github.com/hanerx/DComicReborn`
@@ -498,12 +453,7 @@ class S {
 
   /// `About`
   String get AboutPageAbout {
-    return Intl.message(
-      'About',
-      name: 'AboutPageAbout',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('About', name: 'AboutPageAbout', desc: '', args: []);
   }
 
   /// `About DComicReborn`
@@ -588,7 +538,9 @@ class S {
 
   /// `Upload Time: {uploadTime} ChapterID: {chapterId}`
   String ComicDetailPageChapterEntitySubtitle(
-      Object uploadTime, Object chapterId) {
+    Object uploadTime,
+    Object chapterId,
+  ) {
     return Intl.message(
       'Upload Time: $uploadTime ChapterID: $chapterId',
       name: 'ComicDetailPageChapterEntitySubtitle',
@@ -744,12 +696,7 @@ class S {
 
   /// `DMZJ`
   String get DMZJTitle {
-    return Intl.message(
-      'DMZJ',
-      name: 'DMZJTitle',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('DMZJ', name: 'DMZJTitle', desc: '', args: []);
   }
 
   /// `QQ Login`
@@ -764,12 +711,7 @@ class S {
 
   /// `Login`
   String get CommonLoginLogin {
-    return Intl.message(
-      'Login',
-      name: 'CommonLoginLogin',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Login', name: 'CommonLoginLogin', desc: '', args: []);
   }
 
   /// `Logout`
@@ -824,12 +766,7 @@ class S {
 
   /// `Login`
   String get LoginPageTitle {
-    return Intl.message(
-      'Login',
-      name: 'LoginPageTitle',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Login', name: 'LoginPageTitle', desc: '', args: []);
   }
 
   /// `Ping Success!`
@@ -872,14 +809,29 @@ class S {
     );
   }
 
-  /// `Token`
-  String get CopyMangaToken {
+  /// `Show Splash Page`
+  String get DebugPageShowSplashTitle {
     return Intl.message(
-      'Token',
-      name: 'CopyMangaToken',
+      'Show Splash Page',
+      name: 'DebugPageShowSplashTitle',
       desc: '',
       args: [],
     );
+  }
+
+  /// `Show Splash Page`
+  String get DebugPageShowSplashDescription {
+    return Intl.message(
+      'Show Splash Page',
+      name: 'DebugPageShowSplashDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Token`
+  String get CopyMangaToken {
+    return Intl.message('Token', name: 'CopyMangaToken', desc: '', args: []);
   }
 
   /// `Use Token to Login(No need input password or username if you are using token login)`
@@ -1062,9 +1014,39 @@ class S {
 
   /// `NEW`
   String get NewComicBadge {
+    return Intl.message('NEW', name: 'NewComicBadge', desc: '', args: []);
+  }
+
+  /// `Token has been copied to clipboard`
+  String get TokenCopied {
     return Intl.message(
-      'NEW',
-      name: 'NewComicBadge',
+      'Token has been copied to clipboard',
+      name: 'TokenCopied',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Login with Token`
+  String get TokenLogin {
+    return Intl.message(
+      'Login with Token',
+      name: 'TokenLogin',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copy Token`
+  String get TokenCopy {
+    return Intl.message('Copy Token', name: 'TokenCopy', desc: '', args: []);
+  }
+
+  /// `No Token Found, Maybe Need To Login.`
+  String get RequireLoginForToken {
+    return Intl.message(
+      'No Token Found, Maybe Need To Login.',
+      name: 'RequireLoginForToken',
       desc: '',
       args: [],
     );
