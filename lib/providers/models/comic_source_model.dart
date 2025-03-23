@@ -273,6 +273,12 @@ abstract class BaseComicAccountModel extends BaseModel {
 
   Future<bool> logout();
 
+  Future<bool> loginWithToken(String token) {
+    throw UnimplementedError();
+  }
+
+  String? get token => null;
+
   Widget buildLoginWidget(BuildContext context);
 
   Future<bool> getIfSubscribed(String comicId);

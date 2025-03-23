@@ -437,18 +437,68 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                       icon: const Icon(FontAwesome5.arrow_right),
                       label: Text(S.of(context).CommonLoginLogin),
                       style: ButtonStyle(
-                          shape: MaterialStateProperty.all(
+                          shape: WidgetStateProperty.all(
                               const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(3),
                             bottomLeft: Radius.circular(3),
                           ))),
-                          padding: MaterialStateProperty.all(
+                          padding: WidgetStateProperty.all(
                               const EdgeInsets.only(
                                   top: 10, left: 10, bottom: 10))),
                     ))
               ],
             ),
+            Row(
+              children: [
+                const Expanded(
+                  child: SizedBox(),
+                ),
+                Expanded(
+                    flex: 1,
+                    child: ElevatedButton.icon(
+                      onPressed: () async{
+                        try {
+                          if (formKey.currentState!.validate()) {
+                            if (await loginWithToken(tokenController.text)) {
+                              if (!context.mounted) {
+                                return;
+                              }
+                              Provider.of<NavigatorProvider>(context,
+                                  listen: false)
+                                  .getNavigator(
+                                  context, NavigatorType.defaultNavigator)
+                                  ?.pop();
+                            }
+                          }
+                        } catch (e, s) {
+                          logger.e(e, error: e, stackTrace: s);
+                          if (!context.mounted) {
+                            return;
+                          }
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content:
+                            Text(S.of(context).CommonLoginLoginFailed(e)),
+                          ));
+                        }
+                      },
+                      icon: const Icon(Icons.generating_tokens_outlined),
+                      label: Text(S.of(context).TokenLogin),
+                      style: ButtonStyle(
+                          backgroundColor:
+                          WidgetStateProperty.all(Colors.cyan),
+                          shape: WidgetStateProperty.all(
+                              const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(3),
+                                    bottomLeft: Radius.circular(3),
+                                  ))),
+                          padding: WidgetStateProperty.all(
+                              const EdgeInsets.only(
+                                  top: 10, left: 10, bottom: 10))),
+                    ))
+              ],
+            )
           ],
         )
       ],
@@ -543,6 +593,23 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
       }
     }
     return false;
+  }
+
+  @override
+  Future<bool> loginWithToken(String token) async {
+    _isLogin = true;
+    var databaseInstance = await DatabaseInstance.instance;
+    var databaseIsLogin = (await databaseInstance.modelConfigDao
+        .getOrCreateConfigByKey('isLogin', parent!.type.sourceId));
+    databaseIsLogin.set(true);
+    await databaseInstance.modelConfigDao.updateConfig(databaseIsLogin);
+    var databaseUId = (await databaseInstance.modelConfigDao
+        .getOrCreateConfigByKey('token', parent!.type.sourceId));
+    databaseUId.set(token);
+    await databaseInstance.modelConfigDao.updateConfig(databaseUId);
+    await initAccount();
+    notifyListeners();
+    return true;
   }
 
   @override

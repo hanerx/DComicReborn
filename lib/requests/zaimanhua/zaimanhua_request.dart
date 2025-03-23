@@ -130,6 +130,22 @@ class ZaiManHuaAccountRequestHandler extends RequestHandler {
   ZaiManHuaAccountRequestHandler()
       : super('https://account-api.zaimanhua.com/v1');
 
+  Future<Options> setHeader([Map<String, dynamic>? headers]) async {
+    headers ??= {};
+    var databaseInstance = await DatabaseInstance.instance;
+    var isLoginEntity = await databaseInstance.modelConfigDao
+        .getConfigByKeyAndModel('isLogin', 'zaimanhua');
+    if (isLoginEntity != null && isLoginEntity.get<bool>()) {
+      String token = (await (await DatabaseInstance.instance)
+          .modelConfigDao
+          .getConfigByKeyAndModel('token', 'zaimanhua'))
+          ?.value ??
+          '';
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return Options(headers: headers);
+  }
+
   Future<Response> login(String username, String password) {
     var pwd = md5.convert(utf8.encode(password)).toString().toLowerCase();
     Map<String, dynamic> data = {
@@ -137,5 +153,9 @@ class ZaiManHuaAccountRequestHandler extends RequestHandler {
       "passwd": pwd,
     };
     return dio.post('/login/passwd', data: data);
+  }
+  
+  Future<Response> getUserData() async {
+    return dio.get('/userInfo/get?_v=2.0.7.2&_c=101_01_01_000', options: await setHeader());
   }
 }

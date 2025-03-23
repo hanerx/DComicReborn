@@ -94,7 +94,10 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
   String? _username;
   ImageEntity? _avatar;
   String? _nickname;
-  String? token;
+  String? _token;
+
+  @override
+  String? get token => _token;
 
   @override
   ImageEntity? get avatar => _avatar;
@@ -104,6 +107,7 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
     GlobalKey<FormState> formKey = GlobalKey<FormState>();
     TextEditingController usernameController = TextEditingController();
     TextEditingController passwordController = TextEditingController();
+    TextEditingController tokenController = TextEditingController();
     return Stack(
       children: [
         Container(
@@ -160,6 +164,22 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
                                           .of(context)
                                           .ZaiManHuaLoginPasswordHint),
                                 ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: TextFormField(
+                                  controller: tokenController,
+                                  obscureText: true,
+                                  decoration: InputDecoration(
+                                      isDense: true,
+                                      border: const OutlineInputBorder(
+                                          gapPadding: 1),
+                                      labelText: S.of(context).CopyMangaToken,
+                                      prefixIcon:
+                                      const Icon(Icons.token_outlined),
+                                      hintText:
+                                      S.of(context).CopyMangaTokenHint),
+                                ),
                               )
                             ],
                           )),
@@ -215,6 +235,55 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
                     ))
               ],
             ),
+            Row(
+              children: [
+                const Expanded(
+                  child: SizedBox(),
+                ),
+                Expanded(
+                    flex: 1,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          if (formKey.currentState!.validate()) {
+                            if (await loginWithToken(tokenController.text)) {
+                              if (!context.mounted) {
+                                return;
+                              }
+                              Provider.of<NavigatorProvider>(context,
+                                      listen: false)
+                                  .getNavigator(
+                                      context, NavigatorType.defaultNavigator)
+                                  ?.pop();
+                            }
+                          }
+                        } catch (e, s) {
+                          logger.e(e, error: e, stackTrace: s);
+                          if (!context.mounted) {
+                            return;
+                          }
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content:
+                                Text(S.of(context).CommonLoginLoginFailed(e)),
+                          ));
+                        }
+                      },
+                      icon: const Icon(Icons.generating_tokens_outlined),
+                      label: Text(S.of(context).TokenLogin),
+                      style: ButtonStyle(
+                          backgroundColor: WidgetStateProperty.all(Colors.cyan),
+                          shape: WidgetStateProperty.all(
+                              const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(3),
+                            bottomLeft: Radius.circular(3),
+                          ))),
+                          padding: WidgetStateProperty.all(
+                              const EdgeInsets.only(
+                                  top: 10, left: 10, bottom: 10))),
+                    ))
+              ],
+            )
           ],
         )
       ],
@@ -267,7 +336,10 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
                     .refresh();
               }
             });
-          }, DateTime.fromMillisecondsSinceEpoch(rawData['last_updatetime'] * 1000), rawData['id'].toString()));
+          },
+              DateTime.fromMillisecondsSinceEpoch(
+                  rawData['last_updatetime'] * 1000),
+              rawData['id'].toString()));
         }
       }
     } catch (e, s) {
@@ -287,23 +359,6 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
           var databaseIsLogin = await databaseInstance.modelConfigDao
               .getOrCreateConfigByKey('isLogin', parent!.type.sourceId);
           databaseIsLogin.set(true);
-          await databaseInstance.modelConfigDao.updateConfig(databaseIsLogin);
-          var databaseUId = await databaseInstance.modelConfigDao
-              .getOrCreateConfigByKey('uid', parent!.type.sourceId);
-          databaseUId.set(response.data['data']['user']['uid'].toString());
-          await databaseInstance.modelConfigDao.updateConfig(databaseUId);
-          var databaseNickname = await databaseInstance.modelConfigDao
-              .getOrCreateConfigByKey('nickname', parent!.type.sourceId);
-          databaseNickname.set(response.data['data']['user']['nickname']);
-          await databaseInstance.modelConfigDao.updateConfig(databaseNickname);
-          var databaseAvatar = await databaseInstance.modelConfigDao
-              .getOrCreateConfigByKey('avatar', parent!.type.sourceId);
-          databaseAvatar.set(response.data['data']['user']['photo']);
-          await databaseInstance.modelConfigDao.updateConfig(databaseAvatar);
-          var databaseUsername = await databaseInstance.modelConfigDao
-              .getOrCreateConfigByKey('username', parent!.type.sourceId);
-          databaseUsername.set(username);
-          await databaseInstance.modelConfigDao.updateConfig(databaseUsername);
           var databaseToken = await databaseInstance.modelConfigDao
               .getOrCreateConfigByKey('token', parent!.type.sourceId);
           databaseToken.set(response.data['data']['user']['token']);
@@ -314,6 +369,27 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
           throw response.data['msg'];
         }
       }
+    } catch (e, s) {
+      logger.e(e, error: e, stackTrace: s);
+      rethrow;
+    }
+    return false;
+  }
+
+  @override
+  Future<bool> loginWithToken(String token) async {
+    try {
+      var databaseInstance = await DatabaseInstance.instance;
+      var databaseIsLogin = await databaseInstance.modelConfigDao
+          .getOrCreateConfigByKey('isLogin', parent!.type.sourceId);
+      databaseIsLogin.set(true);
+      await databaseInstance.modelConfigDao.updateConfig(databaseIsLogin);
+      var databaseToken = await databaseInstance.modelConfigDao
+          .getOrCreateConfigByKey('token', parent!.type.sourceId);
+      databaseToken.set(token);
+      await databaseInstance.modelConfigDao.updateConfig(databaseToken);
+      await initAccount();
+      return true;
     } catch (e, s) {
       logger.e(e, error: e, stackTrace: s);
       rethrow;
@@ -388,23 +464,28 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
     _isLogin = (await databaseInstance.modelConfigDao
             .getOrCreateConfigByKey('isLogin', parent!.type.sourceId))
         .get<bool>();
-    _uid = (await databaseInstance.modelConfigDao
-            .getOrCreateConfigByKey('uid', parent!.type.sourceId))
+    _token = (await databaseInstance.modelConfigDao
+            .getOrCreateConfigByKey('token', parent!.type.sourceId))
         .get<String>();
-    if (_isLogin && _uid!.isNotEmpty) {
-      _username = (await databaseInstance.modelConfigDao
-              .getOrCreateConfigByKey('username', parent!.type.sourceId))
-          .get<String>();
-      _nickname = (await databaseInstance.modelConfigDao
-              .getOrCreateConfigByKey('nickname', parent!.type.sourceId))
-          .get<String>();
-      var avatarUrl = (await databaseInstance.modelConfigDao
-              .getOrCreateConfigByKey('avatar', parent!.type.sourceId))
-          .get<String>();
-      _avatar = ImageEntity(ImageType.network, avatarUrl);
-      token = (await databaseInstance.modelConfigDao
-              .getOrCreateConfigByKey('token', parent!.type.sourceId))
-          .get<String>();
+    if (_isLogin && _token!.isNotEmpty) {
+      try {
+        var response =
+            await RequestHandlers.zaiManHuaAccountRequestHandler.getUserData();
+        if ((response.statusCode == 200 || response.statusCode == 304)) {
+          if (response.data['errno'] == 0) {
+            _uid = response.data['data']['userInfo']['uid'].toString();
+            _username = response.data['data']['userInfo']['bind_phone'].toString();
+            _avatar = ImageEntity(ImageType.network, response.data['data']['userInfo']['photo']);
+            _nickname = response.data['data']['userInfo']['nickname'];
+          } else {
+            _isLogin = false;
+          }
+        } else {
+          _isLogin = false;
+        }
+      } catch (e, s) {
+        _isLogin = false;
+      }
     } else {
       _isLogin = false;
     }
@@ -819,12 +900,12 @@ class ZaiManHuaComicChapterDetailModel extends BaseComicChapterDetailModel {
       var response = await RequestHandlers.zaiManHuaMobileRequestHandler
           .getViewpoint(parent.comicId, chapterId);
       if ((response.statusCode == 200 || response.statusCode == 304)) {
-        if(response.data['data']['list']!=null){
+        if (response.data['data']['list'] != null) {
           List<dynamic> rawData = response.data['data']['list'];
           rawData.sort((a, b) => int.parse(b[1].toString()).compareTo(a[1]));
           for (var item in rawData) {
-            data.add(ChapterCommentEntity(
-                item[6].toString(), item[7], item[1]));
+            data.add(
+                ChapterCommentEntity(item[6].toString(), item[7], item[1]));
           }
         }
       }
