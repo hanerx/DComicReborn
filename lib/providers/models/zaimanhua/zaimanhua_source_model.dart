@@ -740,7 +740,7 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
           .getComicChapterDetail(comicId, chapterId);
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         var rawData = response.data['data']['data'];
-        return ZaiManHuaComicChapterDetailModel(rawData);
+        return ZaiManHuaComicChapterDetailModel(rawData, this);
       }
     } catch (e, s) {
       logger.e('$e', error: e, stackTrace: s);
@@ -805,16 +805,33 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
 
 class ZaiManHuaComicChapterDetailModel extends BaseComicChapterDetailModel {
   final Map rawData;
+  final ZaiManHuaComicDetailModel parent;
 
-  ZaiManHuaComicChapterDetailModel(this.rawData);
+  ZaiManHuaComicChapterDetailModel(this.rawData, this.parent);
 
   @override
   String get chapterId => rawData['chapter_id'].toString();
 
   @override
   Future<List<ChapterCommentEntity>> getChapterComments() async {
-    // TODO
-    return [];
+    List<ChapterCommentEntity> data = [];
+    try {
+      var response = await RequestHandlers.zaiManHuaMobileRequestHandler
+          .getViewpoint(parent.comicId, chapterId);
+      if ((response.statusCode == 200 || response.statusCode == 304)) {
+        if(response.data['data']['list']!=null){
+          List<dynamic> rawData = response.data['data']['list'];
+          rawData.sort((a, b) => int.parse(b[1].toString()).compareTo(a[1]));
+          for (var item in rawData) {
+            data.add(ChapterCommentEntity(
+                item[6].toString(), item[7], item[1]));
+          }
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+    }
+    return data;
   }
 
   @override

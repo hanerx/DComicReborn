@@ -117,6 +117,13 @@ class ZaiManHuaMobileRequestHandler extends RequestHandler {
     return dio.get('/comic/sub/checkIsSub?objId=$comicId&source=$type',
         options: await setHeader());
   }
+
+  Future<Response> getViewpoint(String comicId, String chapterId, {int type = 0, int page=0}) async {
+    if(page > 0){
+      return dio.get('/viewpoint/list?type=$type&comicId=$comicId&chapterId=$chapterId&page=$page', options: await setHeader());
+    }
+    return dio.get('/viewpoint/list?type=$type&comicId=$comicId&chapterId=$chapterId', options: await setHeader());
+  }
 }
 
 class ZaiManHuaAccountRequestHandler extends RequestHandler {

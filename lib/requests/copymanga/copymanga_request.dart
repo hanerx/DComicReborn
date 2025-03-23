@@ -14,7 +14,7 @@ class CopyMangaRequestHandler extends RequestHandler {
     var databaseInstance = await DatabaseInstance.instance;
     var isLoginEntity = await databaseInstance.modelConfigDao
         .getConfigByKeyAndModel('isLogin', 'copymanga');
-    if (isLoginEntity!=null&&isLoginEntity.get<bool>()) {
+    if (isLoginEntity != null && isLoginEntity.get<bool>()) {
       String token = (await (await DatabaseInstance.instance)
                   .modelConfigDao
                   .getConfigByKeyAndModel('token', 'copymanga'))
@@ -50,9 +50,15 @@ class CopyMangaRequestHandler extends RequestHandler {
         }));
   }
 
-  Future<Response> search(String keyword, {int page = 0, int limit=12}) async {
+  Future<Response> search(String keyword,
+      {int page = 0, int limit = 18}) async {
     return dio.get(
-        '/api/kb/web/searchbc/comics?offset=${page*limit}&platform=2&limit=$limit&q=$keyword&q_type=');
+        '/api/v3/search/comic?limit=$limit&offset=${page * limit}&q_type=&q=$keyword&platform=3',
+        options: Options(headers: {
+          'platform': '3',
+          'version': '2.2.6',
+          'User-Agent': 'COPY/2.2.6'
+        }));
   }
 
   Future<Response> login(String username, String password) async {
@@ -169,9 +175,8 @@ class CopyMangaRequestHandler extends RequestHandler {
         options: await setHeader({'Platform': '1'}));
   }
 
-  Future<Response> getHistory({int limit=12, int page=0}) async {
-    return dio.get(
-        '/api/kb/web/browses?limit=$limit&offset=${limit * page}',
+  Future<Response> getHistory({int limit = 12, int page = 0}) async {
+    return dio.get('/api/kb/web/browses?limit=$limit&offset=${limit * page}',
         options: await setHeader({'Platform': '1'}));
   }
 }

@@ -60,7 +60,7 @@ class _FavoritePageState extends State<FavoritePage> {
                           refreshOnStart: true,
                           child: Container(
                               color:
-                                  Theme.of(context).colorScheme.surfaceVariant,
+                                  Theme.of(context).colorScheme.surfaceContainerHighest,
                               height: double.infinity,
                               child: GridView(
                                 gridDelegate:
