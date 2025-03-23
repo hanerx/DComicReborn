@@ -121,6 +121,10 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage(
           "尝试输出本地所有持久化数据（包括你的token，如果你不知道你在干啥就别点）",
         ),
+    "DebugPageShowSplashDescription": MessageLookupByLibrary.simpleMessage(
+      "显示一个永远不会关闭的开屏页",
+    ),
+    "DebugPageShowSplashTitle": MessageLookupByLibrary.simpleMessage("显示开屏页"),
     "DebugPageTryCrash": MessageLookupByLibrary.simpleMessage("伪造崩溃日志"),
     "DebugPageTryCrashDescription": MessageLookupByLibrary.simpleMessage(
       "向firebase传输一个伪造的崩溃日志",

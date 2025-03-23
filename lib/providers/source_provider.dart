@@ -17,10 +17,14 @@ class ComicSourceProvider extends BaseProvider {
   ConfigEntity? _activeHomeModelIndexEntity;
   ConfigEntity? _sortOrderEntity;
   Map sortOrder = {};
+  bool isLoading = true;
 
   @override
   Future<void> init() async {
     final database = await DatabaseInstance.instance;
+    _sortOrderEntity = await database.configDao
+        .getOrCreateConfigByKey('sourceModelSortOrder', value: sortOrder);
+    sortOrder = _sortOrderEntity?.get<Map>();
     _activeHomeModelIndexEntity = await database.configDao
         .getOrCreateConfigByKey('activeHomeModelIndex', value: 0);
     activeHomeModelIndex = _activeHomeModelIndexEntity?.get<int>();
@@ -31,9 +35,7 @@ class ComicSourceProvider extends BaseProvider {
       sortOrder[sourceModel.type.sourceId] = idx;
       idx++;
     }
-    _sortOrderEntity = await database.configDao
-        .getOrCreateConfigByKey('sourceModelSortOrder', value: sortOrder);
-    sortOrder = _sortOrderEntity?.get<Map>();
+    isLoading = false;
     notifyListeners();
   }
 

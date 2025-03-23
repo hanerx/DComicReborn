@@ -157,6 +157,12 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage(
           "Try Print All Database Content to Log",
         ),
+    "DebugPageShowSplashDescription": MessageLookupByLibrary.simpleMessage(
+      "Show Splash Page",
+    ),
+    "DebugPageShowSplashTitle": MessageLookupByLibrary.simpleMessage(
+      "Show Splash Page",
+    ),
     "DebugPageTryCrash": MessageLookupByLibrary.simpleMessage("Try Crash"),
     "DebugPageTryCrashDescription": MessageLookupByLibrary.simpleMessage(
       "Try call a crash to test firebase collection method.",

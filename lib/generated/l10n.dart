@@ -809,6 +809,26 @@ class S {
     );
   }
 
+  /// `Show Splash Page`
+  String get DebugPageShowSplashTitle {
+    return Intl.message(
+      'Show Splash Page',
+      name: 'DebugPageShowSplashTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Show Splash Page`
+  String get DebugPageShowSplashDescription {
+    return Intl.message(
+      'Show Splash Page',
+      name: 'DebugPageShowSplashDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Token`
   String get CopyMangaToken {
     return Intl.message('Token', name: 'CopyMangaToken', desc: '', args: []);

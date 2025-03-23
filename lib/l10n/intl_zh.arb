@@ -41,6 +41,8 @@
   "DebugPageTryCrashDescription": "向firebase传输一个伪造的崩溃日志",
   "DebugPagePrintModelDatabase": "本地数据库解析",
   "DebugPagePrintModelDatabaseDescription": "尝试输出本地所有持久化数据（包括你的token，如果你不知道你在干啥就别点）",
+  "DebugPageShowSplashTitle": "显示开屏页",
+  "DebugPageShowSplashDescription": "显示一个永远不会关闭的开屏页",
   "DatabaseDebugPageTitle": "本地数据库老巢",
 
   "AboutPageCheckForUpdate": "检查更新",
