@@ -180,6 +180,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "SourceSettingsDescription": MessageLookupByLibrary.simpleMessage("管理漫画源"),
     "TimeOrRankFilterEntityModes": m10,
     "TimeOrRankFilterEntityName": MessageLookupByLibrary.simpleMessage("排序方式"),
+    "TitleCopied": MessageLookupByLibrary.simpleMessage("分类标题已复制到剪贴板"),
     "TokenCopied": MessageLookupByLibrary.simpleMessage("Token已复制到剪贴板"),
     "TokenCopy": MessageLookupByLibrary.simpleMessage(
       "拷贝Token（这个能够直接用于登录，请不要随意分享）",

@@ -40,6 +40,7 @@ class CardListItem extends StatelessWidget {
                       child: DComicImage(
                         cover,
                         fit: BoxFit.fill,
+                        showErrorMessage: false,
                       ),
                     ),
                   )),
@@ -47,6 +48,7 @@ class CardListItem extends StatelessWidget {
                   flex: 3,
                   child: Card(
                     elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(10, 3, 3, 3),
                       child: Column(

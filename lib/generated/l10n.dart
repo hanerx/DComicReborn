@@ -1051,6 +1051,16 @@ class S {
       args: [],
     );
   }
+
+  /// `Category Title copied to clipboard`
+  String get TitleCopied {
+    return Intl.message(
+      'Category Title copied to clipboard',
+      name: 'TitleCopied',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

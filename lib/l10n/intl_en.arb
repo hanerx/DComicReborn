@@ -168,5 +168,6 @@
   "TokenCopied": "Token has been copied to clipboard",
   "TokenLogin": "Login with Token",
   "TokenCopy": "Copy Token",
-  "RequireLoginForToken": "No Token Found, Maybe Need To Login."
+  "RequireLoginForToken": "No Token Found, Maybe Need To Login.",
+  "TitleCopied": "Category Title copied to clipboard"
 }
