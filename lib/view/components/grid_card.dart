@@ -46,7 +46,7 @@ class GridCard extends StatelessWidget {
                 width: 40,
                 child: TextButton(
                     style: const ButtonStyle(
-                      minimumSize: MaterialStatePropertyAll(Size(30, 30)),
+                      minimumSize: WidgetStatePropertyAll(Size(30, 30)),
                     ),
                     onPressed: onSideIconPressed,
                     child: Icon(
@@ -98,6 +98,7 @@ class GridCardItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
       child: InkWell(
         borderRadius: BorderRadius.circular(5),
         onTap: onTap,

@@ -219,7 +219,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                                           Padding(
                                             padding: const EdgeInsets.only(
                                                 left: 10, top: 5, bottom: 5),
-                                            child: Text(Provider.of<
+                                            child: SelectableText(Provider.of<
                                                         ComicDetailPageController>(
                                                     context)
                                                 .title),
@@ -428,7 +428,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
           Expanded(
             child: Center(
               child:
-                  Text(Provider.of<ComicDetailPageController>(context).comicId),
+                SelectableText(Provider.of<ComicDetailPageController>(context).comicId),
             ),
           ),
           IconButton(

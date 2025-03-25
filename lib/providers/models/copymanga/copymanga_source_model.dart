@@ -317,9 +317,13 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
   String? _username;
   ImageEntity? _avatar;
   String? _nickname;
+  String? _token;
 
   @override
   ImageEntity? get avatar => _avatar;
+
+  @override
+  String? get token => _token;
 
   @override
   Widget buildLoginWidget(BuildContext context) {
@@ -672,6 +676,9 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
           _username = data['username'];
           _avatar = ImageEntity(ImageType.network, data['avatar'],
               imageHeaders: {"Referer": "https://www.mangacopy.com/"});
+          _token = (await databaseInstance.modelConfigDao
+              .getOrCreateConfigByKey('token', parent!.type.sourceId))
+              .get<String>();
         }
       } catch (e, s) {
         logger.e('$e', error: e, stackTrace: s);

@@ -1,8 +1,10 @@
+import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/page_controllers/comic_category_detail_page_controller.dart';
 import 'package:dcomic/view/components/card_list_item.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class ComicCategoryDetailPage extends StatefulWidget {
@@ -34,8 +36,19 @@ class _ComicCategoryDetailPageState extends State<ComicCategoryDetailPage> {
         appBar: AppBar(
           elevation: 0,
           title: Text(widget.categoryTitle),
+          actions: [
+            IconButton(onPressed: (){
+              Clipboard.setData(ClipboardData(text: widget.categoryTitle)).then((value){
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(S.of(context).TitleCopied),
+                  ));
+                }
+              });
+            }, icon: Icon(Icons.copy))
+          ],
         ),
-        backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         body: Column(
           children: [
             Card(

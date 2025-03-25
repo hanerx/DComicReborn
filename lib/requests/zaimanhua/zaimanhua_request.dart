@@ -80,7 +80,7 @@ class ZaiManHuaMobileRequestHandler extends RequestHandler {
   Future<Response> getCategoryDetail(int tagId,
       {int page = 0, int type = 0, int limit = 20}) {
     return dio.get(
-        '/comic/filter/list?tag_id=$tagId&status=0&by_time=$type&page=$page&size=$limit');
+        '/comic/filter/list?status=0&theme=$tagId&zone=0&sortType=${2-type}&page=$page&size=$limit&cate=0&_v=2.0.7.2&_c=101_01_01_000');
   }
 
   Future<Response> getRankList(

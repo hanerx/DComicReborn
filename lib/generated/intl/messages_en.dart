@@ -230,6 +230,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "TimeOrRankFilterEntityName": MessageLookupByLibrary.simpleMessage(
       "SortType",
     ),
+    "TitleCopied": MessageLookupByLibrary.simpleMessage(
+      "Category Title copied to clipboard",
+    ),
     "TokenCopied": MessageLookupByLibrary.simpleMessage(
       "Token has been copied to clipboard",
     ),
