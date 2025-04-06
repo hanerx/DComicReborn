@@ -6,6 +6,7 @@ import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:date_format/date_format.dart' as date_format;
 import 'package:pinyin/pinyin.dart';
@@ -250,6 +251,18 @@ abstract class BaseComicChapterDetailModel extends BaseModel {
   String get chapterId;
 
   Future<List<ChapterCommentEntity>> getChapterComments();
+
+  Future<List<FileInfo>> downloadPages() async {
+    List<FileInfo> data = [];
+    for(var page in pages){
+      if(page.imageType == ImageType.network){
+        var cacheResult = await DefaultCacheManager().getFileFromCache(page.imageUrl);
+        cacheResult ??= await DefaultCacheManager().downloadFile(page.imageUrl, authHeaders: page.imageHeaders);
+        data.add(cacheResult);
+      }
+    }
+    return data;
+  }
 }
 
 abstract class BaseComicAccountModel extends BaseModel {

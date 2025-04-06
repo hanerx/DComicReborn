@@ -8,14 +8,14 @@ import 'package:dcomic/requests/zaimanhua/zaimanhua_request.dart';
 import 'package:dcomic/utils/db_cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
-import 'package:dio_cache_interceptor_db_store/dio_cache_interceptor_db_store.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:http_cache_drift_store/http_cache_drift_store.dart';
 
 class RequestStatics {
-  static DbCacheStore? _store;
+  static DriftCacheStore? _store;
 
-  static Future<DbCacheStore> get store async {
+  static Future<DriftCacheStore> get store async {
     if (_store == null) {
       Directory? value;
 
@@ -25,7 +25,7 @@ class RequestStatics {
         value = await getExternalStorageDirectory();
       }
 
-      _store = DbCacheStore(databasePath: '${value?.path}/cache/dio');
+      _store = DriftCacheStore(databasePath: '${value?.path}/cache/dio');
     }
     return _store!;
   }
@@ -47,13 +47,14 @@ class RequestHandler {
         // Required.
         policy: policy,
         // Default. Checks cache freshness, requests otherwise and caches response.
-        hitCacheOnErrorExcept: [401, 403],
+        hitCacheOnErrorCodes: [401, 403, 404],
         // Optional. Returns a cached response on error if available but for statuses 401 & 403.
         priority: CachePriority.normal,
         // Optional. Default. Allows 3 cache sets and ease cleanup.
         maxStale: const Duration(days: 7),
         // Very optional. Overrides any HTTP directive to delete entry past this duration.
         keyBuilder: CacheOptions.defaultCacheKeyBuilder,
+        hitCacheOnNetworkFailure: true,
       );
       if(useCookie){
         dio.interceptors.add(cookieManager);

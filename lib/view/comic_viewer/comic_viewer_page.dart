@@ -688,6 +688,7 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                                           .chapters
                                           .reversed
                                           .toList()[index]);
+                              _easyRefreshController.callRefresh();
                               Navigator.of(context).pop();
                             },
                           ),
