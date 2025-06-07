@@ -3,7 +3,7 @@
     "project_number": "522563222655",
     "firebase_url": "https://dcomic-93209-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "dcomic-93209",
-    "storage_bucket": "dcomic-93209.appspot.com"
+    "storage_bucket": "dcomic-93209.firebasestorage.app"
   },
   "client": [
     {
@@ -13,12 +13,7 @@
           "package_name": "top.hanerx.dcomic"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "522563222655-vtsp4k0o2ef9gua3rgf01jl4u4hm791s.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
           "current_key": "AIzaSyB8rCCOBN1x2sC5VBnAEE_EhOBiCaC518A"
@@ -26,19 +21,7 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "522563222655-vtsp4k0o2ef9gua3rgf01jl4u4hm791s.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "522563222655-lihtg3bcqnrea6k9em6etm6cga1h0h8n.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "online.connlost.dcomic"
-              }
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     },
@@ -49,12 +32,7 @@
           "package_name": "top.hanerx.flutterdmzj"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "522563222655-vtsp4k0o2ef9gua3rgf01jl4u4hm791s.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
           "current_key": "AIzaSyB8rCCOBN1x2sC5VBnAEE_EhOBiCaC518A"
@@ -62,19 +40,7 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "522563222655-vtsp4k0o2ef9gua3rgf01jl4u4hm791s.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "522563222655-lihtg3bcqnrea6k9em6etm6cga1h0h8n.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "online.connlost.dcomic"
-              }
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

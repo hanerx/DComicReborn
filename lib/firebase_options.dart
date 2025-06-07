@@ -33,10 +33,7 @@ class DefaultFirebaseOptions {
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -55,7 +52,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '522563222655',
     projectId: 'dcomic-93209',
     databaseURL: 'https://dcomic-93209-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'dcomic-93209.appspot.com',
+    storageBucket: 'dcomic-93209.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -64,8 +61,19 @@ class DefaultFirebaseOptions {
     messagingSenderId: '522563222655',
     projectId: 'dcomic-93209',
     databaseURL: 'https://dcomic-93209-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'dcomic-93209.appspot.com',
-    iosClientId: '522563222655-mrva14d6a637isfb57mn6e2apaelc45s.apps.googleusercontent.com',
+    storageBucket: 'dcomic-93209.firebasestorage.app',
     iosBundleId: 'top.hanerx.dcomic',
   );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyCfrUge9F102tuyD8UnyP_vz8SVjLYgdSM',
+    appId: '1:522563222655:web:8fe8a42463c71a6b43d34a',
+    messagingSenderId: '522563222655',
+    projectId: 'dcomic-93209',
+    authDomain: 'dcomic-93209.firebaseapp.com',
+    databaseURL: 'https://dcomic-93209-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'dcomic-93209.firebasestorage.app',
+    measurementId: 'G-ETEWGYMNV4',
+  );
+
 }
