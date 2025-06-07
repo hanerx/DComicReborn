@@ -94,7 +94,7 @@ class ZaiManHuaMobileRequestHandler extends RequestHandler {
   }
 
   Future<Response> getSubscribe(
-      {int status = 1,
+      {int status = 0,
       String firstLetter = '',
       int page = 0,
       int limit = 20}) async {

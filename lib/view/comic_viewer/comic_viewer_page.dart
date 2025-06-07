@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
@@ -95,7 +97,8 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                       curve: Curves.easeIn);
                 }
               },
-              child: Stack(
+              child: SafeArea(
+                  child: Stack(
                 children: [
                   _buildViewer(context),
                   _buildPrePageButton(context),
@@ -104,7 +107,7 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                   _buildAppBar(context),
                   _buildToolBar(context)
                 ],
-              ),
+              )),
             ),
           )),
     );
@@ -190,11 +193,11 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                       .chapterDetailModel ==
                   null
               ? null
-              : Provider.of<ComicViewerPageController>(context)
-                      .chapterDetailModel!
-                      .pages
-                      .length -
-                  1,
+              : max(Provider.of<ComicViewerPageController>(context)
+              .chapterDetailModel!
+              .pages
+              .length -
+              1, 1),
           min: 0,
           max: Provider.of<ComicViewerPageController>(context)
                       .chapterDetailModel ==
@@ -688,6 +691,7 @@ class _ComicViewerPageState extends State<ComicViewerPage> {
                                           .chapters
                                           .reversed
                                           .toList()[index]);
+                              _easyRefreshController.callRefresh();
                               Navigator.of(context).pop();
                             },
                           ),

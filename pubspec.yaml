@@ -15,7 +15,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 2.3.1
+version: 2.3.2
 
 environment:
   sdk: ">=3.0.0"
@@ -28,7 +28,6 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   provider: ^6.1.1
-  flutter_adaptive_scaffold: ^0.3.1
   flutter_localizations:
     sdk: flutter
 
@@ -48,11 +47,11 @@ dependencies:
   easy_refresh: ^3.3.4
   cached_network_image: ^3.3.1
   fluttericon: ^2.0.0
-  carousel_slider: ^5.0.0
-  dio_cache_interceptor: ^3.5.0
+  carousel_slider_plus: ^7.1.0
+  dio_cache_interceptor: ^4.0.3
   dio_cookie_manager: ^3.1.1
   cookie_jar: ^4.0.8
-  dio_cache_interceptor_db_store: ^6.0.0
+  http_cache_drift_store: ^7.0.0
   sqlite3_flutter_libs: ^0.5.24
   dio: ^5.4.0
   path_provider: ^2.1.2
@@ -73,6 +72,8 @@ dependencies:
   crypto: ^3.0.5
   version: ^3.0.2
   badges: ^3.1.2
+  flutter_cache_manager: ^3.4.1
+  flutter_adaptive_scaffold: ^0.3.2
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,4 @@
-import 'package:carousel_slider/carousel_slider.dart';
+import 'package:carousel_slider_plus/carousel_slider_plus.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/page_controllers/comic_homepage_controller.dart';
 import 'package:dcomic/view/components/carousel_item.dart';
@@ -38,10 +38,12 @@ class _HomePageState extends State<HomePage> {
   Widget _buildCarousels(BuildContext context) {
     return CarouselSlider.builder(
       options: CarouselOptions(
-        viewportFraction: 1,
+        viewportFraction: 0.95,
         enableInfiniteScroll: true,
         autoPlay: true,
-        aspectRatio: 16 / 9,
+        aspectRatio: 3,
+        enlargeCenterPage: true,
+        enlargeStrategy: CenterPageEnlargeStrategy.height,
       ),
       itemCount: Provider.of<ComicHomepageController>(context)
           .homepageCarousels
