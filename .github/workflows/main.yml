@@ -96,6 +96,15 @@ jobs:
           path: |
             build/app/outputs/flutter-apk/app-${{ github.event.inputs.build_type }}.apk
 
+      # 仅tag触发时，上传APK到GitHub Release
+      - name: Upload APK to GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/app/outputs/flutter-apk/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build_ios:
     runs-on: macos-latest
 
@@ -155,3 +164,12 @@ jobs:
         with:
           name: ios-build-manual
           path: build/ios/iphoneos/Runner.app
+
+      # 仅tag触发时，上传iOS包到GitHub Release
+      - name: Upload iOS Runner.app to GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/ios/iphoneos/Runner.app/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
