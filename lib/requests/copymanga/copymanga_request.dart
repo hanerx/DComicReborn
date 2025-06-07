@@ -27,27 +27,26 @@ class CopyMangaRequestHandler extends RequestHandler {
                 .getConfigByKeyAndModel('login', 'copymanga'))
             ?.value ??
         '0';
+    headers['umstring'] = 'b4c89ca4104ea9a97750314d791520ac';
     return Options(headers: headers);
   }
 
-  Future<Response> getComicDetail(String comicId) {
-    return dio.get('/api/v3/comic2/$comicId?platform=1');
+  Future<Response> getComicDetail(String comicId) async{
+    return dio.get('/api/v3/comic2/$comicId?in_mainland=true&platform=3',
+        options: await setHeader());
   }
 
   Future<Response> getChapters(String comicId, String groupName,
       {int limit = 100, int page = 0}) async {
     return dio.get(
-        '/api/v3/comic/$comicId/group/$groupName/chapters?limit=$limit&offset=$page',
-        options: await setHeader({'Platform': '1'}));
+        '/api/v3/comic/$comicId/group/$groupName/chapters?limit=$limit&offset=$page&in_mainland=true&platform=3',
+        options: await setHeader());
   }
 
   Future<Response> getComic(String comicId, String chapterId) async {
     return dio.get(
-        '/api/v3/comic/$comicId/chapter/$chapterId?platform=1&_update=true',
-        options: await setHeader({
-          'User-Agent':
-              'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.134 Safari/537.36'
-        }));
+        '/api/v3/comic/$comicId/chapter2/$chapterId?in_mainland=true&platform=3',
+        options: await setHeader());
   }
 
   Future<Response> search(String keyword,
