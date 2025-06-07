@@ -1,12 +1,21 @@
 name: Flutter CI & Release
 
 on:
-  workflow_dispatch:           # 手动触发
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: "Build type for manual run (release or debug)"
+        required: false
+        default: "debug"
+        type: choice
+        options:
+          - debug
+          - release
   push:
     branches:
-      - develop                # develop分支每次提交
+      - develop
     tags:
-      - '*'                   # 每次新tag提交
+      - '*'
 
 jobs:
   build_android:
@@ -24,23 +33,24 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # 仅在tag提交时，下载keystore并生成key.properties
-      - name: Decode keystore from Secret
-        if: github.ref_type == 'tag'
+      # 任意构建场景都准备 keystore 和 key.properties（如果 secrets 存在）
+      - name: Prepare keystore and key.properties
+        if: env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEY_PASSWORD != ''
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/my-release-key.keystore
-
-      - name: Generate key.properties
-        if: github.ref_type == 'tag'
-        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/my-release-key.keystore
           cat > android/key.properties <<EOF
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
           storeFile=../app/my-release-key.keystore
           EOF
 
-      # develop分支用debug签名，tag用release签名，手动触发用debug包
+      # develop分支用debug，tag用release，手动可选
       - name: Build Android APK (Dev)
         if: github.ref == 'refs/heads/develop'
         run: flutter build apk --debug
@@ -51,7 +61,12 @@ jobs:
 
       - name: Build Android APK (Manual)
         if: github.event_name == 'workflow_dispatch'
-        run: flutter build apk --debug
+        run: |
+          if [ "${{ github.event.inputs.build_type }}" = "release" ]; then
+            flutter build apk --release
+          else
+            flutter build apk --debug
+          fi
 
       - name: Upload Android APK (Dev)
         if: github.ref == 'refs/heads/develop'
@@ -72,7 +87,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-apk-manual
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          path: |
+            build/app/outputs/flutter-apk/app-${{ github.event.inputs.build_type }}.apk
 
   build_ios:
     runs-on: macos-latest
@@ -89,7 +105,7 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # develop分支与tag均为不签名打包，手动触发也不签名
+      # develop分支与tag均为不签名打包
       - name: Build iOS (Dev)
         if: github.ref == 'refs/heads/develop'
         run: flutter build ios --debug --no-codesign
@@ -98,9 +114,15 @@ jobs:
         if: github.ref_type == 'tag'
         run: flutter build ios --release --no-codesign
 
+      # 手动触发，根据 build_type 参数构建 debug 或 release
       - name: Build iOS (Manual)
         if: github.event_name == 'workflow_dispatch'
-        run: flutter build ios --debug --no-codesign
+        run: |
+          if [ "${{ github.event.inputs.build_type }}" = "release" ]; then
+            flutter build ios --release --no-codesign
+          else
+            flutter build ios --debug --no-codesign
+          fi
 
       - name: Upload iOS build (Dev)
         if: github.ref == 'refs/heads/develop'
