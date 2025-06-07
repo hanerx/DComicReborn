@@ -101,6 +101,11 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.29.0'
+      
+      - name: Install CocoaPods dependencies
+        run: |
+          cd ios
+          pod install --repo-update
 
       - name: Install dependencies
         run: flutter pub get
