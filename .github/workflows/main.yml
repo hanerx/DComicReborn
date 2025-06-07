@@ -1,0 +1,102 @@
+name: Flutter CI & Release
+
+on:
+  workflow_dispatch:           # 手动触发
+  push:
+    branches:
+      - develop                # develop分支每次提交
+    tags:
+      - '*'                   # 每次新tag提交
+
+jobs:
+  build_android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 仅在tag提交时，下载keystore并生成key.properties
+      - name: Decode keystore from Secret
+        if: github.ref_type == 'tag'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/my-release-key.keystore
+
+      - name: Generate key.properties
+        if: github.ref_type == 'tag'
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=../app/my-release-key.keystore
+          EOF
+
+      # develop分支用debug签名，tag用release签名
+      - name: Build Android APK (Dev)
+        if: github.ref == 'refs/heads/develop'
+        run: flutter build apk --debug
+
+      - name: Build Android APK (Release)
+        if: github.ref_type == 'tag'
+        run: flutter build apk --release
+
+      - name: Upload Android APK (Dev)
+        if: github.ref == 'refs/heads/develop'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-dev
+          path: build/app/outputs/flutter-apk/app-debug.apk
+
+      - name: Upload Android APK (Release)
+        if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  build_ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # develop分支与tag均为不签名打包
+      - name: Build iOS (Dev)
+        if: github.ref == 'refs/heads/develop'
+        run: flutter build ios --debug --no-codesign
+
+      - name: Build iOS (Release, unsigned)
+        if: github.ref_type == 'tag'
+        run: flutter build ios --release --no-codesign
+
+      - name: Upload iOS build (Dev)
+        if: github.ref == 'refs/heads/develop'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-dev
+          path: build/ios/iphoneos/Runner.app
+
+      - name: Upload iOS build (Release, unsigned)
+        if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-release
+          path: build/ios/iphoneos/Runner.app
