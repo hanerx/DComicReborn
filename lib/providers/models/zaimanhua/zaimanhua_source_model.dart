@@ -308,12 +308,25 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
   Future<List<GridItemEntity>> getSubscribeComics({int page = 0}) async {
     List<GridItemEntity> data = [];
     try {
-      var response = await RequestHandlers.zaiManHuaMobileRequestHandler
-          .getSubscribe(page: page);
-      if ((response.statusCode == 200 || response.statusCode == 304) &&
-          response.data['errno'] == 0) {
-        List list = response.data['data']['subList'];
-        for (var rawData in list) {
+      var unReadResponse = await RequestHandlers.zaiManHuaMobileRequestHandler
+          .getSubscribe(page: page, status: 1);
+      var readResponse = await RequestHandlers.zaiManHuaMobileRequestHandler
+          .getSubscribe(page: page, status: 2);
+      var unReadStatus = (unReadResponse.statusCode == 200 || unReadResponse.statusCode == 304) &&
+          unReadResponse.data['errno'] == 0;
+      var readStatus =  (readResponse.statusCode == 200 || readResponse.statusCode == 304) &&
+          readResponse.data['errno'] == 0;
+      var subList = [];
+      if(unReadStatus){
+        subList.addAll(unReadResponse.data['data']['subList']);
+      }
+      if(readStatus){
+        subList.addAll(readResponse.data['data']['subList']);
+      }
+      // 再漫画全部这个选项炸了，所以只能自己拼接一个了
+      subList.sort((a, b) => b['last_updatetime'].compareTo(a['last_updatetime']));
+      if (subList.isNotEmpty) {
+        for (var rawData in subList) {
           data.add(GridItemEntityWithStatus(
               rawData['title'],
               rawData['last_update_chapter_name'],
@@ -359,6 +372,7 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
           var databaseIsLogin = await databaseInstance.modelConfigDao
               .getOrCreateConfigByKey('isLogin', parent!.type.sourceId);
           databaseIsLogin.set(true);
+          await databaseInstance.modelConfigDao.updateConfig(databaseIsLogin);
           var databaseToken = await databaseInstance.modelConfigDao
               .getOrCreateConfigByKey('token', parent!.type.sourceId);
           databaseToken.set(response.data['data']['user']['token']);
@@ -467,7 +481,7 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
     _token = (await databaseInstance.modelConfigDao
             .getOrCreateConfigByKey('token', parent!.type.sourceId))
         .get<String>();
-    if (_isLogin && _token!.isNotEmpty) {
+    if (_token!.isNotEmpty) {
       try {
         var response =
             await RequestHandlers.zaiManHuaAccountRequestHandler.getUserData();
