@@ -40,7 +40,7 @@ jobs:
           storeFile=../app/my-release-key.keystore
           EOF
 
-      # develop分支用debug签名，tag用release签名
+      # develop分支用debug签名，tag用release签名，手动触发用debug包
       - name: Build Android APK (Dev)
         if: github.ref == 'refs/heads/develop'
         run: flutter build apk --debug
@@ -48,6 +48,10 @@ jobs:
       - name: Build Android APK (Release)
         if: github.ref_type == 'tag'
         run: flutter build apk --release
+
+      - name: Build Android APK (Manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: flutter build apk --debug
 
       - name: Upload Android APK (Dev)
         if: github.ref == 'refs/heads/develop'
@@ -62,6 +66,13 @@ jobs:
         with:
           name: android-apk-release
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload Android APK (Manual)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-manual
+          path: build/app/outputs/flutter-apk/app-debug.apk
 
   build_ios:
     runs-on: macos-latest
@@ -78,7 +89,7 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # develop分支与tag均为不签名打包
+      # develop分支与tag均为不签名打包，手动触发也不签名
       - name: Build iOS (Dev)
         if: github.ref == 'refs/heads/develop'
         run: flutter build ios --debug --no-codesign
@@ -86,6 +97,10 @@ jobs:
       - name: Build iOS (Release, unsigned)
         if: github.ref_type == 'tag'
         run: flutter build ios --release --no-codesign
+
+      - name: Build iOS (Manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: flutter build ios --debug --no-codesign
 
       - name: Upload iOS build (Dev)
         if: github.ref == 'refs/heads/develop'
@@ -99,4 +114,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-build-release
+          path: build/ios/iphoneos/Runner.app
+
+      - name: Upload iOS build (Manual)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-manual
           path: build/ios/iphoneos/Runner.app
