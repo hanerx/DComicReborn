@@ -78,23 +78,22 @@ jobs:
         if: github.ref == 'refs/heads/develop'
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk-dev
+          name: app-debug.apk
           path: build/app/outputs/flutter-apk/app-debug.apk
 
       - name: Upload Android APK (Release)
         if: github.ref_type == 'tag'
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk-release
+          name: app-release.apk
           path: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload Android APK (Manual)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk-manual
-          path: |
-            build/app/outputs/flutter-apk/app-${{ github.event.inputs.build_type }}.apk
+          name: app-${{ github.event.inputs.build_type }}.apk
+          path: build/app/outputs/flutter-apk/app-${{ github.event.inputs.build_type }}.apk
 
       # 仅tag触发时，上传APK到GitHub Release
       - name: Upload APK to GitHub Release
@@ -125,16 +124,17 @@ jobs:
           cd ios
           pod install --repo-update
 
-      # develop分支与tag均为不签名打包
+      # develop分支打debug
       - name: Build iOS (Dev)
         if: github.ref == 'refs/heads/develop'
         run: flutter build ios --debug --no-codesign
 
+      # tag打release
       - name: Build iOS (Release, unsigned)
         if: github.ref_type == 'tag'
         run: flutter build ios --release --no-codesign
 
-      # 手动触发，根据 build_type 参数构建 debug 或 release
+      # 手动触发，可选debug/release
       - name: Build iOS (Manual)
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -144,32 +144,58 @@ jobs:
             flutter build ios --debug --no-codesign
           fi
 
-      - name: Upload iOS build (Dev)
+      # 统一制作ipa（所有场景）
+      - name: Create IPA from Runner.app (Dev)
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r ios-debug.ipa Payload
+          rm -rf Payload
+
+      - name: Create IPA from Runner.app (Release)
+        if: github.ref_type == 'tag'
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r ios-release.ipa Payload
+          rm -rf Payload
+
+      - name: Create IPA from Runner.app (Manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r ios-manual.ipa Payload
+          rm -rf Payload
+
+      # 上传ipa，name带后缀
+      - name: Upload iOS IPA (Dev)
         if: github.ref == 'refs/heads/develop'
         uses: actions/upload-artifact@v4
         with:
-          name: ios-build-dev
-          path: build/ios/iphoneos/Runner.app
+          name: ios-debug.ipa
+          path: ios-debug.ipa
 
-      - name: Upload iOS build (Release, unsigned)
+      - name: Upload iOS IPA (Release, unsigned)
         if: github.ref_type == 'tag'
         uses: actions/upload-artifact@v4
         with:
-          name: ios-build-release
-          path: build/ios/iphoneos/Runner.app
+          name: ios-release.ipa
+          path: ios-release.ipa
 
-      - name: Upload iOS build (Manual)
+      - name: Upload iOS IPA (Manual)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
-          name: ios-build-manual
-          path: build/ios/iphoneos/Runner.app
+          name: ios-manual.ipa
+          path: ios-manual.ipa
 
-      # 仅tag触发时，上传iOS包到GitHub Release
-      - name: Upload iOS Runner.app to GitHub Release
+      # tag场景自动发布release
+      - name: Upload iOS IPA to GitHub Release
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
-          files: build/ios/iphoneos/Runner.app/**/*
+          files: ios-release.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
