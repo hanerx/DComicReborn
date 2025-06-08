@@ -3,9 +3,11 @@ import 'dart:io';
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/entity/config.dart';
 import 'package:dcomic/providers/base_provider.dart';
+import 'package:dcomic/providers/download_provider.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher_string.dart' as url_string_launcher;
 import 'package:version/version.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
@@ -23,20 +25,6 @@ class ReleaseInfo {
   final String releaseUrl;
 
   ReleaseInfo(this.version, this.updateUrl, this.desc, this.releaseUrl);
-}
-
-void onDownloadComplete(String id, int status, int progress) async {
-  if (DownloadTaskStatus.fromInt(status) == DownloadTaskStatus.complete) {
-    final database = await DatabaseInstance.instance;
-    final releaseInfo = await database.configDao.getConfigByKey('ReleaseInfo');
-    if (releaseInfo == null) return;
-    final dir = Platform.isAndroid
-        ? await getExternalStorageDirectory()
-        : await getApplicationDocumentsDirectory();
-    if (dir == null) return;
-    final filePath = '${dir.path}/app${Platform.isAndroid? '.apk' : '.ipa'}';
-    await OpenFile.open(filePath);
-  }
 }
 
 class VersionProvider extends BaseProvider {
@@ -247,13 +235,23 @@ class VersionProvider extends BaseProvider {
                         return;
                       }
                       // 初始化下载器
-                      await FlutterDownloader.initialize();
                       final dir = Platform.isAndroid
                           ? await getExternalStorageDirectory()
                           : await getApplicationDocumentsDirectory();
+                      if (dir == null) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(S.of(context).ReleaseInfoDownloadFailed)));
+                        }
+                        return;
+                      }
+                      final filePath = '${dir.path}/app${Platform.isAndroid ? '.apk' : '.ipa'}';
+                      if(await File(filePath).exists()) {
+                        File(filePath).deleteSync();
+                      }
                       final taskId = await FlutterDownloader.enqueue(
                         url: releaseInfo.updateUrl,
-                        savedDir: dir!.path,
+                        savedDir: dir.path,
                         showNotification: true,
                         openFileFromNotification: true,
                         fileName: 'app${Platform.isAndroid ? '.apk' : '.ipa'}',
@@ -263,12 +261,23 @@ class VersionProvider extends BaseProvider {
                           ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text(S.of(context).ReleaseInfoDownloadFailed)));
                         }
-                      }
-                      // 监听下载完成并自动打开
-                      FlutterDownloader.registerCallback(onDownloadComplete);
-                      if (context.mounted){
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(S.of(context).ReleaseInfoDownloadStarted)));
+                      }else{
+                        if (context.mounted){
+                          Provider.of<DownloadProvider>(context, listen: false)
+                              .registerDownloadCallback(taskId,
+                                  (id, status, progress) async {
+                            if (status == DownloadTaskStatus.complete){
+                              await FlutterDownloader.open(taskId: id);
+                            }else if (status == DownloadTaskStatus.failed) {
+                              if (context.mounted){
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(S.of(context).ReleaseInfoDownloadFailed)));
+                              }
+                            }
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(S.of(context).ReleaseInfoDownloadStarted)));
+                        }
                       }
                     },
                     child: Text(S.of(context).ReleaseInfoDownload))
