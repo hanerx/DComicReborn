@@ -50,7 +50,23 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # ... 省略 Android keystore 步骤（如有需要请补充）
+      
+      # 任意构建场景都准备 keystore 和 key.properties（如果 secrets 存在）
+      - name: Prepare keystore and key.properties
+        if: env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEY_PASSWORD != ''Add commentMore actions
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/my-release-key.keystore
+          cat > android/key.properties <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=../app/my-release-key.keystore
+          EOF
 
       - name: Build Android APK (Dev)
         if: github.ref == 'refs/heads/develop'
