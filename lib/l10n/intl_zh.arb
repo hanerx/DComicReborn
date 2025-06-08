@@ -166,5 +166,8 @@
   "TokenLogin": "使用Token登录",
   "TokenCopy": "拷贝Token（这个能够直接用于登录，请不要随意分享）",
   "RequireLoginForToken": "无法复制Token，可能是没登录",
-  "TitleCopied": "分类标题已复制到剪贴板"
+  "TitleCopied": "分类标题已复制到剪贴板",
+  "ReleaseInfoNoApkOrIpa": "未找到可用的安装包下载链接",
+  "ReleaseInfoDownloadFailed": "下载任务启动失败",
+  "ReleaseInfoDownloadStarted": "已开始下载，下载完成后将自动打开"
 }

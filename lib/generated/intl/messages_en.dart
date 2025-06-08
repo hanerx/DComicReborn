@@ -205,6 +205,15 @@ class MessageLookup extends MessageLookupByLibrary {
       "Settings About Comic Reader",
     ),
     "ReleaseInfoDownload": MessageLookupByLibrary.simpleMessage("Download"),
+    "ReleaseInfoDownloadFailed": MessageLookupByLibrary.simpleMessage(
+      "Failed to start download task",
+    ),
+    "ReleaseInfoDownloadStarted": MessageLookupByLibrary.simpleMessage(
+      "Download started, will open automatically after completion",
+    ),
+    "ReleaseInfoNoApkOrIpa": MessageLookupByLibrary.simpleMessage(
+      "No available installation package download link found",
+    ),
     "ReleaseInfoTitle": m8,
     "RequireLogin": MessageLookupByLibrary.simpleMessage(
       "This Page Needs User Info, Please Login",

@@ -169,5 +169,8 @@
   "TokenLogin": "Login with Token",
   "TokenCopy": "Copy Token",
   "RequireLoginForToken": "No Token Found, Maybe Need To Login.",
-  "TitleCopied": "Category Title copied to clipboard"
+  "TitleCopied": "Category Title copied to clipboard",
+  "ReleaseInfoNoApkOrIpa": "No available installation package download link found",
+  "ReleaseInfoDownloadFailed": "Failed to start download task",
+  "ReleaseInfoDownloadStarted": "Download started, will open automatically after completion"
 }

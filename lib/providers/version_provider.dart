@@ -1,12 +1,16 @@
+import 'dart:io';
+
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/entity/config.dart';
 import 'package:dcomic/providers/base_provider.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher_string.dart' as url_string_launcher;
 import 'package:version/version.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../generated/l10n.dart';
 
@@ -19,6 +23,20 @@ class ReleaseInfo {
   final String releaseUrl;
 
   ReleaseInfo(this.version, this.updateUrl, this.desc, this.releaseUrl);
+}
+
+void onDownloadComplete(String id, int status, int progress) async {
+  if (DownloadTaskStatus.fromInt(status) == DownloadTaskStatus.complete) {
+    final database = await DatabaseInstance.instance;
+    final releaseInfo = await database.configDao.getConfigByKey('ReleaseInfo');
+    if (releaseInfo == null) return;
+    final dir = Platform.isAndroid
+        ? await getExternalStorageDirectory()
+        : await getApplicationDocumentsDirectory();
+    if (dir == null) return;
+    final filePath = '${dir.path}/app${Platform.isAndroid? '.apk' : '.ipa'}';
+    await OpenFile.open(filePath);
+  }
 }
 
 class VersionProvider extends BaseProvider {
@@ -146,9 +164,24 @@ class VersionProvider extends BaseProvider {
     if (data == null) {
       return null;
     }
+    // 根据平台选择合适的安装包
+    String updateUrl = '';
+    if (data['assets'] != null && data['assets'].isNotEmpty) {
+      if (Platform.isAndroid) {
+        var apk = data['assets'].firstWhere(
+            (a) => a['name'] != null && a['name'].toString().endsWith('.apk'),
+            orElse: () => null);
+        updateUrl = apk != null ? apk['browser_download_url'] : '';
+      } else if (Platform.isIOS) {
+        var ipa = data['assets'].firstWhere(
+            (a) => a['name'] != null && a['name'].toString().endsWith('.ipa'),
+            orElse: () => null);
+        updateUrl = ipa != null ? ipa['browser_download_url'] : '';
+      }
+    }
     return ReleaseInfo(
       data['tag_name'],
-      data['assets'] != null && data['assets'].isNotEmpty ? data['assets'][0]['browser_download_url'] : '',
+      updateUrl,
       data['body'] ?? '',
       data['html_url'] ?? '',
     );
@@ -207,12 +240,35 @@ class VersionProvider extends BaseProvider {
                     child: Text(S.of(context).AboutPageGithub)),
                 TextButton(
                     onPressed: () async {
-                      if (await url_string_launcher
-                          .canLaunchUrlString(releaseInfo.updateUrl)) {
-                        if (context.mounted) {
-                          url_string_launcher
-                              .launchUrlString(releaseInfo.updateUrl);
+                      Navigator.of(context).pop();
+                      if (releaseInfo.updateUrl.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(S.of(context).ReleaseInfoNoApkOrIpa)));
+                        return;
+                      }
+                      // 初始化下载器
+                      await FlutterDownloader.initialize();
+                      final dir = Platform.isAndroid
+                          ? await getExternalStorageDirectory()
+                          : await getApplicationDocumentsDirectory();
+                      final taskId = await FlutterDownloader.enqueue(
+                        url: releaseInfo.updateUrl,
+                        savedDir: dir!.path,
+                        showNotification: true,
+                        openFileFromNotification: true,
+                        fileName: 'app${Platform.isAndroid ? '.apk' : '.ipa'}',
+                      );
+                      if (taskId == null) {
+                        if(context.mounted){
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(S.of(context).ReleaseInfoDownloadFailed)));
                         }
+                      }
+                      // 监听下载完成并自动打开
+                      FlutterDownloader.registerCallback(onDownloadComplete);
+                      if (context.mounted){
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(S.of(context).ReleaseInfoDownloadStarted)));
                       }
                     },
                     child: Text(S.of(context).ReleaseInfoDownload))

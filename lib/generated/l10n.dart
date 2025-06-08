@@ -1061,6 +1061,36 @@ class S {
       args: [],
     );
   }
+
+  /// `No available installation package download link found`
+  String get ReleaseInfoNoApkOrIpa {
+    return Intl.message(
+      'No available installation package download link found',
+      name: 'ReleaseInfoNoApkOrIpa',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to start download task`
+  String get ReleaseInfoDownloadFailed {
+    return Intl.message(
+      'Failed to start download task',
+      name: 'ReleaseInfoDownloadFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Download started, will open automatically after completion`
+  String get ReleaseInfoDownloadStarted {
+    return Intl.message(
+      'Download started, will open automatically after completion',
+      name: 'ReleaseInfoDownloadStarted',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
