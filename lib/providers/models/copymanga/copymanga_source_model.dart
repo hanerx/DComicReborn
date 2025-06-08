@@ -300,9 +300,14 @@ class CopyMangaComicChapterDetailModel extends BaseComicChapterDetailModel {
   }
 
   @override
-  List<ImageEntity> get pages => rawData['contents']
-      .map<ImageEntity>((e) => ImageEntity(ImageType.network, e['url']))
-      .toList();
+  List<ImageEntity> get pages{
+    List<ImageEntity> pages = [];
+    for(var index in rawData['words']){
+      var e = rawData['contents'][index];
+      pages.add(ImageEntity(ImageType.network, e['url']));
+    }
+    return pages;
+  }
 
   @override
   String get title => rawData['name'];
