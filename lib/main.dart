@@ -103,8 +103,14 @@ class MainFramework extends StatefulWidget {
 class _MainFrameworkState extends State<MainFramework> {
   @override
   Widget build(BuildContext context) {
-    if(Provider.of<ComicSourceProvider>(context).isLoading){
+    if(Provider.of<ComicSourceProvider>(context).isLoading || Provider.of<VersionProvider>(context).isLoading) {
       return SplashPage();
+    }
+    if (Provider.of<VersionProvider>(context).needShowUpdateDialog && !Provider.of<VersionProvider>(context).isUpdateDialogShown) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Provider.of<VersionProvider>(context, listen: false)
+            .tryShowUpdateDialog(context);
+      });
     }
     return ChangeNotifierProvider<AppBarProvider>(
         create: (_) => AppBarProvider(context),
@@ -152,3 +158,4 @@ class _MainFrameworkState extends State<MainFramework> {
             ));
   }
 }
+
