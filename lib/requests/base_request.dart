@@ -9,8 +9,11 @@ import 'package:dcomic/utils/db_cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http_cache_drift_store/http_cache_drift_store.dart';
+
+import '../utils/firbaselogoutput.dart';
 
 class RequestStatics {
   static DriftCacheStore? _store;
@@ -38,6 +41,10 @@ class RequestHandler {
 
   CacheOptions? options;
   final String baseUrl;
+  Logger logger = Logger(
+      printer: PrettyPrinter(noBoxingByDefault: true,methodCount:2),
+      filter: ProductionFilter(),
+      output: CrashConsoleOutput());
 
   RequestHandler(this.baseUrl, {CachePolicy policy= CachePolicy.request,bool useCookie=true}) {
     dio.options.baseUrl = baseUrl;

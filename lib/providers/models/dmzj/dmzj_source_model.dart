@@ -72,7 +72,7 @@ class DMZJComicSourceModel extends BaseComicSourceModel {
                         '-',
                         date_format.dd
                       ]),
-                  Icons.history_edu: item['chapter_name']
+                  Icons.history_edu: item['chapter_name'] ?? '',
                 }, (context) {
               Provider.of<NavigatorProvider>(context, listen: false)
                   .getNavigator(context, NavigatorType.defaultNavigator)
