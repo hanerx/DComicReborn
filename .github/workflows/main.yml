@@ -11,6 +11,16 @@ on:
         options:
           - debug
           - release
+      run_android:
+        description: "是否运行 Android 打包"
+        required: false
+        default: "true"
+        type: boolean
+      run_ios:
+        description: "是否运行 iOS 打包"
+        required: false
+        default: "true"
+        type: boolean
   push:
     branches:
       - develop
@@ -19,6 +29,7 @@ on:
 
 jobs:
   build_android:
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_android == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -95,16 +106,8 @@ jobs:
           name: app-${{ github.event.inputs.build_type }}.apk
           path: build/app/outputs/flutter-apk/app-${{ github.event.inputs.build_type }}.apk
 
-      # 仅tag触发时，上传APK到GitHub Release
-      - name: Upload APK to GitHub Release
-        if: github.ref_type == 'tag'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: build/app/outputs/flutter-apk/app-release.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   build_ios:
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_ios == 'true' }}
     runs-on: macos-latest
 
     steps:
@@ -122,7 +125,7 @@ jobs:
       - name: Install CocoaPods dependencies
         run: |
           cd ios
-          rm -rf Podfile.lock && pod install --repo-update
+          pod install --repo-update
 
       # develop分支打debug
       - name: Build iOS (Dev)
@@ -191,11 +194,68 @@ jobs:
           name: ios-manual.ipa
           path: ios-manual.ipa
 
-      # tag场景自动发布release
-      - name: Upload iOS IPA to GitHub Release
-        if: github.ref_type == 'tag'
+  generate_release_note:
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    outputs:
+      release_title: ${{ steps.set_title.outputs.release_title }}
+      release_body: ${{ steps.set_body.outputs.release_body }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          # 取tag最后一个/后的内容，去掉v前缀
+          TAG_NAME="${GITHUB_REF##*/}"
+          VERSION="${TAG_NAME/#v/}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set release title
+        id: set_title
+        run: |
+          echo "release_title=DComicReborn v${{ steps.extract_version.outputs.version }}" >> $GITHUB_OUTPUT
+
+      - name: Generate release body from commit logs
+        id: set_body
+        run: |
+          TAG_NAME="${GITHUB_REF##*/}"
+          # 取上一个tag（不含本tag）
+          PREV_TAG=$(git describe --tags --abbrev=0 "${TAG_NAME}^" 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            echo "## 更新日志" > release-note.md
+            git log $PREV_TAG..$TAG_NAME --pretty=format:"- %s (%an)" >> release-note.md
+          else
+            echo "## 更新日志" > release-note.md
+            git log $TAG_NAME --pretty=format:"- %s (%an)" >> release-note.md
+          fi
+          echo "release_body<<EOF" >> $GITHUB_OUTPUT
+          cat release-note.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  publish_release:
+    needs: [build_android, build_ios, generate_release_note]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: app-release.apk
+
+      - name: Download iOS IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-release.ipa
+
+      - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ios-release.ipa
+          files: |
+            app-release.apk
+            ios-release.ipa
+          name: ${{ needs.generate_release_note.outputs.release_title }}
+          body: ${{ needs.generate_release_note.outputs.release_body }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
