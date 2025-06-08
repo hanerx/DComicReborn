@@ -301,12 +301,30 @@ class CopyMangaComicChapterDetailModel extends BaseComicChapterDetailModel {
 
   @override
   List<ImageEntity> get pages{
-    List<ImageEntity> pages = [];
-    for(var index in rawData['words']){
-      var e = rawData['contents'][index];
-      pages.add(ImageEntity(ImageType.network, e['url']));
+    List<ImageEntity> result = [];
+    var words = rawData['words'];
+    var contents = rawData['contents'];
+    if (words == null) {
+      for (var e in contents) {
+        result.add(ImageEntity(ImageType.network, e['url']));
+      }
+      return result;
     }
-    return pages;
+
+    List<int> wordsList = List<int>.from(words);
+    for (int i = 0; i < contents.length; i++) {
+      if (!wordsList.contains(i)) {
+        wordsList.add(i);
+      }
+    }
+    Map<int, String> hm = {};
+    for (int i = 0; i < contents.length; i++) {
+      hm[wordsList[i]] = contents[i]['url'];
+    }
+    for (int i = 0; i < contents.length; i++) {
+      result.add(ImageEntity(ImageType.network, hm[i] ?? ''));
+    }
+    return result;
   }
 
   @override
