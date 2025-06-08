@@ -6,9 +6,44 @@ import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dio/dio.dart';
 
+
+class CopyMangaAPIRequestHandler extends RequestHandler {
+  CopyMangaAPIRequestHandler()
+      : super('https://api.copy-manga.com/', useCookie: false);
+
+  Future<Response> getNetworkStatus() async {
+    return dio.get('/api/v3/system/network2?platform=3',
+        options: Options(headers: {
+          'source': 'copyApp',
+          'webp': '1',
+          'dt': date_format.formatDate(DateTime.now(),
+              [date_format.yyyy, '.', date_format.mm, '.', date_format.dd]),
+          'platform': '3',
+          'referer': 'com.copymanga.app-2.3.0',
+          'version': '2.3.0',
+          'region': '1',
+          'umstring': 'b4c89ca4104ea9a97750314d791520ac'
+        }));
+  }
+}
+
 class CopyMangaRequestHandler extends RequestHandler {
+  String dynamicBaseUrl = '';
+
   CopyMangaRequestHandler()
-      : super('https://api.mangacopy.com/', useCookie: false);
+      : super('https://api.mangacopy.com/', useCookie: false){
+    CopyMangaAPIRequestHandler().getNetworkStatus().then((response){
+      try {
+        if ((response.statusCode == 200 || response.statusCode == 304) &&
+            response.data['code'] == 200) {
+          dynamicBaseUrl = 'https://${response.data['results']['api'][0][0]}';
+          dio.options.baseUrl = dynamicBaseUrl;
+        }
+      } catch (e, s) {
+        logger.e('$e', error: e, stackTrace: s);
+      }
+    });
+  }
 
   Future<Options> setHeader([Map<String, dynamic>? headers]) async {
     headers ??= {};
@@ -23,11 +58,7 @@ class CopyMangaRequestHandler extends RequestHandler {
           '';
       headers['authorization'] = 'Token $token';
     }
-    headers['region'] = (await (await DatabaseInstance.instance)
-                .modelConfigDao
-                .getConfigByKeyAndModel('login', 'copymanga'))
-            ?.value ??
-        '0';
+    headers['region'] = '1';
     headers['umstring'] = 'b4c89ca4104ea9a97750314d791520ac';
     return Options(headers: headers);
   }
@@ -182,7 +213,16 @@ class CopyMangaRequestHandler extends RequestHandler {
   }
 
   Future<Response> getHistory({int limit = 12, int page = 0}) async {
-    return dio.get('/api/kb/web/browses?limit=$limit&offset=${limit * page}',
-        options: await setHeader({'Platform': '1'}));
+    return dio.get('/api/v3/member/browse/comics?limit=$limit&offset=${limit * page}&platform=3',
+        options: await setHeader({
+          'source': 'copyApp',
+          'webp': '1',
+          'dt': date_format.formatDate(DateTime.now(),
+              [date_format.yyyy, '.', date_format.mm, '.', date_format.dd]),
+          'platform': '3',
+          'referer': 'com.copymanga.app-2.3.0',
+          'version': '2.3.0',
+          'region': '1',
+        }));
   }
 }
