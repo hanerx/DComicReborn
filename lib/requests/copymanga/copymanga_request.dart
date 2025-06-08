@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:date_format/date_format.dart' as date_format;
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dio/dio.dart';
@@ -54,9 +55,15 @@ class CopyMangaRequestHandler extends RequestHandler {
     return dio.get(
         '/api/v3/search/comic?limit=$limit&offset=${page * limit}&q_type=&q=$keyword&platform=3',
         options: Options(headers: {
+          'source': 'copyApp',
+          'webp': '1',
+          'dt': date_format.formatDate(DateTime.now(),
+              [date_format.yyyy, '.', date_format.mm, '.', date_format.dd]),
           'platform': '3',
-          'version': '2.2.6',
-          'User-Agent': 'COPY/2.2.6'
+          'referer': 'com.copymanga.app-2.3.0',
+          'version': '2.3.0',
+          'region': '1',
+          'umstring': 'b4c89ca4104ea9a97750314d791520ac'
         }));
   }
 
