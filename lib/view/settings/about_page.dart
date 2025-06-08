@@ -114,7 +114,7 @@ class _AboutPageState extends State<AboutPage> {
                               listen: false)
                           .checkUpdate()) {
                         if (context.mounted) {
-                          await showReleaseInfo(context);
+                          await Provider.of<VersionProvider>(context, listen: false).showReleaseInfo(context);
                         }
                       } else {
                         if (context.mounted) {
@@ -152,7 +152,7 @@ class _AboutPageState extends State<AboutPage> {
                     subtitle: Text(
                         Provider.of<VersionProvider>(context).latestVersion),
                     onTap: () async {
-                      await showReleaseInfo(context);
+                      await Provider.of<VersionProvider>(context, listen: false).showReleaseInfo(context);
                     },
                   ),
                 ],
@@ -221,51 +221,6 @@ class _AboutPageState extends State<AboutPage> {
     );
   }
 
-  Future<void> showReleaseInfo(BuildContext context) async {
-    ReleaseInfo? releaseInfo =
-        await Provider.of<VersionProvider>(context, listen: false)
-            .getLatestUpdateInfo();
-    if (releaseInfo != null) {
-      if (context.mounted) {
-        showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-                  title:
-                      Text(S.of(context).ReleaseInfoTitle(releaseInfo.version)),
-                  content: Text(releaseInfo.desc),
-                  actions: [
-                    TextButton(
-                        onPressed: () async {
-                          if (await url_string_launcher
-                              .canLaunchUrlString(releaseInfo.releaseUrl)) {
-                            if (context.mounted) {
-                              url_string_launcher
-                                  .launchUrlString(releaseInfo.releaseUrl);
-                            }
-                          }
-                        },
-                        child: Text(S.of(context).AboutPageGithub)),
-                    TextButton(
-                        onPressed: () async {
-                          if (await url_string_launcher
-                              .canLaunchUrlString(releaseInfo.updateUrl)) {
-                            if (context.mounted) {
-                              url_string_launcher
-                                  .launchUrlString(releaseInfo.updateUrl);
-                            }
-                          }
-                        },
-                        child: Text(S.of(context).ReleaseInfoDownload))
-                  ],
-                ));
-      }
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(S.of(context).SettingPageFailToGetReleaseInfo)));
-      }
-    }
-  }
 }
 
 class _TrapezoidClipper extends CustomClipper<Path> {
@@ -324,3 +279,4 @@ class _FillLineClipper extends CustomClipper<Path> {
     return oldClipper.imgHeight != imgHeight;
   }
 }
+

@@ -163,6 +163,15 @@ class MessageLookup extends MessageLookupByLibrary {
       "漫画阅读器通用设置",
     ),
     "ReleaseInfoDownload": MessageLookupByLibrary.simpleMessage("下载"),
+    "ReleaseInfoDownloadFailed": MessageLookupByLibrary.simpleMessage(
+      "下载任务启动失败",
+    ),
+    "ReleaseInfoDownloadStarted": MessageLookupByLibrary.simpleMessage(
+      "已开始下载，下载完成后将自动打开",
+    ),
+    "ReleaseInfoNoApkOrIpa": MessageLookupByLibrary.simpleMessage(
+      "未找到可用的安装包下载链接",
+    ),
     "ReleaseInfoTitle": m8,
     "RequireLogin": MessageLookupByLibrary.simpleMessage("本界面需要用户数据，请先登录"),
     "RequireLoginForToken": MessageLookupByLibrary.simpleMessage(

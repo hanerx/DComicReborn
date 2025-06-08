@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dcomic/providers/download_provider.dart';
 import 'package:dcomic/providers/version_provider.dart';
 import 'package:dcomic/view/drawer_page/search_page.dart';
 import 'package:dcomic/view/homepage/category_page.dart';
@@ -7,6 +8,7 @@ import 'package:dcomic/view/homepage/latest_page.dart';
 import 'package:dcomic/view/homepage/rank_page.dart';
 import 'package:dcomic/view/splash_page.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
 
 import 'firebase_options.dart';
 import 'package:dcomic/generated/l10n.dart';
@@ -35,7 +37,6 @@ Future<void> main() async {
     // Set Easy Refresh
     EasyRefresh.defaultHeaderBuilder = () => const ClassicHeader();
     EasyRefresh.defaultFooterBuilder = () => const ClassicFooter();
-
     runApp(const App());
   },
       (error, stack) =>
@@ -64,6 +65,10 @@ class App extends StatelessWidget {
           ),
           ChangeNotifierProvider<VersionProvider>(
             create: (_) => VersionProvider(),
+            lazy: false,
+          ),
+          ChangeNotifierProvider<DownloadProvider>(
+            create: (_) => DownloadProvider(),
             lazy: false,
           ),
         ],
@@ -103,8 +108,14 @@ class MainFramework extends StatefulWidget {
 class _MainFrameworkState extends State<MainFramework> {
   @override
   Widget build(BuildContext context) {
-    if(Provider.of<ComicSourceProvider>(context).isLoading){
+    if(Provider.of<ComicSourceProvider>(context).isLoading || Provider.of<VersionProvider>(context).isLoading) {
       return SplashPage();
+    }
+    if (Provider.of<VersionProvider>(context).needShowUpdateDialog && !Provider.of<VersionProvider>(context).isUpdateDialogShown) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Provider.of<VersionProvider>(context, listen: false)
+            .tryShowUpdateDialog(context);
+      });
     }
     return ChangeNotifierProvider<AppBarProvider>(
         create: (_) => AppBarProvider(context),
@@ -152,3 +163,4 @@ class _MainFrameworkState extends State<MainFramework> {
             ));
   }
 }
+

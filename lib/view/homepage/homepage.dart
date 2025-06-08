@@ -41,7 +41,7 @@ class _HomePageState extends State<HomePage> {
         viewportFraction: 0.95,
         enableInfiniteScroll: true,
         autoPlay: true,
-        aspectRatio: 3,
+        aspectRatio: 2,
         enlargeCenterPage: true,
         enlargeStrategy: CenterPageEnlargeStrategy.height,
       ),
