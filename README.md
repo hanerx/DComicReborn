@@ -1,4 +1,9 @@
-# dcomic
+# DComicReborn
+![GitHub Release](https://img.shields.io/github/v/release/hanerx/DComicReborn?style=for-the-badge&link=https%3A%2F%2Fgithub.com%2Fhanerx%2FDComicReborn%2Freleases%2Flatest)
+![GitHub Release Date](https://img.shields.io/github/release-date/hanerx/DComicReborn?style=for-the-badge)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/hanerx/DComicReborn/main.yml?style=for-the-badge)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/hanerx/DComicReborn/total?style=for-the-badge)
+
 
 DComic Ver2.0
 
