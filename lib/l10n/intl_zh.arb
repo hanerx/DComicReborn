@@ -169,5 +169,6 @@
   "TitleCopied": "分类标题已复制到剪贴板",
   "ReleaseInfoNoApkOrIpa": "未找到可用的安装包下载链接",
   "ReleaseInfoDownloadFailed": "下载任务启动失败",
-  "ReleaseInfoDownloadStarted": "已开始下载，下载完成后将自动打开"
+  "ReleaseInfoDownloadStarted": "已开始下载，下载完成后将自动打开",
+  "CopyMangaUseDynamicBaseUrl": "使用动态域名(从拷贝漫画获取动态域名)"
 }

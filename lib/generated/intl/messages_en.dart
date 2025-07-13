@@ -123,6 +123,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "CopyMangaTokenHint": MessageLookupByLibrary.simpleMessage(
       "Use Token to Login(No need input password or username if you are using token login)",
     ),
+    "CopyMangaUseDynamicBaseUrl": MessageLookupByLibrary.simpleMessage(
+      "Use Dynamic Base URL (Get API Base URL from Remote)",
+    ),
     "DMZJLoginPassword": MessageLookupByLibrary.simpleMessage("Password"),
     "DMZJLoginPasswordHint": MessageLookupByLibrary.simpleMessage(
       "Your DMZJ Password!",

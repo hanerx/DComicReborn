@@ -103,6 +103,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "CopyMangaTokenHint": MessageLookupByLibrary.simpleMessage(
       "使用Token进行登录（无需填写用户名密码）",
     ),
+    "CopyMangaUseDynamicBaseUrl": MessageLookupByLibrary.simpleMessage(
+      "使用动态域名(从拷贝漫画获取动态域名)",
+    ),
     "DMZJLoginPassword": MessageLookupByLibrary.simpleMessage("密码"),
     "DMZJLoginPasswordHint": MessageLookupByLibrary.simpleMessage("你的大妈之家密码"),
     "DMZJLoginQQLogin": MessageLookupByLibrary.simpleMessage("QQ登录"),

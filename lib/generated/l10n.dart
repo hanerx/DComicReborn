@@ -1091,6 +1091,16 @@ class S {
       args: [],
     );
   }
+
+  /// `Use Dynamic Base URL (Get API Base URL from Remote)`
+  String get CopyMangaUseDynamicBaseUrl {
+    return Intl.message(
+      'Use Dynamic Base URL (Get API Base URL from Remote)',
+      name: 'CopyMangaUseDynamicBaseUrl',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
