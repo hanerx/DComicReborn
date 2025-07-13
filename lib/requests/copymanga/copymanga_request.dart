@@ -32,15 +32,20 @@ class CopyMangaRequestHandler extends RequestHandler {
 
   CopyMangaRequestHandler()
       : super('https://api.mangacopy.com/', useCookie: false){
-    CopyMangaAPIRequestHandler().getNetworkStatus().then((response){
-      try {
-        if ((response.statusCode == 200 || response.statusCode == 304) &&
-            response.data['code'] == 200) {
-          dynamicBaseUrl = 'https://${response.data['results']['api'][0][0]}';
-          dio.options.baseUrl = dynamicBaseUrl;
+    CopyMangaAPIRequestHandler().getNetworkStatus().then((response) async{
+      var databaseInstance = await DatabaseInstance.instance;
+      var databaseUseDynamicBaseUrl = (await databaseInstance.modelConfigDao
+          .getOrCreateConfigByKey('useDynamicBaseUrl', 'copymanga', value: true));
+      if(databaseUseDynamicBaseUrl.get<bool>()){
+        try {
+          if ((response.statusCode == 200 || response.statusCode == 304) &&
+              response.data['code'] == 200) {
+            dynamicBaseUrl = 'https://${response.data['results']['api'][0][0]}';
+            dio.options.baseUrl = dynamicBaseUrl;
+          }
+        } catch (e, s) {
+          logger.e('$e', error: e, stackTrace: s);
         }
-      } catch (e, s) {
-        logger.e('$e', error: e, stackTrace: s);
       }
     });
   }

@@ -16,6 +16,7 @@ import 'package:provider/provider.dart';
 
 class CopyMangaComicSourceModel extends BaseComicSourceModel {
   final CopyMangaAccountModel _accountModel = CopyMangaAccountModel();
+  bool _useDynamicBaseUrl = true;
 
   @override
   ComicSourceEntity get type => ComicSourceEntity("拷贝漫画", "copymanga",
@@ -120,6 +121,10 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
   @override
   Future<void> initModel() async {
     _accountModel.parent ??= this;
+    var databaseInstance = await DatabaseInstance.instance;
+    var databaseUseDynamicBaseUrl = (await databaseInstance.modelConfigDao
+        .getOrCreateConfigByKey('useDynamicBaseUrl', type.sourceId, value: true));
+    _useDynamicBaseUrl = databaseUseDynamicBaseUrl.get<bool>();
     return super.initModel();
   }
 
@@ -128,6 +133,33 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
 
   @override
   BaseComicHomepageModel? get homepage => CopyMangaComicHomepageModel(this);
+
+  @override
+  Widget getSourceSettingWidget(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.http),
+      title: Text(S.of(context).CopyMangaUseDynamicBaseUrl),
+      dense: true,
+      trailing: Switch(value: _useDynamicBaseUrl, onChanged: (value) async{
+        _useDynamicBaseUrl = value;
+        var databaseInstance = await DatabaseInstance.instance;
+        var databaseUseDynamicBaseUrl = (await databaseInstance.modelConfigDao
+            .getOrCreateConfigByKey('useDynamicBaseUrl', type.sourceId, value: true));
+        databaseUseDynamicBaseUrl.set(_useDynamicBaseUrl);
+        await databaseInstance.modelConfigDao.updateConfig(databaseUseDynamicBaseUrl);
+        notifyListeners();
+      }),
+      onTap: () async{
+        _useDynamicBaseUrl = !_useDynamicBaseUrl;
+        var databaseInstance = await DatabaseInstance.instance;
+        var databaseUseDynamicBaseUrl = (await databaseInstance.modelConfigDao
+            .getOrCreateConfigByKey('useDynamicBaseUrl', type.sourceId, value: true));
+        databaseUseDynamicBaseUrl.set(_useDynamicBaseUrl);
+        await databaseInstance.modelConfigDao.updateConfig(databaseUseDynamicBaseUrl);
+        notifyListeners();
+      },
+    );
+  }
 }
 
 class CopyMangaComicDetailModel extends BaseComicDetailModel {
