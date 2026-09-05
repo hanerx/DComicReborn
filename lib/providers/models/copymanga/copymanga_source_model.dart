@@ -166,7 +166,11 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
         title: Text(label),
         subtitle: DropdownButton<CopyMangaApiDomain>(
           value: value,
+          isDense: true,
           isExpanded: true,
+          style: ListTileTheme.of(context).subtitleTextStyle ??
+              Theme.of(context).textTheme.bodySmall,
+          iconSize: 20,
           items: domains
               .map((domain) => DropdownMenuItem(
                     value: domain,
@@ -219,8 +223,12 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
             CopyMangaApiDomain.values.where((domain) => !domain.isHotManga),
             true),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Text(strings.CopyMangaRoutingHint),
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: Text(
+            strings.CopyMangaRoutingHint,
+            style: ListTileTheme.of(context).subtitleTextStyle ??
+                Theme.of(context).textTheme.bodySmall,
+          ),
         ),
       ],
     );

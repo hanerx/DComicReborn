@@ -83,6 +83,129 @@ class ZaiManHuaSourceModel extends BaseComicSourceModel {
 
   @override
   BaseComicAccountModel? get accountModel => _accountModel;
+
+  @override
+  Widget getSourceSettingWidget(BuildContext context) =>
+      _ZaiManHuaSourceSettings(account: _accountModel);
+}
+
+enum ZaiManHuaSignInStatus {
+  checking,
+  notLoggedIn,
+  signedIn,
+  notSignedIn,
+  queryFailed,
+  signInFailed,
+}
+
+enum ZaiManHuaVipRewardStatus {
+  checking,
+  notLoggedIn,
+  notMember,
+  unavailable,
+  claimable,
+  claimed,
+  queryFailed,
+  claimFailed,
+}
+
+class _ZaiManHuaSourceSettings extends StatefulWidget {
+  const _ZaiManHuaSourceSettings({required this.account});
+
+  final ZaiManHuaAccountModel account;
+
+  @override
+  State<_ZaiManHuaSourceSettings> createState() =>
+      _ZaiManHuaSourceSettingsState();
+}
+
+class _ZaiManHuaSourceSettingsState extends State<_ZaiManHuaSourceSettings>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.account.refreshSignInStatus();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      widget.account.refreshSignInStatus();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+        listenable: widget.account,
+        builder: (context, _) {
+          final account = widget.account;
+          final strings = S.of(context);
+          return Column(
+            children: [
+              SwitchListTile(
+                secondary: const Icon(Icons.event_repeat),
+                title: Text(strings.ZaiManHuaAutoSignIn),
+                subtitle: Text(strings.ZaiManHuaAutoSignInHint),
+                value: account.autoSignInEnabled,
+                onChanged: account.isLoading || account.savingAutoSignIn
+                    ? null
+                    : (enabled) async {
+                        try {
+                          await account.setAutoSignInEnabled(enabled);
+                        } catch (_) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content:
+                                    Text(strings.ZaiManHuaSaveSettingFailed)));
+                          }
+                        }
+                      },
+              ),
+              ListTile(
+                leading: Icon(
+                    account.signInStatus == ZaiManHuaSignInStatus.signedIn
+                        ? Icons.event_available
+                        : Icons.event_note),
+                title: Text(strings.ZaiManHuaTodaySignIn),
+                subtitle: Text(
+                    strings.ZaiManHuaSignInStatus(account.signInStatus.name)),
+                trailing: IconButton(
+                  tooltip: strings.ZaiManHuaRefreshSignInStatus,
+                  onPressed: account.isLoading || account.savingAutoSignIn
+                      ? null
+                      : account.refreshSignInStatus,
+                  icon: const Icon(Icons.refresh),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.workspace_premium_outlined),
+                title: Text(strings.ZaiManHuaMembership),
+                subtitle:
+                    Text(strings.ZaiManHuaMembershipStatus(account.isLoading
+                        ? 'checking'
+                        : !account.isLogin
+                            ? 'notLoggedIn'
+                            : account.isMember?.toString() ?? 'unknown')),
+              ),
+              ListTile(
+                leading: const Icon(Icons.card_giftcard),
+                title: Text(strings.ZaiManHuaVipDailyReward),
+                subtitle: Text(strings.ZaiManHuaVipRewardStatus(
+                    account.vipRewardStatus.name)),
+              ),
+            ],
+          );
+        },
+      );
 }
 
 class ZaiManHuaAccountModel extends BaseComicAccountModel {
@@ -95,6 +218,42 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
   ImageEntity? _avatar;
   String? _nickname;
   String? _token;
+  bool _autoSignInEnabled = true;
+  bool _savingAutoSignIn = false;
+  int _accountGeneration = 0;
+  ZaiManHuaSignInStatus _signInStatus = ZaiManHuaSignInStatus.checking;
+  bool? _isMember;
+  ZaiManHuaVipRewardStatus _vipRewardStatus = ZaiManHuaVipRewardStatus.checking;
+
+  bool get autoSignInEnabled => _autoSignInEnabled;
+  bool get savingAutoSignIn => _savingAutoSignIn;
+  ZaiManHuaSignInStatus get signInStatus => _signInStatus;
+  bool? get isMember => _isMember;
+  ZaiManHuaVipRewardStatus get vipRewardStatus => _vipRewardStatus;
+
+  Future<void> setAutoSignInEnabled(bool enabled) async {
+    if (_savingAutoSignIn || enabled == _autoSignInEnabled) return;
+    _savingAutoSignIn = true;
+    notifyListeners();
+    try {
+      final dao = (await DatabaseInstance.instance).modelConfigDao;
+      final config = await dao.getOrCreateConfigByKey(
+          'autoSignInEnabled', parent!.type.sourceId,
+          value: true);
+      config.set(enabled);
+      await dao.updateConfig(config);
+      _autoSignInEnabled = enabled;
+      if (enabled) await initAccount();
+    } finally {
+      _savingAutoSignIn = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshSignInStatus() async {
+    if (_isLoading || _savingAutoSignIn) return;
+    await _loadAccount(automaticallySignIn: false);
+  }
 
   @override
   String? get token => _token;
@@ -463,38 +622,153 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
   bool get isLogin => _isLogin;
 
   @override
-  Future<void> initAccount() async {
-    var databaseInstance = await DatabaseInstance.instance;
-    _isLogin = (await databaseInstance.modelConfigDao
-            .getOrCreateConfigByKey('isLogin', parent!.type.sourceId))
-        .get<bool>();
-    _token = (await databaseInstance.modelConfigDao
-            .getOrCreateConfigByKey('token', parent!.type.sourceId))
-        .get<String>();
-    if (_token!.isNotEmpty) {
-      try {
-        var response =
-            await RequestHandlers.zaiManHuaAccountRequestHandler.getUserData();
-        if ((response.statusCode == 200 || response.statusCode == 304)) {
-          if (response.data['errno'] == 0) {
-            var personalInfo = response.data['data']['personalInfo'];
-            _uid = personalInfo['uid'].toString();
-            _username = _uid;
-            _avatar = ImageEntity(ImageType.network, personalInfo['photo']);
-            _nickname = personalInfo['nickname'];
-          } else {
-            _isLogin = false;
-          }
-        } else {
-          _isLogin = false;
-        }
-      } catch (e, s) {
-        _isLogin = false;
+  Future<void> initAccount() => _loadAccount(automaticallySignIn: true);
+
+  Future<void> _loadAccount({required bool automaticallySignIn}) async {
+    final generation = ++_accountGeneration;
+    _isLoading = true;
+    _signInStatus = ZaiManHuaSignInStatus.checking;
+    _isMember = null;
+    _vipRewardStatus = ZaiManHuaVipRewardStatus.checking;
+    notifyListeners();
+    try {
+      final dao = (await DatabaseInstance.instance).modelConfigDao;
+      final enabled = (await dao.getOrCreateConfigByKey(
+              'autoSignInEnabled', parent!.type.sourceId,
+              value: true))
+          .get<bool>();
+      final loggedIn =
+          (await dao.getOrCreateConfigByKey('isLogin', parent!.type.sourceId))
+              .get<bool>();
+      final token =
+          (await dao.getOrCreateConfigByKey('token', parent!.type.sourceId))
+              .get<String>();
+      if (generation != _accountGeneration) return;
+      _autoSignInEnabled = enabled;
+      _token = token;
+      _isLogin = loggedIn && token.isNotEmpty;
+      if (!_isLogin) {
+        _signInStatus = ZaiManHuaSignInStatus.notLoggedIn;
+        _vipRewardStatus = ZaiManHuaVipRewardStatus.notLoggedIn;
+        return;
       }
-    } else {
-      _isLogin = false;
+      final response =
+          await RequestHandlers.zaiManHuaAccountRequestHandler.getUserData();
+      if (generation != _accountGeneration) return;
+      if (response.statusCode != 200 && response.statusCode != 304) {
+        _signInStatus = ZaiManHuaSignInStatus.queryFailed;
+        _vipRewardStatus = ZaiManHuaVipRewardStatus.queryFailed;
+        return;
+      }
+      if (response.data['errno'] != 0) {
+        _isLogin = false;
+        _signInStatus = ZaiManHuaSignInStatus.notLoggedIn;
+        _vipRewardStatus = ZaiManHuaVipRewardStatus.notLoggedIn;
+        return;
+      }
+      final personalInfo = response.data['data']['personalInfo'];
+      _uid = personalInfo['uid'].toString();
+      _username = _uid;
+      _avatar = ImageEntity(ImageType.network, personalInfo['photo']);
+      _nickname = personalInfo['nickname'];
+      _isMember = personalInfo['isMember'] as bool?;
+      _signInStatus = switch (personalInfo['is_sign']) {
+        true => ZaiManHuaSignInStatus.signedIn,
+        false => ZaiManHuaSignInStatus.notSignedIn,
+        _ => ZaiManHuaSignInStatus.queryFailed,
+      };
+      if (automaticallySignIn &&
+          _autoSignInEnabled &&
+          _signInStatus == ZaiManHuaSignInStatus.notSignedIn) {
+        final signedIn = await _signIn(token);
+        if (generation != _accountGeneration) return;
+        _signInStatus = signedIn
+            ? ZaiManHuaSignInStatus.signedIn
+            : ZaiManHuaSignInStatus.signInFailed;
+      }
+      if (_isMember == true) {
+        await _loadVipReward(token, generation,
+            claim: automaticallySignIn && _autoSignInEnabled);
+      } else {
+        _vipRewardStatus = _isMember == false
+            ? ZaiManHuaVipRewardStatus.notMember
+            : ZaiManHuaVipRewardStatus.queryFailed;
+      }
+    } catch (_) {
+      if (generation == _accountGeneration) {
+        _signInStatus = ZaiManHuaSignInStatus.queryFailed;
+        _vipRewardStatus = ZaiManHuaVipRewardStatus.queryFailed;
+      }
+    } finally {
+      if (generation == _accountGeneration) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
-    _isLoading = false;
+  }
+
+  Future<void> _loadVipReward(String token, int generation,
+      {required bool claim}) async {
+    try {
+      final handler = RequestHandlers.zaiManHuaTaskRequestHandler;
+      final response = await handler.getTasks(token);
+      if (generation != _accountGeneration) return;
+      if (response.statusCode != 200 || response.data['errno'] != 0) {
+        _vipRewardStatus = ZaiManHuaVipRewardStatus.queryFailed;
+        return;
+      }
+      final tasks = response.data['data']['task']['dayTask'] as List;
+      int? status;
+      for (final task in tasks) {
+        if (task['id'] == 16) {
+          status = task['status'] as int?;
+          break;
+        }
+      }
+      _vipRewardStatus = switch (status) {
+        2 => ZaiManHuaVipRewardStatus.claimable,
+        3 => ZaiManHuaVipRewardStatus.claimed,
+        1 || null => ZaiManHuaVipRewardStatus.unavailable,
+        _ => ZaiManHuaVipRewardStatus.queryFailed,
+      };
+      if (!claim || status != 2) return;
+      try {
+        final reward = await handler.claimVipReward(token);
+        if (generation != _accountGeneration) return;
+        _vipRewardStatus = reward.statusCode == 200 && reward.data['errno'] == 0
+            ? ZaiManHuaVipRewardStatus.claimed
+            : ZaiManHuaVipRewardStatus.claimFailed;
+      } catch (_) {
+        if (generation == _accountGeneration) {
+          _vipRewardStatus = ZaiManHuaVipRewardStatus.claimFailed;
+        }
+      }
+    } catch (_) {
+      // VIP task errors must not overwrite the ordinary check-in result.
+      if (generation == _accountGeneration) {
+        _vipRewardStatus = ZaiManHuaVipRewardStatus.queryFailed;
+      }
+    }
+  }
+
+  Future<bool> _signIn(String token) async {
+    try {
+      final response =
+          await RequestHandlers.zaiManHuaTaskRequestHandler.signIn(token);
+      final data = response.data;
+      // Another client may have signed in since the profile was fetched.
+      if (response.statusCode == 200 &&
+          (data['errno'] == 0 ||
+              (data['errno'] == 1 && data['errmsg'] == '今天已签到过~'))) {
+        return true;
+      }
+      logger.w('再漫画自动签到未成功，保留登录状态');
+    } catch (_) {
+      // A failed optional task must not turn a valid session into a logout.
+      // Do not log the request exception: it can contain the bearer token.
+      logger.w('再漫画自动签到请求失败，保留登录状态');
+    }
+    return false;
   }
 }
 

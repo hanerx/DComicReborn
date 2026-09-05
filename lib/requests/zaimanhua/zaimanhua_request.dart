@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dio/dio.dart';
+import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 
 import '../../database/database_instance.dart';
 
@@ -222,6 +223,52 @@ class ZaiManHuaAccountRequestHandler extends RequestHandler {
   }
 
   Future<Response> getUserData() async {
-    return dio.get('/u_center/personal/info/get', options: await setHeader());
+    final requestOptions = await setHeader();
+    // The daily sign-in status and login validity must come from the server.
+    requestOptions.extra =
+        const CacheOptions(store: null, policy: CachePolicy.noCache).toExtra();
+    return dio.get('/u_center/personal/info/get', options: requestOptions);
+  }
+}
+
+class ZaiManHuaTaskRequestHandler extends RequestHandler {
+  ZaiManHuaTaskRequestHandler()
+      : super('https://m.zaimanhua.com/lpi/v1',
+            policy: CachePolicy.noCache, useCookie: false) {
+    dio.options.connectTimeout = const Duration(seconds: 10);
+    dio.options.receiveTimeout = const Duration(seconds: 10);
+  }
+
+  Future<Response> signIn(String token) {
+    return dio.post('/task/sign_in',
+        data: {'_v': '15'},
+        options: _taskOptions(token,
+            contentType: Headers.formUrlEncodedContentType));
+  }
+
+  Future<Response> getTasks(String token) {
+    return dio.get('/task/list',
+        queryParameters: {'_v': '15'}, options: _taskOptions(token));
+  }
+
+  Future<Response> claimVipReward(String token) {
+    return dio.get('/task/get_reward',
+        queryParameters: {'_v': '15', 'task_id': 16},
+        options: _taskOptions(token));
+  }
+
+  Options _taskOptions(String token,
+      {String contentType = Headers.jsonContentType}) {
+    return Options(
+        contentType: contentType,
+        // get_reward is a mutating GET and must never use an HTTP cache.
+        extra: const CacheOptions(store: null, policy: CachePolicy.noCache)
+            .toExtra(),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Platform': 'h5',
+          'Origin': 'https://m.zaimanhua.com',
+          'Referer': 'https://m.zaimanhua.com/pages/signIn/index?from=app',
+        });
   }
 }

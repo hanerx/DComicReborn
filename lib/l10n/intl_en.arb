@@ -176,5 +176,30 @@
   "CopyMangaApiDomain": "Comic and image API",
   "CopyMangaChapterCommentDomain": "CopyManga comments API",
   "CopyMangaRoutingHint": "Select HotManga above to read its images with CopyManga chapter comments. Accounts are separate. Changes apply immediately; local favorites and reading history are retained.",
-  "HotMangaTitle": "HotManga"
+  "HotMangaTitle": "HotManga",
+  "ZaiManHuaAutoSignIn": "Automatic check-in",
+  "ZaiManHuaAutoSignInHint": "Daily check-in and VIP reward",
+  "ZaiManHuaTodaySignIn": "Today's check-in",
+  "ZaiManHuaRefreshSignInStatus": "Refresh check-in status",
+  "ZaiManHuaSaveSettingFailed": "Could not save automatic check-in settings. Please try again.",
+  "ZaiManHuaSignInStatus": "{status, select, checking{Checking…} notLoggedIn{Not logged in} signedIn{Checked in today} notSignedIn{Not checked in today} queryFailed{Could not check status. Refresh to retry.} signInFailed{Check-in did not succeed. Refresh to confirm.} other{Unknown check-in status}}",
+  "ZaiManHuaMembership": "Membership",
+  "ZaiManHuaMembershipStatus": "{status, select, checking{Checking…} notLoggedIn{Not logged in} true{VIP member} false{Not a VIP member} other{Unknown membership status}}",
+  "@ZaiManHuaMembershipStatus": {
+    "placeholders": {
+      "status": {}
+    }
+  },
+  "ZaiManHuaVipDailyReward": "Daily VIP reward",
+  "ZaiManHuaVipRewardStatus": "{status, select, checking{Checking…} notLoggedIn{Not logged in} notMember{VIP members only} unavailable{No reward available} claimable{Not claimed today} claimed{Claimed today} queryFailed{Could not check status. Refresh to retry.} claimFailed{Claim did not succeed. Refresh to confirm.} other{Unknown reward status}}",
+  "@ZaiManHuaVipRewardStatus": {
+    "placeholders": {
+      "status": {}
+    }
+  },
+  "@ZaiManHuaSignInStatus": {
+    "placeholders": {
+      "status": {}
+    }
+  }
 }

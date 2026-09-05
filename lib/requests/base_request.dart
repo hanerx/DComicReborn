@@ -104,6 +104,7 @@ class RequestHandlers{
   static ZaiManHuaRequestHandler zaiManHuaRequestHandler=ZaiManHuaRequestHandler();
   static ZaiManHuaMobileRequestHandler zaiManHuaMobileRequestHandler=ZaiManHuaMobileRequestHandler();
   static ZaiManHuaAccountRequestHandler zaiManHuaAccountRequestHandler=ZaiManHuaAccountRequestHandler();
+  static ZaiManHuaTaskRequestHandler zaiManHuaTaskRequestHandler=ZaiManHuaTaskRequestHandler();
 
   static GithubRequestHandler githubRequestHandler=GithubRequestHandler();
 }

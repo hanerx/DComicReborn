@@ -28,9 +28,10 @@ class S {
   static const AppLocalizationDelegate delegate = AppLocalizationDelegate();
 
   static Future<S> load(Locale locale) {
-    final name = (locale.countryCode?.isEmpty ?? false)
-        ? locale.languageCode
-        : locale.toString();
+    final name =
+        (locale.countryCode?.isEmpty ?? false)
+            ? locale.languageCode
+            : locale.toString();
     final localeName = Intl.canonicalizedLocale(name);
     return initializeMessages(localeName).then((_) {
       Intl.defaultLocale = localeName;
@@ -1124,6 +1125,133 @@ class S {
   /// `HotManga`
   String get HotMangaTitle {
     return Intl.message('HotManga', name: 'HotMangaTitle', desc: '', args: []);
+  }
+
+  /// `Automatic check-in`
+  String get ZaiManHuaAutoSignIn {
+    return Intl.message(
+      'Automatic check-in',
+      name: 'ZaiManHuaAutoSignIn',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Daily check-in and VIP reward`
+  String get ZaiManHuaAutoSignInHint {
+    return Intl.message(
+      'Daily check-in and VIP reward',
+      name: 'ZaiManHuaAutoSignInHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Today's check-in`
+  String get ZaiManHuaTodaySignIn {
+    return Intl.message(
+      'Today\'s check-in',
+      name: 'ZaiManHuaTodaySignIn',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Refresh check-in status`
+  String get ZaiManHuaRefreshSignInStatus {
+    return Intl.message(
+      'Refresh check-in status',
+      name: 'ZaiManHuaRefreshSignInStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not save automatic check-in settings. Please try again.`
+  String get ZaiManHuaSaveSettingFailed {
+    return Intl.message(
+      'Could not save automatic check-in settings. Please try again.',
+      name: 'ZaiManHuaSaveSettingFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{status, select, checking{Checking…} notLoggedIn{Not logged in} signedIn{Checked in today} notSignedIn{Not checked in today} queryFailed{Could not check status. Refresh to retry.} signInFailed{Check-in did not succeed. Refresh to confirm.} other{Unknown check-in status}}`
+  String ZaiManHuaSignInStatus(Object status) {
+    return Intl.select(
+      status,
+      {
+        'checking': 'Checking…',
+        'notLoggedIn': 'Not logged in',
+        'signedIn': 'Checked in today',
+        'notSignedIn': 'Not checked in today',
+        'queryFailed': 'Could not check status. Refresh to retry.',
+        'signInFailed': 'Check-in did not succeed. Refresh to confirm.',
+        'other': 'Unknown check-in status',
+      },
+      name: 'ZaiManHuaSignInStatus',
+      desc: '',
+      args: [status],
+    );
+  }
+
+  /// `Membership`
+  String get ZaiManHuaMembership {
+    return Intl.message(
+      'Membership',
+      name: 'ZaiManHuaMembership',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{status, select, checking{Checking…} notLoggedIn{Not logged in} true{VIP member} false{Not a VIP member} other{Unknown membership status}}`
+  String ZaiManHuaMembershipStatus(Object status) {
+    return Intl.select(
+      status,
+      {
+        'checking': 'Checking…',
+        'notLoggedIn': 'Not logged in',
+        'true': 'VIP member',
+        'false': 'Not a VIP member',
+        'other': 'Unknown membership status',
+      },
+      name: 'ZaiManHuaMembershipStatus',
+      desc: '',
+      args: [status],
+    );
+  }
+
+  /// `Daily VIP reward`
+  String get ZaiManHuaVipDailyReward {
+    return Intl.message(
+      'Daily VIP reward',
+      name: 'ZaiManHuaVipDailyReward',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{status, select, checking{Checking…} notLoggedIn{Not logged in} notMember{VIP members only} unavailable{No reward available} claimable{Not claimed today} claimed{Claimed today} queryFailed{Could not check status. Refresh to retry.} claimFailed{Claim did not succeed. Refresh to confirm.} other{Unknown reward status}}`
+  String ZaiManHuaVipRewardStatus(Object status) {
+    return Intl.select(
+      status,
+      {
+        'checking': 'Checking…',
+        'notLoggedIn': 'Not logged in',
+        'notMember': 'VIP members only',
+        'unavailable': 'No reward available',
+        'claimable': 'Not claimed today',
+        'claimed': 'Claimed today',
+        'queryFailed': 'Could not check status. Refresh to retry.',
+        'claimFailed': 'Claim did not succeed. Refresh to confirm.',
+        'other': 'Unknown reward status',
+      },
+      name: 'ZaiManHuaVipRewardStatus',
+      desc: '',
+      args: [status],
+    );
   }
 }
 

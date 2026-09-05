@@ -22,55 +22,72 @@ class _SourceManagePageState extends State<SourceManagePage> {
           elevation: 0,
           title: Text(S.of(context).SourceSettings),
         ),
-        body: Container(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          child: EasyRefresh(
-            onRefresh: () {
-              Provider.of<ComicSourceProvider>(context, listen: false)
-                  .callNotify();
-            },
-            child: ReorderableListView.builder(
-              itemCount: Provider.of<ComicSourceProvider>(context)
-                  .orderedSources
-                  .length,
-              itemBuilder: (context, index) {
-                var sourceModel = Provider.of<ComicSourceProvider>(context)
-                    .orderedSources[index];
-                return Card(
-                    key: ValueKey(sourceModel),
-                    elevation: 0,
-                    margin: const EdgeInsets.all(10),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          title: Text(
-                            sourceModel.type.sourceName,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          leading: SizedBox(
-                            height: 50,
-                            width: 50,
-                            child: ClipRRect(
-                                borderRadius: BorderRadius.circular(5),
-                                child: const FlutterLogo()
+        body: ListTileTheme.merge(
+            dense: true,
+            minTileHeight: 48,
+            minVerticalPadding: 6,
+            minLeadingWidth: 24,
+            horizontalTitleGap: 12,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+            titleTextStyle: Theme.of(context).textTheme.bodyMedium,
+            subtitleTextStyle: Theme.of(context).textTheme.bodySmall,
+            child: Container(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: EasyRefresh(
+                onRefresh: () {
+                  Provider.of<ComicSourceProvider>(context, listen: false)
+                      .callNotify();
+                },
+                child: ReorderableListView.builder(
+                  itemCount: Provider.of<ComicSourceProvider>(context)
+                      .orderedSources
+                      .length,
+                  itemBuilder: (context, index) {
+                    var sourceModel = Provider.of<ComicSourceProvider>(context)
+                        .orderedSources[index];
+                    return Card(
+                        key: ValueKey(sourceModel),
+                        elevation: 0,
+                        margin: const EdgeInsets.all(10),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              title: Text(
+                                sourceModel.type.sourceName,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              leading: SizedBox(
+                                height: 50,
+                                width: 50,
+                                child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(5),
+                                    child: Image.asset(
+                                      'assets/sources/${sourceModel.type.sourceId}.png',
+                                      fit: BoxFit.contain,
+                                      excludeFromSemantics: true,
+                                    )),
+                              ),
+                              subtitle: Text(S.of(context).SourceProviderDesc(
+                                  sourceModel.type.sourceId)),
+                              trailing: const IconButton(
+                                onPressed: null,
+                                icon: Icon(Icons.unfold_more),
+                              ),
                             ),
-                          ),
-                          subtitle: Text(S.of(context).SourceProviderDesc(sourceModel.type.sourceId)),
-                          trailing: const IconButton(
-                            onPressed: null,
-                            icon: Icon(Icons.unfold_more),
-                          ),
-                        ),
-                        const Divider(height: 1,),
-                        sourceModel.getSourceSettingWidget(context)
-                      ],
-                    ));
-              },
-              onReorder: (int oldIndex, int newIndex) {
-                Provider.of<ComicSourceProvider>(context, listen: false).swapOrder(oldIndex, newIndex);
-              },
-            ),
-          ),
-        ));
+                            const Divider(
+                              height: 1,
+                            ),
+                            sourceModel.getSourceSettingWidget(context)
+                          ],
+                        ));
+                  },
+                  onReorder: (int oldIndex, int newIndex) {
+                    Provider.of<ComicSourceProvider>(context, listen: false)
+                        .swapOrder(oldIndex, newIndex);
+                  },
+                ),
+              ),
+            )));
   }
 }

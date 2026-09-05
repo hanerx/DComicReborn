@@ -150,6 +150,31 @@
   },
   "SourceProviderSettingEmpty": "该漫画源暂无更多设置选项",
   "ZaiManHuaTitle": "再漫画",
+  "ZaiManHuaAutoSignIn": "自动签到",
+  "ZaiManHuaAutoSignInHint": "每日签到及 VIP 福利",
+  "ZaiManHuaTodaySignIn": "今日签到",
+  "ZaiManHuaRefreshSignInStatus": "刷新签到状态",
+  "ZaiManHuaSaveSettingFailed": "保存自动签到设置失败，请重试",
+  "ZaiManHuaSignInStatus": "{status, select, checking{正在查询…} notLoggedIn{未登录} signedIn{今日已签到} notSignedIn{今日未签到} queryFailed{查询失败，请刷新重试} signInFailed{签到未成功，请刷新确认} other{签到状态未知}}",
+  "@ZaiManHuaSignInStatus": {
+    "placeholders": {
+      "status": {}
+    }
+  },
+  "ZaiManHuaMembership": "会员状态",
+  "ZaiManHuaMembershipStatus": "{status, select, checking{正在查询…} notLoggedIn{未登录} true{VIP 会员} false{非 VIP 会员} other{会员状态未知}}",
+  "@ZaiManHuaMembershipStatus": {
+    "placeholders": {
+      "status": {}
+    }
+  },
+  "ZaiManHuaVipDailyReward": "VIP 每日福利",
+  "ZaiManHuaVipRewardStatus": "{status, select, checking{正在查询…} notLoggedIn{未登录} notMember{仅限 VIP 会员} unavailable{暂无可领取福利} claimable{今日未领取} claimed{今日已领取} queryFailed{查询失败，请刷新重试} claimFailed{领取未成功，请刷新确认} other{福利状态未知}}",
+  "@ZaiManHuaVipRewardStatus": {
+    "placeholders": {
+      "status": {}
+    }
+  },
   "ZaiManHuaLoginPasswordHint": "你的拷贝漫画账号密码",
   "CheckUpdateUpToDate": "没有更新",
   "ReleaseInfoTitle": "版本点亮： {version}",
