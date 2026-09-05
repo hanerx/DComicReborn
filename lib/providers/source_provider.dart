@@ -10,7 +10,7 @@ import 'package:dcomic/providers/models/zaimanhua/zaimanhua_source_model.dart';
 
 class ComicSourceProvider extends BaseProvider {
   List<BaseComicSourceModel> sources = [
-    DMZJComicSourceModel(),
+    // DMZJComicSourceModel(),
     CopyMangaComicSourceModel(),
     ZaiManHuaSourceModel()
   ];
@@ -25,16 +25,16 @@ class ComicSourceProvider extends BaseProvider {
     _sortOrderEntity = await database.configDao
         .getOrCreateConfigByKey('sourceModelSortOrder', value: sortOrder);
     sortOrder = _sortOrderEntity?.get<Map>();
-    _activeHomeModelIndexEntity = await database.configDao
-        .getOrCreateConfigByKey('activeHomeModelIndex', value: 0);
-    activeHomeModelIndex = _activeHomeModelIndexEntity?.get<int>();
     int idx = 0;
     for (var sourceModel in sources) {
       logger.i('init source model: ${sourceModel.type}');
       sourceModel.initModel();
-      sortOrder[sourceModel.type.sourceId] = idx;
+      sortOrder.putIfAbsent(sourceModel.type.sourceId, () => idx);
       idx++;
     }
+    _activeHomeModelIndexEntity = await database.configDao
+        .getOrCreateConfigByKey('activeHomeModelIndex', value: 0);
+    activeHomeModelIndex = _activeHomeModelIndexEntity?.get<int>();
     isLoading = false;
     notifyListeners();
   }
@@ -56,9 +56,8 @@ class ComicSourceProvider extends BaseProvider {
         result.add(element);
       }
     }
-    result.sort((a, b) =>
-        sortOrder[a.type.sourceId] ??
-        0.compareTo(sortOrder[b.type.sourceId] ?? 0));
+    result.sort((a, b) => (sortOrder[a.type.sourceId] ?? 0)
+        .compareTo(sortOrder[b.type.sourceId] ?? 0));
     return result;
   }
 
@@ -69,9 +68,8 @@ class ComicSourceProvider extends BaseProvider {
         result.add(element);
       }
     }
-    result.sort((a, b) =>
-        sortOrder[a.type.sourceId] ??
-        0.compareTo(sortOrder[b.type.sourceId] ?? 0));
+    result.sort((a, b) => (sortOrder[a.type.sourceId] ?? 0)
+        .compareTo(sortOrder[b.type.sourceId] ?? 0));
     return result;
   }
 
@@ -80,9 +78,8 @@ class ComicSourceProvider extends BaseProvider {
     for (var element in sources) {
       result.add(element);
     }
-    result.sort((a, b) =>
-        sortOrder[a.type.sourceId] ??
-        0.compareTo(sortOrder[b.type.sourceId] ?? 0));
+    result.sort((a, b) => (sortOrder[a.type.sourceId] ?? 0)
+        .compareTo(sortOrder[b.type.sourceId] ?? 0));
     return result;
   }
 

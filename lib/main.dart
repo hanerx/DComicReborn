@@ -108,7 +108,7 @@ class MainFramework extends StatefulWidget {
 class _MainFrameworkState extends State<MainFramework> {
   @override
   Widget build(BuildContext context) {
-    if(Provider.of<ComicSourceProvider>(context).isLoading || Provider.of<VersionProvider>(context).isLoading) {
+    if (Provider.of<ComicSourceProvider>(context).isLoading) {
       return SplashPage();
     }
     if (Provider.of<VersionProvider>(context).needShowUpdateDialog && !Provider.of<VersionProvider>(context).isUpdateDialogShown) {

@@ -33,7 +33,6 @@ class VersionProvider extends BaseProvider {
   String _latestVersion = '';
   ConfigEntity? _lastTimeCheckVersion;
   bool _needShowUpdateDialog = false;
-  bool isLoading = true;
   bool isUpdateDialogShown = false;
 
   @override
@@ -56,7 +55,6 @@ class VersionProvider extends BaseProvider {
         }
       }
     }
-    isLoading = false;
     notifyListeners();
   }
 
