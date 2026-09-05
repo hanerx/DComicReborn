@@ -176,9 +176,9 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
                                           gapPadding: 1),
                                       labelText: S.of(context).CopyMangaToken,
                                       prefixIcon:
-                                      const Icon(Icons.token_outlined),
+                                          const Icon(Icons.token_outlined),
                                       hintText:
-                                      S.of(context).CopyMangaTokenHint),
+                                          S.of(context).CopyMangaTokenHint),
                                 ),
                               )
                             ],
@@ -308,23 +308,13 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
   Future<List<GridItemEntity>> getSubscribeComics({int page = 0}) async {
     List<GridItemEntity> data = [];
     try {
-      var unReadResponse = await RequestHandlers.zaiManHuaMobileRequestHandler
-          .getSubscribe(page: page, status: 1);
-      var readResponse = await RequestHandlers.zaiManHuaMobileRequestHandler
-          .getSubscribe(page: page, status: 2);
-      var unReadStatus = (unReadResponse.statusCode == 200 || unReadResponse.statusCode == 304) &&
-          unReadResponse.data['errno'] == 0;
-      var readStatus =  (readResponse.statusCode == 200 || readResponse.statusCode == 304) &&
-          readResponse.data['errno'] == 0;
-      var subList = [];
-      if(unReadStatus){
-        subList.addAll(unReadResponse.data['data']['subList']);
+      var response = await RequestHandlers.zaiManHuaMobileRequestHandler
+          .getSubscribe(page: page);
+      if ((response.statusCode != 200 && response.statusCode != 304) ||
+          response.data['errno'] != 0) {
+        return data;
       }
-      if(readStatus){
-        subList.addAll(readResponse.data['data']['subList']);
-      }
-      // 再漫画全部这个选项炸了，所以只能自己拼接一个了
-      subList.sort((a, b) => b['last_updatetime'].compareTo(a['last_updatetime']));
+      var subList = response.data['data']['subList'];
       if (subList.isNotEmpty) {
         for (var rawData in subList) {
           data.add(GridItemEntityWithStatus(
@@ -380,7 +370,7 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
           await initAccount();
           return true;
         } else {
-          throw response.data['msg'];
+          throw response.data['errmsg'];
         }
       }
     } catch (e, s) {
@@ -487,10 +477,11 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
             await RequestHandlers.zaiManHuaAccountRequestHandler.getUserData();
         if ((response.statusCode == 200 || response.statusCode == 304)) {
           if (response.data['errno'] == 0) {
-            _uid = response.data['data']['userInfo']['uid'].toString();
-            _username = response.data['data']['userInfo']['bind_phone'].toString();
-            _avatar = ImageEntity(ImageType.network, response.data['data']['userInfo']['photo']);
-            _nickname = response.data['data']['userInfo']['nickname'];
+            var personalInfo = response.data['data']['personalInfo'];
+            _uid = personalInfo['uid'].toString();
+            _username = _uid;
+            _avatar = ImageEntity(ImageType.network, personalInfo['photo']);
+            _nickname = personalInfo['nickname'];
           } else {
             _isLogin = false;
           }
@@ -520,7 +511,9 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
         .getMainPageRecommend();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
-        for (var rawData in jsonDecode(response.data)) {
+        final recommendations =
+            response.data is String ? jsonDecode(response.data) : response.data;
+        for (var rawData in recommendations) {
           if (blackList.contains(rawData['category_id'])) {
             continue;
           }
@@ -563,7 +556,12 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
         .getMainPageRecommend();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
-        var rawData = jsonDecode(response.data)[0];
+        final recommendations =
+            response.data is String ? jsonDecode(response.data) : response.data;
+        if (recommendations.isEmpty) {
+          return data;
+        }
+        var rawData = recommendations[0];
         for (var rawItem in rawData['data']) {
           data.add(CarouselEntity(
               ImageEntity(ImageType.network, rawItem['cover'],
@@ -606,6 +604,7 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
                 ?.push(MaterialPageRoute(
                     builder: (context) => ComicCategoryDetailPage(
                           categoryId: rawData['tagId'].toString(),
+                          categoryType: rawData['tagType'],
                           sourceModel: parent,
                           categoryTitle: rawData['title'],
                         ),
@@ -706,6 +705,7 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
       var response = await RequestHandlers.zaiManHuaMobileRequestHandler
           .getCategoryDetail(int.parse(categoryId),
               page: page,
+              categoryType: categoryType,
               type:
                   TimeOrRankEnum.values.indexOf(categoryFilter['TimeOrRank']));
       if ((response.statusCode == 200 || response.statusCode == 304)) {

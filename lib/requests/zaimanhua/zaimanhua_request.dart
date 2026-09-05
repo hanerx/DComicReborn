@@ -6,6 +6,22 @@ import 'package:dio/dio.dart';
 
 import '../../database/database_instance.dart';
 
+void _configureAppClient(Dio dio) {
+  const version = '2.3.5';
+  const channel = '101_01_01_000';
+  // Without _v, reader endpoints report existing comics as deleted.
+  dio.options.queryParameters.addAll({
+    '_v': version,
+    '_c': channel,
+    'platform': 'android',
+  });
+  dio.options.headers.addAll({
+    'appversion': version,
+    'channel': channel,
+    'platform': 'android',
+  });
+}
+
 class ZaiManHuaRequestHandler extends RequestHandler {
   ZaiManHuaRequestHandler() : super("https://manhua.zaimanhua.com");
 
@@ -26,7 +42,10 @@ class ZaiManHuaRequestHandler extends RequestHandler {
 }
 
 class ZaiManHuaMobileRequestHandler extends RequestHandler {
-  ZaiManHuaMobileRequestHandler() : super('https://v4api.zaimanhua.com/app/v1');
+  ZaiManHuaMobileRequestHandler()
+      : super('https://v4api.zaimanhua.com/app/v1') {
+    _configureAppClient(dio);
+  }
 
   Future<Options> setHeader([Map<String, dynamic>? headers]) async {
     headers ??= {};
@@ -54,14 +73,27 @@ class ZaiManHuaMobileRequestHandler extends RequestHandler {
         options: await setHeader());
   }
 
-  Future<Response> search(String keyword, {int page = 0, int limit = 20}) {
-    return dio.get('/search/index?keyword=$keyword&page=$page&size=$limit');
+  Future<Response> search(String keyword,
+      {int page = 0, int limit = 20}) async {
+    return dio.get('/search/index',
+        queryParameters: {
+          'keyword': keyword,
+          'page': page + 1,
+          'size': limit,
+        },
+        options: await setHeader());
   }
 
   Future<Response> getComments(String comicId,
       {int page = 0, int type = 4, int sort = 1, int limit = 30}) async {
-    return dio.get(
-        '/comment/list?type=$type&objId=$comicId&sort=$sort&page=$page&size=$limit',
+    return dio.get('/comment/list',
+        queryParameters: {
+          'type': type,
+          'objId': comicId,
+          'sortBy': sort,
+          'page': page + 1,
+          'size': limit,
+        },
         options: await setHeader());
   }
 
@@ -73,24 +105,51 @@ class ZaiManHuaMobileRequestHandler extends RequestHandler {
     return dio.get('/comic/recommend/index');
   }
 
-  Future<Response> getCategory() {
-    return dio.get('/comic/filter/category');
+  Future<Response> getCategory() async {
+    return dio.get('/comic/filter/category',
+        queryParameters: {'source': 1}, options: await setHeader());
   }
 
   Future<Response> getCategoryDetail(int tagId,
-      {int page = 0, int type = 0, int limit = 20}) {
-    return dio.get(
-        '/comic/filter/list?status=0&theme=$tagId&zone=0&sortType=${2-type}&page=$page&size=$limit&cate=0&_v=2.0.7.2&_c=101_01_01_000');
+      {int page = 0,
+      int type = 0,
+      int limit = 20,
+      int categoryType = 0}) async {
+    final filterKey = switch (categoryType) {
+      4 => 'zone',
+      5 => 'status',
+      6 => 'cate',
+      _ => 'theme',
+    };
+    return dio.get('/comic/filter/list',
+        queryParameters: {
+          'status': 0,
+          'theme': 0,
+          'zone': 0,
+          'sortType': 2 - type,
+          'page': page + 1,
+          'size': limit,
+          'cate': 0,
+          filterKey: tagId,
+        },
+        options: await setHeader());
   }
 
   Future<Response> getRankList(
-      {int page = 0, int byTime = 3, int rankType = 0, int tagId = 0}) {
-    return dio.get(
-        '/comic/rank/list?tag_id=$tagId&rank_type=$rankType&by_time=$byTime&page=${page + 1}');
+      {int page = 0, int byTime = 0, int rankType = 0, int tagId = 0}) async {
+    return dio.get('/comic/rank/list',
+        queryParameters: {
+          'tag_id': tagId,
+          'rank_type': rankType,
+          'by_time': byTime,
+          'page': page + 1,
+        },
+        options: await setHeader());
   }
 
-  Future<Response> getLatestList({int page = 0, int type = 0}) {
-    return dio.get('/comic/update/list/$type/${page + 1}');
+  Future<Response> getLatestList({int page = 0, int type = 0}) async {
+    return dio.get('/comic/update/list/$type/${page + 1}',
+        options: await setHeader());
   }
 
   Future<Response> getSubscribe(
@@ -118,17 +177,24 @@ class ZaiManHuaMobileRequestHandler extends RequestHandler {
         options: await setHeader());
   }
 
-  Future<Response> getViewpoint(String comicId, String chapterId, {int type = 0, int page=0}) async {
-    if(page > 0){
-      return dio.get('/viewpoint/list?type=$type&comicId=$comicId&chapterId=$chapterId&page=$page', options: await setHeader());
+  Future<Response> getViewpoint(String comicId, String chapterId,
+      {int type = 0, int page = 0}) async {
+    if (page > 0) {
+      return dio.get(
+          '/viewpoint/list?type=$type&comicId=$comicId&chapterId=$chapterId&page=$page',
+          options: await setHeader());
     }
-    return dio.get('/viewpoint/list?type=$type&comicId=$comicId&chapterId=$chapterId', options: await setHeader());
+    return dio.get(
+        '/viewpoint/list?type=$type&comicId=$comicId&chapterId=$chapterId',
+        options: await setHeader());
   }
 }
 
 class ZaiManHuaAccountRequestHandler extends RequestHandler {
   ZaiManHuaAccountRequestHandler()
-      : super('https://account-api.zaimanhua.com/v1');
+      : super('https://account-api.zaimanhua.com/v1') {
+    _configureAppClient(dio);
+  }
 
   Future<Options> setHeader([Map<String, dynamic>? headers]) async {
     headers ??= {};
@@ -137,9 +203,9 @@ class ZaiManHuaAccountRequestHandler extends RequestHandler {
         .getConfigByKeyAndModel('isLogin', 'zaimanhua');
     if (isLoginEntity != null && isLoginEntity.get<bool>()) {
       String token = (await (await DatabaseInstance.instance)
-          .modelConfigDao
-          .getConfigByKeyAndModel('token', 'zaimanhua'))
-          ?.value ??
+                  .modelConfigDao
+                  .getConfigByKeyAndModel('token', 'zaimanhua'))
+              ?.value ??
           '';
       headers['Authorization'] = 'Bearer $token';
     }
@@ -149,13 +215,13 @@ class ZaiManHuaAccountRequestHandler extends RequestHandler {
   Future<Response> login(String username, String password) {
     var pwd = md5.convert(utf8.encode(password)).toString().toLowerCase();
     Map<String, dynamic> data = {
-      "username": Uri.encodeComponent(username),
+      "username": username,
       "passwd": pwd,
     };
     return dio.post('/login/passwd', data: data);
   }
-  
+
   Future<Response> getUserData() async {
-    return dio.get('/userInfo/get?_v=2.0.7.2&_c=101_01_01_000', options: await setHeader());
+    return dio.get('/u_center/personal/info/get', options: await setHeader());
   }
 }
