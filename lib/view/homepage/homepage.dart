@@ -21,8 +21,13 @@ class _HomePageState extends State<HomePage> {
       create: (_) => ComicHomepageController(),
       builder: (context, child) => EasyRefresh(
           onRefresh: () async {
-            await Provider.of<ComicHomepageController>(context, listen: false)
-                .refresh(context);
+            try {
+              await Provider.of<ComicHomepageController>(context, listen: false)
+                  .refresh(context);
+              return IndicatorResult.success;
+            } catch (_) {
+              return IndicatorResult.fail;
+            }
           },
           refreshOnStart: true,
           child: Container(
@@ -64,7 +69,11 @@ class _HomePageState extends State<HomePage> {
         }
         var entity = Provider.of<ComicHomepageController>(context)
             .homepageCarousels[index];
-        return CarouselItem(title:entity.title,cover:entity.cover,onTap: entity.onTap,);
+        return CarouselItem(
+          title: entity.title,
+          cover: entity.cover,
+          onTap: entity.onTap,
+        );
       },
     );
   }

@@ -28,10 +28,9 @@ class S {
   static const AppLocalizationDelegate delegate = AppLocalizationDelegate();
 
   static Future<S> load(Locale locale) {
-    final name =
-        (locale.countryCode?.isEmpty ?? false)
-            ? locale.languageCode
-            : locale.toString();
+    final name = (locale.countryCode?.isEmpty ?? false)
+        ? locale.languageCode
+        : locale.toString();
     final localeName = Intl.canonicalizedLocale(name);
     return initializeMessages(localeName).then((_) {
       Intl.defaultLocale = localeName;
@@ -744,10 +743,10 @@ class S {
     );
   }
 
-  /// `Your CopyManga Password!`
+  /// `Password for the selected API site's account`
   String get CopyMangaLoginPasswordHint {
     return Intl.message(
-      'Your CopyManga Password!',
+      'Password for the selected API site\'s account',
       name: 'CopyMangaLoginPasswordHint',
       desc: '',
       args: [],
@@ -1092,14 +1091,39 @@ class S {
     );
   }
 
-  /// `Use Dynamic Base URL (Get API Base URL from Remote)`
-  String get CopyMangaUseDynamicBaseUrl {
+  /// `Comic and image API`
+  String get CopyMangaApiDomain {
     return Intl.message(
-      'Use Dynamic Base URL (Get API Base URL from Remote)',
-      name: 'CopyMangaUseDynamicBaseUrl',
+      'Comic and image API',
+      name: 'CopyMangaApiDomain',
       desc: '',
       args: [],
     );
+  }
+
+  /// `CopyManga comments API`
+  String get CopyMangaChapterCommentDomain {
+    return Intl.message(
+      'CopyManga comments API',
+      name: 'CopyMangaChapterCommentDomain',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select HotManga above to read its images with CopyManga chapter comments. Accounts are separate. Changes apply immediately; local favorites and reading history are retained.`
+  String get CopyMangaRoutingHint {
+    return Intl.message(
+      'Select HotManga above to read its images with CopyManga chapter comments. Accounts are separate. Changes apply immediately; local favorites and reading history are retained.',
+      name: 'CopyMangaRoutingHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `HotManga`
+  String get HotMangaTitle {
+    return Intl.message('HotManga', name: 'HotMangaTitle', desc: '', args: []);
   }
 }
 

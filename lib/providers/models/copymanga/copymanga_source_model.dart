@@ -6,17 +6,20 @@ import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/page_controllers/comic_favorite_page_controller.dart';
 import 'package:dcomic/requests/base_request.dart';
+import 'package:dcomic/requests/copymanga/copymanga_request.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
-import 'package:dio/src/response.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:provider/provider.dart';
 
 class CopyMangaComicSourceModel extends BaseComicSourceModel {
   final CopyMangaAccountModel _accountModel = CopyMangaAccountModel();
-  bool _useDynamicBaseUrl = true;
+  CopyMangaApiDomain _apiDomain = CopyMangaApiDomain.defaultDomain;
+  CopyMangaApiDomain _chapterCommentDomain = CopyMangaApiDomain.defaultDomain;
+  bool _changingDomain = false;
 
   @override
   ComicSourceEntity get type => ComicSourceEntity("拷贝漫画", "copymanga",
@@ -34,13 +37,27 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
         var groups = response.data['results']['groups'];
         var groupsRawData = {};
         for (var item in groups.values) {
-          var chapterResponse = await RequestHandlers.copyMangaRequestHandler
-              .getChapters(comicId, item['path_word'], limit: item['count']);
-          if ((chapterResponse.statusCode == 200 ||
-                  chapterResponse.statusCode == 304) &&
-              chapterResponse.data['code'] == 200) {
-            groupsRawData[item] = chapterResponse.data['results']['list'];
+          final chapters = <dynamic>[];
+          var total = item['count'] as int;
+          while (chapters.length < total) {
+            final chapterResponse = await RequestHandlers
+                .copyMangaRequestHandler
+                .getChapters(comicId, item['path_word'], page: chapters.length);
+            if ((chapterResponse.statusCode != 200 &&
+                    chapterResponse.statusCode != 304) ||
+                chapterResponse.data['code'] != 200) {
+              throw StateError(
+                  'Failed to load chapter group ${item['path_word']}');
+            }
+            final result = chapterResponse.data['results'];
+            final batch = result['list'] as List;
+            total = (result['total'] as int?) ?? total;
+            if (batch.isEmpty && chapters.length < total) {
+              throw StateError('Incomplete chapter group ${item['path_word']}');
+            }
+            chapters.addAll(batch);
           }
+          groupsRawData[item] = chapters;
         }
         return CopyMangaComicDetailModel(data, this, groupsRawData);
       }
@@ -121,11 +138,15 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
   @override
   Future<void> initModel() async {
     _accountModel.parent ??= this;
-    var databaseInstance = await DatabaseInstance.instance;
-    var databaseUseDynamicBaseUrl = (await databaseInstance.modelConfigDao
-        .getOrCreateConfigByKey('useDynamicBaseUrl', type.sourceId, value: true));
-    _useDynamicBaseUrl = databaseUseDynamicBaseUrl.get<bool>();
-    return super.initModel();
+    _apiDomain = await RequestHandlers.copyMangaRequestHandler.apiDomain;
+    final dao = (await DatabaseInstance.instance).modelConfigDao;
+    final config = await dao.getConfigByKeyAndModel(
+        'chapterCommentApiDomain', type.sourceId);
+    final domain = CopyMangaApiDomain.fromHost(config?.get<String>());
+    _chapterCommentDomain =
+        domain.isHotManga ? CopyMangaApiDomain.defaultDomain : domain;
+    await super.initModel();
+    notifyListeners();
   }
 
   @override
@@ -135,29 +156,75 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
   BaseComicHomepageModel? get homepage => CopyMangaComicHomepageModel(this);
 
   @override
-  Widget getSourceSettingWidget(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.http),
-      title: Text(S.of(context).CopyMangaUseDynamicBaseUrl),
-      dense: true,
-      trailing: Switch(value: _useDynamicBaseUrl, onChanged: (value) async{
-        _useDynamicBaseUrl = value;
-        var databaseInstance = await DatabaseInstance.instance;
-        var databaseUseDynamicBaseUrl = (await databaseInstance.modelConfigDao
-            .getOrCreateConfigByKey('useDynamicBaseUrl', type.sourceId, value: true));
-        databaseUseDynamicBaseUrl.set(_useDynamicBaseUrl);
-        await databaseInstance.modelConfigDao.updateConfig(databaseUseDynamicBaseUrl);
-        notifyListeners();
-      }),
-      onTap: () async{
-        _useDynamicBaseUrl = !_useDynamicBaseUrl;
-        var databaseInstance = await DatabaseInstance.instance;
-        var databaseUseDynamicBaseUrl = (await databaseInstance.modelConfigDao
-            .getOrCreateConfigByKey('useDynamicBaseUrl', type.sourceId, value: true));
-        databaseUseDynamicBaseUrl.set(_useDynamicBaseUrl);
-        await databaseInstance.modelConfigDao.updateConfig(databaseUseDynamicBaseUrl);
-        notifyListeners();
-      },
+  Widget getSourceSettingWidget(BuildContext context) => ListenableBuilder(
+      listenable: this, builder: (context, _) => _buildSourceSettings(context));
+
+  Widget _buildSourceSettings(BuildContext context) {
+    final strings = S.of(context);
+    Widget selector(String label, CopyMangaApiDomain value,
+        Iterable<CopyMangaApiDomain> domains, bool comments) {
+      return ListTile(
+        leading: Icon(comments ? Icons.comment_outlined : Icons.http),
+        title: Text(label),
+        subtitle: DropdownButton<CopyMangaApiDomain>(
+          value: value,
+          isExpanded: true,
+          items: domains
+              .map((domain) => DropdownMenuItem(
+                    value: domain,
+                    child: Text(
+                        '${domain.isHotManga ? strings.HotMangaTitle : strings.CopyMangaTitle} · ${domain.host}'),
+                  ))
+              .toList(),
+          onChanged: _changingDomain
+              ? null
+              : (domain) async {
+                  if (domain == null || domain == value) return;
+                  _changingDomain = true;
+                  notifyListeners();
+                  try {
+                    final dao =
+                        (await DatabaseInstance.instance).modelConfigDao;
+                    final config = await dao.getOrCreateConfigByKey(
+                        comments ? 'chapterCommentApiDomain' : 'apiDomain',
+                        type.sourceId);
+                    config.set(domain.host);
+                    await dao.updateConfig(config);
+                    if (comments) {
+                      _chapterCommentDomain = domain;
+                    } else {
+                      _apiDomain = domain;
+                      await _accountModel.initAccount();
+                    }
+                  } catch (e, s) {
+                    logger.e('$e', error: e, stackTrace: s);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(SnackBar(content: Text('$e')));
+                    }
+                  } finally {
+                    _changingDomain = false;
+                    notifyListeners();
+                  }
+                },
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        selector(strings.CopyMangaApiDomain, _apiDomain,
+            CopyMangaApiDomain.values, false),
+        selector(
+            strings.CopyMangaChapterCommentDomain,
+            _chapterCommentDomain,
+            CopyMangaApiDomain.values.where((domain) => !domain.isHotManga),
+            true),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Text(strings.CopyMangaRoutingHint),
+        ),
+      ],
     );
   }
 }
@@ -332,31 +399,27 @@ class CopyMangaComicChapterDetailModel extends BaseComicChapterDetailModel {
   }
 
   @override
-  List<ImageEntity> get pages{
-    List<ImageEntity> result = [];
-    var words = rawData['words'];
-    var contents = rawData['contents'];
-    if (words == null) {
-      for (var e in contents) {
-        result.add(ImageEntity(ImageType.network, e['url']));
+  List<ImageEntity> get pages {
+    final contents = rawData['contents'] as List;
+    final words = rawData['words'] as List?;
+    final indices = List<int>.generate(contents.length, (index) => index);
+    if (words != null && words.isNotEmpty) {
+      if (words.length != contents.length) {
+        throw const FormatException(
+            'Chapter page order does not match contents');
       }
-      return result;
+      indices.sort((a, b) {
+        final order = (words[a] as int).compareTo(words[b] as int);
+        return order == 0 ? a.compareTo(b) : order;
+      });
     }
-
-    List<int> wordsList = List<int>.from(words);
-    for (int i = 0; i < contents.length; i++) {
-      if (!wordsList.contains(i)) {
-        wordsList.add(i);
-      }
-    }
-    Map<int, String> hm = {};
-    for (int i = 0; i < contents.length; i++) {
-      hm[wordsList[i]] = contents[i]['url'];
-    }
-    for (int i = 0; i < contents.length; i++) {
-      result.add(ImageEntity(ImageType.network, hm[i] ?? ''));
-    }
-    return result;
+    return indices
+        .map((index) => ImageEntity(
+              ImageType.network,
+              contents[index]['url'] as String,
+              imageHeaders: CopyMangaRequestHandler.imageHeaders,
+            ))
+        .toList();
   }
 
   @override
@@ -402,7 +465,9 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                     children: [
                       Center(
                         child: Text(
-                          S.of(context).CopyMangaTitle,
+                          parent?._apiDomain.isHotManga == true
+                              ? S.of(context).HotMangaTitle
+                              : S.of(context).CopyMangaTitle,
                           style: Theme.of(context).textTheme.headlineMedium,
                         ),
                       ),
@@ -516,7 +581,7 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                 Expanded(
                     flex: 1,
                     child: ElevatedButton.icon(
-                      onPressed: () async{
+                      onPressed: () async {
                         try {
                           if (formKey.currentState!.validate()) {
                             if (await loginWithToken(tokenController.text)) {
@@ -524,9 +589,9 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                                 return;
                               }
                               Provider.of<NavigatorProvider>(context,
-                                  listen: false)
+                                      listen: false)
                                   .getNavigator(
-                                  context, NavigatorType.defaultNavigator)
+                                      context, NavigatorType.defaultNavigator)
                                   ?.pop();
                             }
                           }
@@ -537,21 +602,20 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                           }
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content:
-                            Text(S.of(context).CommonLoginLoginFailed(e)),
+                                Text(S.of(context).CommonLoginLoginFailed(e)),
                           ));
                         }
                       },
                       icon: const Icon(Icons.generating_tokens_outlined),
                       label: Text(S.of(context).TokenLogin),
                       style: ButtonStyle(
-                          backgroundColor:
-                          WidgetStateProperty.all(Colors.cyan),
+                          backgroundColor: WidgetStateProperty.all(Colors.cyan),
                           shape: WidgetStateProperty.all(
                               const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(3),
-                                    bottomLeft: Radius.circular(3),
-                                  ))),
+                            topLeft: Radius.circular(3),
+                            bottomLeft: Radius.circular(3),
+                          ))),
                           padding: WidgetStateProperty.all(
                               const EdgeInsets.only(
                                   top: 10, left: 10, bottom: 10))),
@@ -614,7 +678,8 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                     .refresh();
               }
             });
-          }, DateTime.parse(rawData['datetime_updated']), rawData['path_word'].toString()));
+          }, DateTime.parse(rawData['datetime_updated']),
+              rawData['path_word'].toString()));
         }
       }
     } catch (e, s) {
@@ -625,58 +690,60 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
 
   @override
   Future<bool> login(String username, String password) async {
-    {
-      var response = await RequestHandlers.copyMangaRequestHandler
-          .login(username, password);
-      if ((response.statusCode == 200 || response.statusCode == 304)) {
-        if (response.data['code'] == 200) {
-          var data = response.data['results'];
-          _isLogin = true;
-          var databaseInstance = await DatabaseInstance.instance;
-          var databaseIsLogin = (await databaseInstance.modelConfigDao
-              .getOrCreateConfigByKey('isLogin', parent!.type.sourceId));
-          databaseIsLogin.set(true);
-          await databaseInstance.modelConfigDao.updateConfig(databaseIsLogin);
-          var databaseUId = (await databaseInstance.modelConfigDao
-              .getOrCreateConfigByKey('token', parent!.type.sourceId));
-          databaseUId.set(data['token']);
-          await databaseInstance.modelConfigDao.updateConfig(databaseUId);
-          await initAccount();
-          notifyListeners();
-          return true;
-        } else if (response.data['code'] == 210) {
-          throw response.data['results'];
-        }
-      } else if (response.statusCode == 210) {
-        throw response.data['results'];
-      }
+    final handler = RequestHandlers.copyMangaRequestHandler;
+    final domain = await handler.apiDomain;
+    final response = await handler.login(username, password, domain: domain);
+    if ((response.statusCode == 200 || response.statusCode == 304) &&
+        response.data['code'] == 200) {
+      return _saveLogin(domain, response.data['results']['token'] as String);
     }
-    return false;
+    throw StateError('${response.data['message'] ?? response.data['results']}');
+  }
+
+  Future<bool> _saveLogin(CopyMangaApiDomain domain, String token) async {
+    if (token.trim().isEmpty) return false;
+    final dao = (await DatabaseInstance.instance).modelConfigDao;
+    final savedToken =
+        await dao.getOrCreateConfigByKey('token', domain.accountSourceId);
+    savedToken.set(token.trim());
+    await dao.updateConfig(savedToken);
+    final state =
+        await dao.getOrCreateConfigByKey('isLogin', domain.accountSourceId);
+    state.set(true);
+    await dao.updateConfig(state);
+    await initAccount();
+    return _isLogin;
   }
 
   @override
   Future<bool> loginWithToken(String token) async {
-    _isLogin = true;
-    var databaseInstance = await DatabaseInstance.instance;
-    var databaseIsLogin = (await databaseInstance.modelConfigDao
-        .getOrCreateConfigByKey('isLogin', parent!.type.sourceId));
-    databaseIsLogin.set(true);
-    await databaseInstance.modelConfigDao.updateConfig(databaseIsLogin);
-    var databaseUId = (await databaseInstance.modelConfigDao
-        .getOrCreateConfigByKey('token', parent!.type.sourceId));
-    databaseUId.set(token);
-    await databaseInstance.modelConfigDao.updateConfig(databaseUId);
-    await initAccount();
-    notifyListeners();
-    return true;
+    final domain = await RequestHandlers.copyMangaRequestHandler.apiDomain;
+    return _saveLogin(domain, token);
   }
 
   @override
   Future<bool> logout() async {
-    _isLogin = false;
-    await RequestHandlers.copyMangaRequestHandler.logout();
-    notifyListeners();
+    final handler = RequestHandlers.copyMangaRequestHandler;
+    final domain = await handler.apiDomain;
+    try {
+      await handler.logout(domain: domain);
+    } finally {
+      await _clearCredentials(domain);
+      await initAccount();
+    }
     return true;
+  }
+
+  Future<void> _clearCredentials(CopyMangaApiDomain domain) async {
+    final dao = (await DatabaseInstance.instance).modelConfigDao;
+    final state =
+        await dao.getOrCreateConfigByKey('isLogin', domain.accountSourceId);
+    state.set(false);
+    await dao.updateConfig(state);
+    final token =
+        await dao.getOrCreateConfigByKey('token', domain.accountSourceId);
+    token.set('');
+    await dao.updateConfig(token);
   }
 
   @override
@@ -716,33 +783,57 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
 
   @override
   Future<void> initAccount() async {
-    var databaseInstance = await DatabaseInstance.instance;
-    var databaseIsLogin = (await databaseInstance.modelConfigDao
-        .getOrCreateConfigByKey('isLogin', parent!.type.sourceId));
-    _isLogin = databaseIsLogin.get<bool>() ?? false;
-    if (_isLogin) {
-      try {
-        var response =
-            await RequestHandlers.copyMangaRequestHandler.getUserInfo();
-        if (response.statusCode == 200) {
-          var data = response.data['results'];
-          _uid = data['user_id'];
-          _nickname = data['nickname'];
-          _username = data['username'];
-          _avatar = ImageEntity(ImageType.network, data['avatar'],
-              imageHeaders: {"Referer": "https://www.mangacopy.com/"});
-          _token = (await databaseInstance.modelConfigDao
-              .getOrCreateConfigByKey('token', parent!.type.sourceId))
-              .get<String>();
-        }
-      } catch (e, s) {
-        logger.e('$e', error: e, stackTrace: s);
-        _isLogin = false;
+    final generation = ++_accountGeneration;
+    _isLoading = true;
+    _isLogin = false;
+    _uid = null;
+    _username = null;
+    _nickname = null;
+    _avatar = null;
+    _token = null;
+    notifyListeners();
+    CopyMangaApiDomain? domain;
+    try {
+      final handler = RequestHandlers.copyMangaRequestHandler;
+      domain = await handler.apiDomain;
+      final dao = (await DatabaseInstance.instance).modelConfigDao;
+      final state =
+          await dao.getConfigByKeyAndModel('isLogin', domain.accountSourceId);
+      if (state?.get<bool>() != true) return;
+      final token =
+          (await dao.getConfigByKeyAndModel('token', domain.accountSourceId))
+              ?.get<String>();
+      final response = await handler.getUserInfo(domain: domain);
+      if (generation != _accountGeneration) return;
+      if (response.statusCode == 200 && response.data['code'] == 200) {
+        final data = response.data['results'];
+        _uid = data['user_id'].toString();
+        _nickname = data['nickname'];
+        _username = data['username'];
+        _avatar = ImageEntity(ImageType.network, data['avatar'],
+            imageHeaders: CopyMangaRequestHandler.imageHeaders);
+        _token = token;
+        _isLogin = true;
+      } else if (response.data['code'] == 401) {
+        await _clearCredentials(domain);
+      }
+    } catch (e, s) {
+      if (generation == _accountGeneration &&
+          e is DioException &&
+          e.response?.statusCode == 401 &&
+          domain != null) {
+        await _clearCredentials(domain);
+      }
+      logger.e('$e', error: e, stackTrace: s);
+    } finally {
+      if (generation == _accountGeneration) {
+        _isLoading = false;
+        notifyListeners();
       }
     }
-    _isLoading = false;
-    notifyListeners();
   }
+
+  int _accountGeneration = 0;
 
   @override
   bool get isLoading => _isLoading;
@@ -867,26 +958,16 @@ class CopyMangaComicHomepageModel extends BaseComicHomepageModel {
             'hotComics', '热门漫画', FontAwesome5.fire, result, data);
         makeHomepageCardForComic(
             'newComics', '上新漫画', Icons.new_label, result, data);
-        List comicRawData = result['finishComics']['list'];
-        List<GridItemEntity> comicChildren = [];
-        for (var comicRawData in comicRawData) {
-          comicChildren.add(GridItemEntity(
-              comicRawData['name'],
-              comicRawData['theme'].map((e) => e['name']).toList().join('/'),
-              ImageEntity(ImageType.network, comicRawData['cover']), (context) {
-            Provider.of<NavigatorProvider>(context, listen: false)
-                .getNavigator(context, NavigatorType.defaultNavigator)
-                ?.push(MaterialPageRoute(
-                    builder: (context) => ComicDetailPage(
-                          title: comicRawData['name'],
-                          comicId: comicRawData['path_word'],
-                          comicSourceModel: parent,
-                        ),
-                    settings: const RouteSettings(name: 'ComicDetailPage')));
-          }));
-        }
-        data.add(HomepageCardEntity(
-            '完结漫画', Icons.check_box, (context) {}, comicChildren));
+        makeHomepageCardForComic(
+            'finishComics', '完结漫画', Icons.check_box, result, data);
+        makeHomepageCardForComic('rankWeeklyFreeComics', '免费周榜',
+            Icons.calendar_view_week_outlined, result, data);
+        makeHomepageCardForComic('rankWeeklyChargeComics', '付费周榜',
+            Icons.calendar_view_week_outlined, result, data);
+        makeHomepageCardForComic(
+            'updateWeeklyFreeComics', '免费更新', Icons.new_label, result, data);
+        makeHomepageCardForComic(
+            'updateWeeklyChargeComics', '付费更新', Icons.new_label, result, data);
       }
     } catch (e, s) {
       logger.e('$e', error: e, stackTrace: s);
@@ -897,18 +978,23 @@ class CopyMangaComicHomepageModel extends BaseComicHomepageModel {
 
   void makeHomepageCardForComic(String cardName, String cardTitle,
       IconData? icon, Map result, List<HomepageCardEntity> data) {
+    // Copy and HotManga expose different optional homepage sections.
+    if (result[cardName] == null) return;
     List comicRawData;
     if (result[cardName] is List) {
       comicRawData = result[cardName];
     } else {
       comicRawData = result[cardName]['list'];
     }
+    if (comicRawData.isEmpty) return;
     List<GridItemEntity> comicChildren = [];
     for (var item in comicRawData) {
-      var comicRawData = item['comic'];
+      final comicRawData = item['comic'] ?? item;
       comicChildren.add(GridItemEntity(
           comicRawData['name'],
-          comicRawData['theme'].map((e) => e['name']).toList().join('/'),
+          (comicRawData['theme'] as List? ?? const [])
+              .map((e) => e['name'])
+              .join('/'),
           ImageEntity(ImageType.network, comicRawData['cover']), (context) {
         Provider.of<NavigatorProvider>(context, listen: false)
             .getNavigator(context, NavigatorType.defaultNavigator)

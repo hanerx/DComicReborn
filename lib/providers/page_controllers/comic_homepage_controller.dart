@@ -4,14 +4,18 @@ import 'package:dcomic/providers/source_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class ComicHomepageController extends BaseProvider{
-  List<HomepageCardEntity> homepageCards=[];
-  List<CarouselEntity> homepageCarousels=[];
+class ComicHomepageController extends BaseProvider {
+  List<HomepageCardEntity> homepageCards = [];
+  List<CarouselEntity> homepageCarousels = [];
 
-  Future<void> refresh(BuildContext context)async{
-    var homepageModel=Provider.of<ComicSourceProvider>(context,listen: false).activeHomeModel.homepage!;
-    homepageCarousels=await homepageModel.getHomepageCarousel();
-    homepageCards=await homepageModel.getHomepageCard();
+  Future<void> refresh(BuildContext context) async {
+    var homepageModel = Provider.of<ComicSourceProvider>(context, listen: false)
+        .activeHomeModel
+        .homepage!;
+    final carousels = await homepageModel.getHomepageCarousel();
+    final cards = await homepageModel.getHomepageCard();
+    homepageCarousels = carousels;
+    homepageCards = cards;
     notifyListeners();
   }
 }

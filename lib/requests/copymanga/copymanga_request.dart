@@ -1,245 +1,307 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:date_format/date_format.dart' as date_format;
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dio/dio.dart';
+import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 
+// Protocol and routes verified against LittleSurvival/copymanga-copy20 v1.4.84.
+enum CopyMangaApiDomain {
+  international('api.mangacopy.com', false),
+  copy20('mapi.copy20.com', false),
+  copy2000('mapi.copy2000.site', false),
+  copy2026('api.2026copy.com', false),
+  copy3000('api.copy3000.com', false),
+  copy4000('api.copy4000.com', false),
+  hotSD('mapi.hotmangasd.com', true),
+  hot2025('api.manga2025.com', true),
+  hotSF('mapi.hotmangasf.com', true),
+  hotSG('mapi.hotmangasg.com', true),
+  hotLine5('mapi.elfgjfghkk.club', true),
+  hotLine6('mapi.fgjfghkk.club', true),
+  hotLine7('mapi.fgjfghkkcenter.club', true);
 
-class CopyMangaAPIRequestHandler extends RequestHandler {
-  CopyMangaAPIRequestHandler()
-      : super('https://api.copy-manga.com/', useCookie: false);
+  const CopyMangaApiDomain(this.host, this.isHotManga);
 
-  Future<Response> getNetworkStatus() async {
-    return dio.get('/api/v3/system/network2?platform=3',
-        options: Options(headers: {
-          'source': 'copyApp',
-          'webp': '1',
-          'dt': date_format.formatDate(DateTime.now(),
-              [date_format.yyyy, '.', date_format.mm, '.', date_format.dd]),
-          'platform': '3',
-          'referer': 'com.copymanga.app-2.3.0',
-          'version': '2.3.0',
-          'region': '1',
-          'umstring': 'b4c89ca4104ea9a97750314d791520ac'
-        }));
-  }
+  final String host;
+  final bool isHotManga;
+  static const defaultDomain = copy4000;
+
+  String get accountSourceId => isHotManga ? 'hotmanga' : 'copymanga';
+
+  static CopyMangaApiDomain fromHost(String? host) => values.firstWhere(
+        (domain) => domain.host == host,
+        orElse: () => defaultDomain,
+      );
 }
 
 class CopyMangaRequestHandler extends RequestHandler {
-  String dynamicBaseUrl = 'https://api.mangacopy.com/';
+  static const imageHeaders = {
+    'user-agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0',
+  };
 
   CopyMangaRequestHandler()
-      : super('https://api.mangacopy.com/', useCookie: false){
-    CopyMangaAPIRequestHandler().getNetworkStatus().then((response) async{
-      var databaseInstance = await DatabaseInstance.instance;
-      var databaseUseDynamicBaseUrl = (await databaseInstance.modelConfigDao
-          .getOrCreateConfigByKey('useDynamicBaseUrl', 'copymanga', value: true));
-      if(databaseUseDynamicBaseUrl.get<bool>()){
-        try {
-          if ((response.statusCode == 200 || response.statusCode == 304) &&
-              response.data['code'] == 200) {
-            dynamicBaseUrl = 'https://${response.data['results']['api'][0][0]}';
-            dio.options.baseUrl = dynamicBaseUrl;
-          }
-        } catch (e, s) {
-          logger.e('$e', error: e, stackTrace: s);
-        }
-      }
-    });
+      : super('https://api.copy4000.com/', useCookie: false);
+
+  Future<CopyMangaApiDomain> _domain(String key) async {
+    final dao = (await DatabaseInstance.instance).modelConfigDao;
+    final config = await dao.getConfigByKeyAndModel(key, 'copymanga');
+    return CopyMangaApiDomain.fromHost(config?.get<String>());
   }
 
-  Future<Options> setHeader({Map<String, dynamic>? headers, bool login=true}) async {
-    headers ??= {};
-    var databaseInstance = await DatabaseInstance.instance;
-    var isLoginEntity = await databaseInstance.modelConfigDao
-        .getConfigByKeyAndModel('isLogin', 'copymanga');
-    if (isLoginEntity != null && isLoginEntity.get<bool>() && login) {
-      String token = (await (await DatabaseInstance.instance)
-                  .modelConfigDao
-                  .getConfigByKeyAndModel('token', 'copymanga'))
-              ?.value ??
-          '';
-      headers['authorization'] = 'Token $token';
-    }else{
-      headers['authorization'] = 'Token';
+  Future<CopyMangaApiDomain> get apiDomain => _domain('apiDomain');
+
+  Future<String> get accountSourceId async => (await apiDomain).accountSourceId;
+
+  Future<CopyMangaApiDomain> get _commentDomain async {
+    final domain = await _domain('chapterCommentApiDomain');
+    return domain.isHotManga ? CopyMangaApiDomain.defaultDomain : domain;
+  }
+
+  Future<Options> _options(CopyMangaApiDomain domain,
+      {bool login = true}) async {
+    final headers = <String, dynamic>{
+      ...imageHeaders,
+      'accept': 'application/json',
+      'accept-language': 'en-US,en;q=0.9,zh-TW;q=0.8,zh;q=0.7',
+      'origin': domain.isHotManga
+          ? 'https://m.relamanhua.org'
+          : 'https://2025copy.com',
+      'version': domain.isHotManga ? '2025.11.21' : '2026.08.21',
+      if (!domain.isHotManga) 'region': '0',
+      'webp': domain.isHotManga ? '1' : '0',
+      'platform': '1',
+      'sec-fetch-dest': 'document',
+      'sec-fetch-mode': 'navigate',
+      'sec-fetch-site': 'same-origin',
+      'sec-fetch-user': '?1',
+      'upgrade-insecure-requests': '1',
+    };
+    if (login) {
+      final dao = (await DatabaseInstance.instance).modelConfigDao;
+      final state =
+          await dao.getConfigByKeyAndModel('isLogin', domain.accountSourceId);
+      if (state?.get<bool>() == true) {
+        final token =
+            (await dao.getConfigByKeyAndModel('token', domain.accountSourceId))
+                ?.get<String>();
+        if (token != null && token.isNotEmpty) {
+          headers['authorization'] = 'Token $token';
+        }
+      }
     }
-    headers['user-agent'] = 'COPY/2.3.6';
-    headers['source'] = 'copyApp';
-    headers['deviceinfo'] = 'SM-S9280-e3q';
-    headers['webp'] = '1';
-    headers['dt'] = date_format.formatDate(DateTime.now(),
-        [date_format.yyyy, '.', date_format.mm, '.', date_format.dd]);
-    headers['platform'] = '3';
-    headers['referer'] = 'com.copymanga.app-2.3.6';
-    headers['accept'] = 'application/json';
-    headers['version'] = '2.3.6';
-    headers['region'] = '1';
-    headers['device'] = 'V417IR';
-    headers['umstring'] = 'b4c89ca4104ea9a97750314d791520ac';
-    headers['host'] = Uri.parse(dynamicBaseUrl).host;
     return Options(headers: headers);
   }
 
-  Future<Response> getComicDetail(String comicId) async{
-    var response = await dio.get('/api/v3/comic2/$comicId?in_mainland=true&platform=3',
-        options: await setHeader());
-    if (response.statusCode == 210){
-      return await dio.get('/api/v3/comic2/$comicId?in_mainland=true&platform=3',
-          options: await setHeader(login: false));
+  Future<Response> _get(String path,
+      {Map<String, dynamic>? query,
+      CopyMangaApiDomain? domain,
+      bool retryAnonymous = false}) async {
+    // Capture the target once: changing settings must not mix hosts and tokens.
+    final target = domain ?? await apiDomain;
+    final url = 'https://${target.host}/api/v3/$path';
+    final response = await dio.get(url,
+        queryParameters: query, options: await _options(target));
+    if (retryAnonymous &&
+        (response.statusCode == 210 ||
+            (response.data is Map && response.data['code'] == 210))) {
+      return dio.get(url,
+          queryParameters: query,
+          options: await _options(target, login: false));
     }
     return response;
   }
 
-  Future<Response> getChapters(String comicId, String groupName,
-      {int limit = 100, int page = 0}) async {
-    return dio.get(
-        '/api/v3/comic/$comicId/group/$groupName/chapters?limit=$limit&offset=$page&in_mainland=true&platform=3',
-        options: await setHeader());
+  Future<Response> _post(String path,
+      {Object? data, CopyMangaApiDomain? domain, bool login = true}) async {
+    final target = domain ?? await apiDomain;
+    return dio.post('https://${target.host}/api/v3/$path',
+        data: data, options: await _options(target, login: login));
   }
+
+  Future<Response> getComicDetail(String comicId) =>
+      _get('comic2/${Uri.encodeComponent(comicId)}', retryAnonymous: true);
+
+  // The API's offset counts chapters, not pages; each response is capped at 100.
+  Future<Response> getChapters(String comicId, String groupName,
+          {int limit = 100, int page = 0}) =>
+      _get(
+          'comic/${Uri.encodeComponent(comicId)}/group/${Uri.encodeComponent(groupName)}/chapters',
+          query: {'limit': min(limit, 100), 'offset': page, '_update': true});
 
   Future<Response> getComic(String comicId, String chapterId) async {
-    var response = await dio.get(
-        '/api/v3/comic/$comicId/chapter2/$chapterId?in_mainland=true&platform=3',
-        options: await setHeader());
-    if (response.statusCode == 210){
-      return await dio.get(
-          '/api/v3/comic/$comicId/chapter2/$chapterId?in_mainland=true&platform=3',
-          options: await setHeader(login: false));
-    }
-    return response;
+    final domain = await apiDomain;
+    final chapterPath = domain.isHotManga ? 'chapter' : 'chapter2';
+    return _get(
+        'comic/${Uri.encodeComponent(comicId)}/$chapterPath/${Uri.encodeComponent(chapterId)}',
+        domain: domain,
+        retryAnonymous: true);
   }
 
-  Future<Response> search(String keyword,
-      {int page = 0, int limit = 18}) async {
-    return dio.get(
-        '/api/v3/search/comic?limit=$limit&offset=${page * limit}&q_type=&q=$keyword&platform=3',
-        options: await setHeader());
+  Future<Response> search(String keyword, {int page = 0, int limit = 18}) =>
+      _get('search/comic', query: {
+        'limit': limit,
+        'offset': page * limit,
+        'q_type': '',
+        'q': keyword,
+      });
+
+  Future<Response> login(String username, String password,
+      {CopyMangaApiDomain? domain}) async {
+    final target = domain ?? await apiDomain;
+    final salt = Random.secure().nextInt(9000) + 1000;
+    return _post('login',
+        domain: target,
+        login: false,
+        data: FormData.fromMap({
+          'username': username,
+          'password': base64Encode(utf8.encode('$password-$salt')),
+          'salt': salt,
+          'source': target.isHotManga ? 'Offical' : 'freeSite',
+          'version': target.isHotManga ? '2025.02.12' : '2025.05.09',
+          'platform': 1,
+        }));
   }
 
-  Future<Response> login(String username, String password) async {
-    int salt = Random().nextInt(9000) + 1000;
-    var data = FormData.fromMap({
-      'username': username,
-      'password': base64Encode(utf8.encode('$password-$salt')),
-      'salt': salt,
-      'source': 'freeSite',
-      'version': '2021.04.01',
-      'platform': 1
-    });
-    return dio.post('/api/v3/login', data: data, options: await setHeader());
-  }
+  Future<Response> logout({CopyMangaApiDomain? domain}) =>
+      _post('logout', domain: domain);
 
-  Future<Response> logout() async {
-    return dio.post('/api/v3/logout', options: await setHeader());
-  }
-
-  Future<Response> getSubscribe({int page = 0, int limit = 21}) async {
-    return dio.get(
-        '/api/v3/member/collect/comics?free_type=1&limit=$limit&offset=${page * limit}&_update=true&ordering=-datetime_updated',
-        options: await setHeader());
-  }
+  Future<Response> getSubscribe({int page = 0, int limit = 21}) =>
+      _get('member/collect/comics', query: {
+        'limit': limit,
+        'offset': page * limit,
+        'ordering': '-datetime_modifier',
+      });
 
   Future<Response> getCategoryDetailList(
-      {required String theme,
-      int page = 0,
-      int limit = 21,
-      String order = '-datetime_modifier'}) async {
-    return dio.get(
-        '/api/v3/comics?free_type=1&theme=$theme&limit=$limit&offset=${page * limit}&_update=true&ordering=$order',
-        options: await setHeader());
-  }
+          {required String theme,
+          int page = 0,
+          int limit = 21,
+          String order = '-datetime_modifier'}) =>
+      _get('comics', query: {
+        'free_type': 1,
+        'theme': theme,
+        'limit': limit,
+        'offset': page * limit,
+        '_update': true,
+        'ordering': order,
+      });
 
   Future<Response> getAuthorDetailList(
-      {required String author,
-      int page = 0,
-      int limit = 21,
-      String order = '-datetime_modifier'}) async {
-    return dio.get(
-        '/api/v3/comics?free_type=1&author=$author&limit=$limit&offset=${page * limit}&ordering=$order',
-        options: await setHeader());
-  }
+          {required String author,
+          int page = 0,
+          int limit = 21,
+          String order = '-datetime_modifier'}) =>
+      _get('comics', query: {
+        'free_type': 1,
+        'author': author,
+        'limit': limit,
+        'offset': page * limit,
+        'ordering': order,
+      });
 
   Future<Response> getRankList(
-      {String dateType = 'day', int limit = 21, int page = 0}) async{
-    return dio.get(
-        '/api/v3/ranks?type=1&date_type=$dateType&limit=$limit&offset=${limit * page}',
-        options: await setHeader());
-  }
+          {String dateType = 'day', int limit = 21, int page = 0}) =>
+      _get('ranks', query: {
+        'type': 1,
+        'date_type': dateType,
+        'limit': limit,
+        'offset': page * limit,
+      });
 
-  Future<Response> getLatestList({int limit = 21, int page = 0}) async{
-    return dio.get('/api/v3/update/newest?limit=$limit&offset=${limit * page}',
-        options: await setHeader());
-  }
+  Future<Response> getLatestList({int limit = 21, int page = 0}) =>
+      _get('update/newest', query: {'limit': limit, 'offset': page * limit});
 
-  Future<Response> getUserInfo() async {
-    return dio.get('/api/v3/member/info', options: await setHeader());
-  }
+  Future<Response> getUserInfo({CopyMangaApiDomain? domain}) =>
+      _get('member/info', domain: domain);
 
-  Future<Response> getIfSubscribe(String comicId) async {
-    return dio.get('/api/v3/comic2/query/$comicId?platform=1',
-        options: await setHeader());
-  }
+  Future<Response> getIfSubscribe(String comicId) =>
+      _get('comic2/query/${Uri.encodeComponent(comicId)}');
 
-  Future<Response> addSubscribe(String comicId, bool subscribe) async {
-    var data = FormData.fromMap(
-        {'comic_id': comicId, 'is_collect': subscribe ? 1 : 0});
-    return dio.post('/api/v3/member/collect/comic',
-        data: data, options: await setHeader());
-  }
+  Future<Response> addSubscribe(String comicId, bool subscribe) =>
+      _post('member/collect/comic',
+          data: FormData.fromMap({
+            'comic_id': comicId,
+            'is_collect': subscribe ? 1 : 0,
+          }));
 
-  Future<Response> getHomepage() async{
-    return dio.get('/api/v3/h5/homeIndex', options: await setHeader());
+  Future<Response> getHomepage() async {
+    final target = await apiDomain;
+    final requestOptions = await _options(target);
+    // Pull-to-refresh must reach the server even during its five-minute TTL.
+    // Do not turn a failed refresh into a successful stale-cache response.
+    requestOptions.extra =
+        const CacheOptions(store: null, policy: CachePolicy.refresh).toExtra();
+    final response = await dio.get('https://${target.host}/api/v3/h5/homeIndex',
+        options: requestOptions);
+    if (response.data is! Map || response.data['code'] != 200) {
+      throw StateError(response.data is Map
+          ? '${response.data['message'] ?? 'Failed to refresh homepage'}'
+          : 'Invalid homepage response');
+    }
+    return response;
   }
 
   Future<Response> getTagList(
-      {bool popular = true,
-      int page = 0,
-      int limit = 21,
-      String? categoryId,
-      String? authorId}) async{
-    return dio.get(
-        '/api/v3/comics?free_type=1&limit=$limit&offset=$page${categoryId == null ? '' : '&theme=$categoryId'}${authorId == null ? '' : '&author=$authorId'}&ordering=${popular ? '-popular' : '-datetime_updated'}&_update=true',
-        options: await setHeader());
-  }
+          {bool popular = true,
+          int page = 0,
+          int limit = 21,
+          String? categoryId,
+          String? authorId}) =>
+      _get('comics', query: {
+        'free_type': 1,
+        'limit': limit,
+        'offset': page * limit,
+        if (categoryId != null) 'theme': categoryId,
+        if (authorId != null) 'author': authorId,
+        'ordering': popular ? '-popular' : '-datetime_updated',
+        '_update': true,
+      });
 
-  Future<Response> getSubjectList({int page = 0, int limit = 20}) async{
-    return dio
-        .get('/api/v3/topics?type=1&limit=$limit&offset=$page&_update=true', options: await setHeader());
-  }
+  Future<Response> getSubjectList({int page = 0, int limit = 20}) =>
+      _get('topics', query: {
+        'type': 1,
+        'limit': limit,
+        'offset': page * limit,
+        '_update': true,
+      });
 
-  Future<Response> getSubjectDetail(String subjectId) async{
-    return dio.get('/api/v3/topic/$subjectId?limit=&offset=', options: await setHeader());
-  }
+  Future<Response> getSubjectDetail(String subjectId) =>
+      _get('topic/${Uri.encodeComponent(subjectId)}');
 
   Future<Response> getSubjectDetailContent(String subjectId,
-      {int page = 0, limit = 30}) async{
-    return dio.get(
-        '/api/v3/topic/$subjectId/contents?limit=$limit&offset=${page * limit}', options: await setHeader());
-  }
+          {int page = 0, int limit = 30}) =>
+      _get('topic/${Uri.encodeComponent(subjectId)}/contents',
+          query: {'limit': limit, 'offset': page * limit});
 
-  Future<Response> getCategory() async{
-    return dio.get(
-        '/api/v3/theme/comic/count?free_type=1&limit=500&offset=0&_update=true', options: await setHeader());
-  }
+  Future<Response> getCategory() => _get('theme/comic/count', query: {
+        'free_type': 1,
+        'limit': 500,
+        'offset': 0,
+        '_update': true,
+      });
 
   Future<Response> getChapterComments(String chapterId,
-      {int limit = 50, int page = 0}) async{
-    return dio.get(
-        '/api/v3/roasts?chapter_id=$chapterId&limit=$limit&offset=${page * limit}',
-        options: await setHeader());
-  }
+          {int limit = 50, int page = 0}) async =>
+      _get('roasts', domain: await _commentDomain, query: {
+        'chapter_id': chapterId,
+        'limit': limit,
+        'offset': page * limit,
+      });
 
   Future<Response> getComments(String comicId,
-      {int limit = 20, int page = 0}) async {
-    return dio.get(
-        '/api/v3/comments?comic_id=$comicId&limit=$limit&offset=${limit * page}',
-        options: await setHeader());
-  }
+          {int limit = 20, int page = 0}) async =>
+      _get('comments', domain: await _commentDomain, query: {
+        'comic_id': comicId,
+        'limit': limit,
+        'offset': page * limit,
+      });
 
-  Future<Response> getHistory({int limit = 12, int page = 0}) async {
-    return dio.get('/api/v3/member/browse/comics?limit=$limit&offset=${limit * page}&platform=3',
-        options: await setHeader());
-  }
+  Future<Response> getHistory({int limit = 12, int page = 0}) =>
+      _get('member/browse/comics', query: {
+        'limit': limit,
+        'offset': page * limit,
+      });
 }

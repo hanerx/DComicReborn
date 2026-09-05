@@ -113,7 +113,7 @@
     }
   },
   "CopyMangaTitle": "CopyManga",
-  "CopyMangaLoginPasswordHint": "Your CopyManga Password!",
+  "CopyMangaLoginPasswordHint": "Password for the selected API site's account",
   "CopyMangaLoginUsernameHint": "Username",
   "LoginPageTitle": "Login",
   "DebugPagePingSuccessTitle": "Ping Success!",
@@ -173,5 +173,8 @@
   "ReleaseInfoNoApkOrIpa": "No available installation package download link found",
   "ReleaseInfoDownloadFailed": "Failed to start download task",
   "ReleaseInfoDownloadStarted": "Download started, will open automatically after completion",
-  "CopyMangaUseDynamicBaseUrl": "Use Dynamic Base URL (Get API Base URL from Remote)"
+  "CopyMangaApiDomain": "Comic and image API",
+  "CopyMangaChapterCommentDomain": "CopyManga comments API",
+  "CopyMangaRoutingHint": "Select HotManga above to read its images with CopyManga chapter comments. Accounts are separate. Changes apply immediately; local favorites and reading history are retained.",
+  "HotMangaTitle": "HotManga"
 }

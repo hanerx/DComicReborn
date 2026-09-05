@@ -130,7 +130,7 @@
   },
 
   "CopyMangaTitle": "拷贝漫画",
-  "CopyMangaLoginPasswordHint": "你的拷贝漫画账号密码",
+  "CopyMangaLoginPasswordHint": "当前 API 线路对应站点的账号密码",
   "CopyMangaLoginUsernameHint": "用户名",
   "LoginPageTitle": "登录",
   "CopyMangaToken": "Token",
@@ -170,5 +170,8 @@
   "ReleaseInfoNoApkOrIpa": "未找到可用的安装包下载链接",
   "ReleaseInfoDownloadFailed": "下载任务启动失败",
   "ReleaseInfoDownloadStarted": "已开始下载，下载完成后将自动打开",
-  "CopyMangaUseDynamicBaseUrl": "使用动态域名(从拷贝漫画获取动态域名)"
+  "CopyMangaApiDomain": "漫画与图片 API 线路",
+  "CopyMangaChapterCommentDomain": "拷贝评论与吐槽 API 线路",
+  "CopyMangaRoutingHint": "上方选择热辣即可使用热辣图片配合拷贝章节吐槽。两站账号独立，切换立即生效，保留本地收藏与阅读记录。",
+  "HotMangaTitle": "热辣漫画"
 }
