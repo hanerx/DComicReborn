@@ -11,7 +11,6 @@ class ComicViewerPageController extends BaseProvider {
   // viewer参数
   int _currentPage = 0;
   bool _showToolBar = false;
-  int _endDrawerPage = 0;
 
   // comment
   List<ChapterCommentEntity> _comments = [];
@@ -110,11 +109,4 @@ class ComicViewerPageController extends BaseProvider {
 
   String get title =>
       chapterDetailModel == null ? "title" : chapterDetailModel!.title;
-
-  int get endDrawerPage => _endDrawerPage;
-
-  set endDrawerPage(int value) {
-    _endDrawerPage = value;
-    notifyListeners();
-  }
 }

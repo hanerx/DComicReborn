@@ -103,6 +103,9 @@
   },
 
   "ComicViewerPageComments": "评论",
+  "ComicViewerPageChapterComments": "本章吐槽",
+  "ComicViewerPageNoComments": "本章暂无吐槽",
+  "ComicViewerPageShowMore": "显示更多",
   "ComicViewerPageDirectory": "目录",
 
   "ComicDetailPageComments": "评论",

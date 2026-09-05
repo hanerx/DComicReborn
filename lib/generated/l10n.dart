@@ -28,10 +28,9 @@ class S {
   static const AppLocalizationDelegate delegate = AppLocalizationDelegate();
 
   static Future<S> load(Locale locale) {
-    final name =
-        (locale.countryCode?.isEmpty ?? false)
-            ? locale.languageCode
-            : locale.toString();
+    final name = (locale.countryCode?.isEmpty ?? false)
+        ? locale.languageCode
+        : locale.toString();
     final localeName = Intl.canonicalizedLocale(name);
     return initializeMessages(localeName).then((_) {
       Intl.defaultLocale = localeName;
@@ -604,6 +603,36 @@ class S {
     return Intl.message(
       'Comments',
       name: 'ComicViewerPageComments',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Chapter comments`
+  String get ComicViewerPageChapterComments {
+    return Intl.message(
+      'Chapter comments',
+      name: 'ComicViewerPageChapterComments',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No comments for this chapter yet`
+  String get ComicViewerPageNoComments {
+    return Intl.message(
+      'No comments for this chapter yet',
+      name: 'ComicViewerPageNoComments',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Show more`
+  String get ComicViewerPageShowMore {
+    return Intl.message(
+      'Show more',
+      name: 'ComicViewerPageShowMore',
       desc: '',
       args: [],
     );

@@ -92,6 +92,9 @@
     }
   },
   "ComicViewerPageComments": "Comments",
+  "ComicViewerPageChapterComments": "Chapter comments",
+  "ComicViewerPageNoComments": "No comments for this chapter yet",
+  "ComicViewerPageShowMore": "Show more",
   "ComicViewerPageDirectory": "Directory",
   "ComicDetailPageComments": "Comments",
   "TimeOrRankFilterEntityName": "SortType",
