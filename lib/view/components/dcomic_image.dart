@@ -54,6 +54,14 @@ class DComicImage extends StatelessWidget {
               _buildErrorWidget(context, "$object Load Failed: $error"),
           width: width,
         );
+      case ImageType.asset:
+        return Image.asset(
+          imageEntity.imageUrl,
+          fit: fit,
+          errorBuilder: (context, object, error) =>
+              _buildErrorWidget(context, "$object Load Failed: $error"),
+          width: width,
+        );
     }
   }
 

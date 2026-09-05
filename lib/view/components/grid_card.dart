@@ -92,7 +92,12 @@ class GridCardItem extends StatelessWidget {
   final Map<badges.BadgePosition, String Function(BuildContext)>? badgeMaps;
 
   const GridCardItem(
-      {super.key, this.title, this.subtitle, required this.image, this.onTap, this.badgeMaps});
+      {super.key,
+      this.title,
+      this.subtitle,
+      required this.image,
+      this.onTap,
+      this.badgeMaps});
 
   @override
   Widget build(BuildContext context) {
@@ -115,7 +120,7 @@ class GridCardItem extends StatelessWidget {
         child: DComicImage(
           image,
           errorMessageOverflow: TextOverflow.ellipsis,
-          fit: BoxFit.fill,
+          fit: image.imageType == ImageType.asset ? BoxFit.cover : BoxFit.fill,
         ),
       )),
     ];
@@ -137,8 +142,8 @@ class GridCardItem extends StatelessWidget {
     return list;
   }
 
-  Widget _buildBadge(BuildContext context){
-    if(badgeMaps==null){
+  Widget _buildBadge(BuildContext context) {
+    if (badgeMaps == null) {
       return Padding(
         padding: const EdgeInsets.all(3),
         child: Column(
@@ -152,9 +157,12 @@ class GridCardItem extends StatelessWidget {
         children: _buildColumn(context),
       ),
     );
-    for(var tuple in badgeMaps!.entries){
+    for (var tuple in badgeMaps!.entries) {
       child = badges.Badge(
-        badgeContent: Text(tuple.value(context), style: TextStyle(color: Theme.of(context).cardColor),),
+        badgeContent: Text(
+          tuple.value(context),
+          style: TextStyle(color: Theme.of(context).cardColor),
+        ),
         position: tuple.key,
         badgeStyle: badges.BadgeStyle(
           shape: badges.BadgeShape.square,

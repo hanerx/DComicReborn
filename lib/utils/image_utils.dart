@@ -1,19 +1,17 @@
-
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
-
-enum ImageType{
+enum ImageType {
   unknown,
   network,
-  local
+  local,
+  // Append new types: existing enum indices are persisted in the database.
+  asset
 }
 
-class ImageEntity{
+class ImageEntity {
   ImageType imageType;
 
   String imageUrl;
 
-  Map<String,String>? imageHeaders;
+  Map<String, String>? imageHeaders;
 
-  ImageEntity(this.imageType, this.imageUrl,{this.imageHeaders});
+  ImageEntity(this.imageType, this.imageUrl, {this.imageHeaders});
 }

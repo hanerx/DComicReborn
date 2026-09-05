@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
@@ -847,6 +845,80 @@ class CopyMangaComicHomepageModel extends BaseComicHomepageModel {
 
   CopyMangaComicHomepageModel(this.parent);
 
+  // Fixed artwork keyed by API identity, never by translated name or list order.
+  // Image origins and crop rectangles: assets/copymanga/credits.json.
+  static const _categoryArtwork = <String, String>{
+    'aiqing': 'aiqing',
+    'huanlexiang': 'huanlexiang',
+    'maoxian': 'maoxian',
+    'qihuan': 'qihuan',
+    'baihe': 'baihe',
+    'xiaoyuan': 'xiaoyuan',
+    'kehuan': 'kehuan',
+    'dongfang': 'dongfang',
+    'danmei': 'danmei',
+    'shenghuo': 'shenghuo',
+    'gedou': 'gedou',
+    'qingxiaoshuo': 'qingxiaoshuo',
+    'qita': 'default',
+    'xuanyi': 'xuanyi',
+    'teenslove': 'teenslove',
+    'mengxi': 'mengxi',
+    'shengui': 'shengui',
+    'zhichang': 'zhichang',
+    'zhiyu': 'zhiyu',
+    'jiecao': 'jiecao',
+    'sige': 'sige',
+    'changtiao': 'changtiao',
+    'jianniang': 'jianniang',
+    'gaoxiao': 'gaoxiao',
+    'jingji': 'jingji',
+    'weiniang': 'weiniang',
+    'mohuan': 'mohuan',
+    'rexue': 'rexue',
+    'xingzhuanhuan': 'xingzhuanhuan',
+    'meishi': 'meishi',
+    'lizhi': 'lizhi',
+    'COLOR': 'COLOR',
+    'hougong': 'hougong',
+    'zhentan': 'zhentan',
+    'jingsong': 'jingsong',
+    'aa': 'aa',
+    'yinyuewudao': 'yinyuewudao',
+    'yishijie': 'yishijie',
+    'zhanzheng': 'zhanzheng',
+    'lishi': 'lishi',
+    'jizhan': 'jizhan',
+    'dushi': 'dushi',
+    'chuanyue': 'chuanyue',
+    'comiket102': 'comiket102',
+    'chongsheng': 'chongsheng',
+    'kongbu': 'kongbu',
+    'comiket103': 'comiket103',
+    'shengcun': 'shengcun',
+    'comiket100': 'comiket100',
+    'comiket104': 'comiket104',
+    'comiket101': 'comiket101',
+    'comiket99': 'comiket99',
+    'comiket97': 'comiket97',
+    'wuxia': 'wuxia',
+    'zhaixi': 'zhaixi',
+    'comiket96': 'comiket96',
+    'comiket105': 'comiket105',
+    'C98': 'C98',
+    'comiket95': 'comiket95',
+    'zhuansheng': 'zhuansheng',
+    'fate': 'fate',
+    'Uncensored': 'Uncensored',
+    'xianxia': 'xianxia',
+    'loveLive': 'loveLive',
+    'zazhifuzengxiezhenji': 'zazhifuzengxiezhenji',
+    'xuanhuan': 'xuanhuan',
+    'yineng': 'yineng',
+    'youxi': 'youxi',
+    'zhenren': 'zazhifuzengxiezhenji',
+  };
+
   @override
   List<FilterEntity> get categoryFilter => [TimeOrRankFilterEntity()];
 
@@ -907,16 +979,13 @@ class CopyMangaComicHomepageModel extends BaseComicHomepageModel {
       if ((response.statusCode == 200 || response.statusCode == 304) &&
           response.data['code'] == 200) {
         for (var item in response.data['results']['list']) {
-          var cover = item['logo'];
-          var randomFallbackCover = [
-            'https://cdn-icons-png.flaticon.com/512/3938/3938619.png',
-            'https://cdn-icons-png.flaticon.com/512/2281/2281829.png',
-            'https://cdn-icons-png.flaticon.com/512/5190/5190321.png',
-            'https://cdn-icons-png.flaticon.com/512/9824/9824322.png'
-          ];
-          cover ??= randomFallbackCover[Random().nextInt(4)];
-          data.add(GridItemEntity(item['name'], item['count'].toString(),
-              ImageEntity(ImageType.network, cover), (context) {
+          final artwork = _categoryArtwork[item['path_word']] ?? 'default';
+          data.add(GridItemEntity(
+              item['name'],
+              item['count'].toString(),
+              ImageEntity(
+                  ImageType.asset, 'assets/copymanga/categories/$artwork.png'),
+              (context) {
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(

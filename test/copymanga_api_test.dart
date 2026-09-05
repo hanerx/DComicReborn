@@ -1,13 +1,17 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/providers/models/copymanga/copymanga_source_model.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/providers/page_controllers/comic_homepage_controller.dart';
 import 'package:dcomic/providers/source_provider.dart';
+import 'package:dcomic/utils/image_utils.dart';
+import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/logger.dart';
@@ -316,6 +320,77 @@ void main() {
     expect(cards.last.children.single.title, '完结 1');
     expect(cards.last.children.single.subtitle, '');
     expect(cards.first.children.single.subtitle, '日常');
+  });
+
+  testWidgets('curated and new categories render offline with a logo fallback',
+      (tester) async {
+    handler.dio.httpClientAdapter = ApiAdapter((_) => {
+          'code': 200,
+          'results': {
+            'list': [
+              {
+                'name': '愛情',
+                'path_word': 'aiqing',
+                'count': 10,
+                'logo': 'https://unreachable.invalid/source-logo.png',
+              },
+              {
+                'name': '愛情',
+                'path_word': 'future-category',
+                'count': 1,
+                'logo': 'https://unreachable.invalid/new-logo.png',
+              },
+            ],
+          },
+        });
+    final categories =
+        (await tester.runAsync(() => source.homepage!.getCategoryList()))!;
+    expect(categories.map((category) => category.cover.imageType),
+        everyElement(isNot(ImageType.network)),
+        reason: 'Category artwork must remain available without a network.');
+    await tester.runAsync(() async {
+      await tester.pumpWidget(MaterialApp(
+        home: Row(children: [
+          for (final category in categories)
+            SizedBox(
+              width: 128,
+              height: 128,
+              child: DComicImage(category.cover, showErrorMessage: false),
+            ),
+        ]),
+      ));
+      // Asset decoding runs on the real IO loop, outside the fake test clock.
+      for (var attempt = 0; attempt < 100; attempt++) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await tester.pump();
+        final images = tester.widgetList<RawImage>(find.byType(RawImage));
+        if (images.length == 2 &&
+            images.every((image) => image.image != null)) {
+          break;
+        }
+      }
+    });
+    final images = tester.widgetList<RawImage>(find.byType(RawImage)).toList();
+    expect(images, hasLength(2));
+    expect(images.every((image) => image.image != null), isTrue);
+    final fallback = await tester.runAsync(() async {
+      final data =
+          await rootBundle.load('assets/copymanga/categories/default.png');
+      final codec = await ui.instantiateImageCodec(
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+      final frame = await codec.getNextFrame();
+      final pixels =
+          await frame.image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      frame.image.dispose();
+      codec.dispose();
+      return pixels!.buffer.asUint8List();
+    });
+    final actual = await tester.runAsync(() =>
+        images.last.image!.toByteData(format: ui.ImageByteFormat.rawRgba));
+    expect(actual!.buffer.asUint8List(), orderedEquals(fallback!));
+    final curated = await tester.runAsync(() =>
+        images.first.image!.toByteData(format: ui.ImageByteFormat.rawRgba));
+    expect(curated!.buffer.asUint8List(), isNot(orderedEquals(fallback)));
   });
 
   test('hot homepage uses its weekly ranking and update sections', () async {

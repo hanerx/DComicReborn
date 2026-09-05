@@ -1,0 +1,1312 @@
+{
+  "description": "Manually selected category artwork; cropped to 256×256 indexed PNG. Third-party artwork remains copyrighted by its respective owners; source links document provenance, not a redistribution license.",
+  "selected_on": "2026-09-05",
+  "images": [
+    {
+      "asset": "huanlexiang.png",
+      "categories": [
+        "huanlexiang"
+      ],
+      "title": "間諜過家家",
+      "source_url": "https://www.copy20.com/comic/jiandieguojiajia",
+      "image_url": "https://sj.mangafunb.fun/j/jiandieguojiajia/cover/1773712124.jpg",
+      "crop": [
+        56,
+        484,
+        1071,
+        1499
+      ],
+      "original_size": [
+        1128,
+        1600
+      ]
+    },
+    {
+      "asset": "xiaoyuan.png",
+      "categories": [
+        "xiaoyuan"
+      ],
+      "title": "我心裡危險的東西",
+      "source_url": "https://www.copy20.com/comic/woxinzhongdeyeshou",
+      "image_url": "https://sw.mangafunb.fun/w/woxinzhongdeyeshou/cover/1655718205.jpg",
+      "crop": [
+        159,
+        192,
+        1167,
+        1200
+      ],
+      "original_size": [
+        1326,
+        2048
+      ]
+    },
+    {
+      "asset": "kehuan.png",
+      "categories": [
+        "kehuan"
+      ],
+      "title": "Mechanical Buddy Universe",
+      "source_url": "https://www.copy20.com/comic/mechanicalbuddyuniverse",
+      "image_url": "https://sm.mangafunb.fun/m/mechanicalbuddyuniverse/cover/1651390259.jpg.328x422.jpg",
+      "crop": [
+        24,
+        20,
+        262,
+        258
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "dongfang.png",
+      "categories": [
+        "dongfang"
+      ],
+      "title": "東方醉蝶華",
+      "source_url": "https://www.copy20.com/comic/dongfangzuidiehua",
+      "image_url": "https://sd.mangafunb.fun/d/dongfangzuidiehua/cover/1651135474.jpg.328x422.jpg",
+      "crop": [
+        5,
+        104,
+        221,
+        320
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "gedou.png",
+      "categories": [
+        "gedou"
+      ],
+      "title": "一拳超人",
+      "source_url": "https://www.copy20.com/comic/yiquanchaoren",
+      "image_url": "https://sy.mangafunb.fun/y/yiquanchaoren/cover/1651425894.jpg.328x422.jpg",
+      "crop": [
+        54,
+        38,
+        270,
+        254
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "qingxiaoshuo.png",
+      "categories": [
+        "qingxiaoshuo"
+      ],
+      "title": "想要成為影之實力者",
+      "source_url": "https://www.copy20.com/comic/xiangyaochengweiyingzhishilizhe",
+      "image_url": "https://sx.mangafunb.fun/x/xiangyaochengweiyingzhishilizhe/cover/1655271488.jpg",
+      "crop": [
+        134,
+        46,
+        352,
+        264
+      ],
+      "original_size": [
+        352,
+        500
+      ]
+    },
+    {
+      "asset": "mengxi.png",
+      "categories": [
+        "mengxi"
+      ],
+      "title": "測不准的阿波連同學",
+      "source_url": "https://www.copy20.com/comic/cebuzhundeaboliantongxue",
+      "image_url": "https://sc.mangafunb.fun/c/cebuzhundeaboliantongxue/cover/1652867989.jpg.328x422.jpg",
+      "crop": [
+        18,
+        31,
+        287,
+        300
+      ],
+      "original_size": [
+        299,
+        385
+      ]
+    },
+    {
+      "asset": "shengui.png",
+      "categories": [
+        "shengui"
+      ],
+      "title": "鬼滅之刃",
+      "source_url": "https://www.copy20.com/comic/guimiezhiren",
+      "image_url": "https://sg.mangafunb.fun/g/guimiezhiren/cover/1655270665.jpg",
+      "crop": [
+        21,
+        195,
+        435,
+        609
+      ],
+      "original_size": [
+        476,
+        744
+      ]
+    },
+    {
+      "asset": "zhichang.png",
+      "categories": [
+        "zhichang"
+      ],
+      "title": "在超市後門吸煙的二人",
+      "source_url": "https://www.copy20.com/comic/zaichaoshihoumenxiyandeerren",
+      "image_url": "https://sz.mangafunb.fun/z/zaichaoshihoumenxiyandeerren/cover/1769605539.jpg",
+      "crop": [
+        79,
+        2,
+        976,
+        899
+      ],
+      "original_size": [
+        1055,
+        1500
+      ]
+    },
+    {
+      "asset": "zhiyu.png",
+      "categories": [
+        "zhiyu"
+      ],
+      "title": "擅長捉弄的高木同學",
+      "source_url": "https://www.copy20.com/comic/shanchangzhuonongdegaomutongxue",
+      "image_url": "https://ss.mangafunb.fun/s/shanchangzhuonongdegaomutongxue/cover/1666699638.jpg",
+      "crop": [
+        158,
+        798,
+        1307,
+        1947
+      ],
+      "original_size": [
+        1436,
+        2048
+      ]
+    },
+    {
+      "asset": "sige.png",
+      "categories": [
+        "sige"
+      ],
+      "title": "月刊少女野崎君",
+      "source_url": "https://www.copy20.com/comic/yuekanshaonvyeqijun",
+      "image_url": "https://sy.mangafunb.fun/y/yuekanshaonvyeqijun/cover/1651153577.jpg.328x422.jpg",
+      "crop": [
+        86,
+        92,
+        270,
+        276
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "changtiao.png",
+      "categories": [
+        "changtiao"
+      ],
+      "title": "我獨自升級",
+      "source_url": "https://www.copy20.com/comic/woduzishenji",
+      "image_url": "https://sw.mangafunb.fun/w/woduzishenji/cover/1651527590.jpg.328x422.jpg",
+      "crop": [
+        6,
+        13,
+        294,
+        301
+      ],
+      "original_size": [
+        320,
+        412
+      ]
+    },
+    {
+      "asset": "jianniang.png",
+      "categories": [
+        "jianniang"
+      ],
+      "title": "超喜歡祥鳳提督的艦娘漫畫",
+      "source_url": "https://www.copy20.com/comic/chaoxihuanxiangfentidudejianniangmanhua",
+      "image_url": "https://sc.mangafunb.fun/c/chaoxihuanxiangfentidudejianniangmanhua/cover/1669732304.jpg.328x422.jpg",
+      "crop": [
+        8,
+        18,
+        251,
+        261
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "gaoxiao.png",
+      "categories": [
+        "gaoxiao"
+      ],
+      "title": "異世界叔叔",
+      "source_url": "https://www.copy20.com/comic/yishijieshushu",
+      "image_url": "https://sy.mangafunb.fun/y/yishijieshushu/cover/1716882350.jpg",
+      "crop": [
+        43,
+        492,
+        1026,
+        1475
+      ],
+      "original_size": [
+        1445,
+        2048
+      ]
+    },
+    {
+      "asset": "jingji.png",
+      "categories": [
+        "jingji"
+      ],
+      "title": "排球少年",
+      "source_url": "https://www.viz.com/haikyu",
+      "image_url": "https://dw9to29mmj727.cloudfront.net/products/1421587661.jpg",
+      "crop": [
+        114,
+        33,
+        300,
+        219
+      ],
+      "original_size": [
+        300,
+        450
+      ]
+    },
+    {
+      "asset": "weiniang.png",
+      "categories": [
+        "weiniang"
+      ],
+      "title": "戀愛少女的養成方法",
+      "source_url": "https://www.copy20.com/comic/baqingmeizhumabianchengnvhaizidegushi",
+      "image_url": "https://sb.mangafunb.fun/b/baqingmeizhumabianchengnvhaizidegushi/cover/1651390243.jpg.328x422.jpg",
+      "crop": [
+        40,
+        52,
+        270,
+        282
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "rexue.png",
+      "categories": [
+        "rexue"
+      ],
+      "title": "海贼王",
+      "source_url": "https://www.copy20.com/comic/haizeiwang",
+      "image_url": "https://sh.mangafunb.fun/h/haizeiwang/cover/1651422982.jpg",
+      "crop": [
+        67,
+        0,
+        955,
+        888
+      ],
+      "original_size": [
+        1110,
+        1032
+      ]
+    },
+    {
+      "asset": "xingzhuanhuan.png",
+      "categories": [
+        "xingzhuanhuan"
+      ],
+      "title": "別當歐尼醬了！",
+      "source_url": "https://www.copy20.com/comic/biedangounijiangle",
+      "image_url": "https://sb.mangafunb.fun/b/biedangounijiangle/cover/1730054905.jpg",
+      "crop": [
+        21,
+        313,
+        865,
+        1157
+      ],
+      "original_size": [
+        1055,
+        1500
+      ]
+    },
+    {
+      "asset": "meishi.png",
+      "categories": [
+        "meishi"
+      ],
+      "title": "迷宮飯",
+      "source_url": "https://www.copy20.com/comic/shejianshangdedixiacheng",
+      "image_url": "https://ss.mangafunb.fun/s/shejianshangdedixiacheng/cover/1721353051.jpg",
+      "crop": [
+        9,
+        241,
+        1575,
+        1807
+      ],
+      "original_size": [
+        1800,
+        2560
+      ]
+    },
+    {
+      "asset": "lizhi.png",
+      "categories": [
+        "lizhi"
+      ],
+      "title": "舞冰的祈願",
+      "source_url": "https://www.copy20.com/comic/wubingdeqiyuan",
+      "image_url": "https://sw.mangafunb.fun/w/wubingdeqiyuan/cover/1706688745.jpg",
+      "crop": [
+        79,
+        22,
+        1091,
+        1034
+      ],
+      "original_size": [
+        1125,
+        1600
+      ]
+    },
+    {
+      "asset": "hougong.png",
+      "categories": [
+        "hougong"
+      ],
+      "title": "超超超超喜歡你的一百個女孩子",
+      "source_url": "https://www.copy20.com/comic/chaochaochaoxihuannideyibaigenvhaizi",
+      "image_url": "https://sc.mangafunb.fun/c/chaochaochaoxihuannideyibaigenvhaizi/cover/1773886400.jpg",
+      "crop": [
+        51,
+        170,
+        744,
+        863
+      ],
+      "original_size": [
+        845,
+        1200
+      ]
+    },
+    {
+      "asset": "aa.png",
+      "categories": [
+        "aa"
+      ],
+      "title": "你是不死的染灰魔女",
+      "source_url": "https://www.copy20.com/comic/busidehuiguniangmonv",
+      "image_url": "https://sb.mangafunb.fun/b/busidehuiguniangmonv/cover/1651390167.jpg.328x422.jpg",
+      "crop": [
+        14,
+        35,
+        257,
+        278
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "yinyuewudao.png",
+      "categories": [
+        "yinyuewudao"
+      ],
+      "title": "孤獨搖滾",
+      "source_url": "https://www.copy20.com/comic/guduyaogun",
+      "image_url": "https://sg.mangafunb.fun/g/guduyaogun/cover/1784611110.jpg",
+      "crop": [
+        360,
+        239,
+        1500,
+        1379
+      ],
+      "original_size": [
+        1500,
+        2128
+      ]
+    },
+    {
+      "asset": "zhanzheng.png",
+      "categories": [
+        "zhanzheng"
+      ],
+      "title": "王者天下",
+      "source_url": "https://www.copy20.com/comic/wangzhetianxia",
+      "image_url": "https://sw.mangafunb.fun/w/wangzhetianxia/cover/1651423072.jpg",
+      "crop": [
+        74,
+        20,
+        634,
+        580
+      ],
+      "original_size": [
+        823,
+        1201
+      ]
+    },
+    {
+      "asset": "lishi.png",
+      "categories": [
+        "lishi"
+      ],
+      "title": "海盜戰記",
+      "source_url": "https://www.copy20.com/comic/haidaozhanji",
+      "image_url": "https://sh.mangafunb.fun/h/haidaozhanji/cover/1651408526.jpg.328x422.jpg",
+      "crop": [
+        42,
+        19,
+        268,
+        245
+      ],
+      "original_size": [
+        310,
+        399
+      ]
+    },
+    {
+      "asset": "jizhan.png",
+      "categories": [
+        "jizhan"
+      ],
+      "title": "新世紀福音戰士",
+      "source_url": "https://www.copy20.com/comic/xsjfyzseva",
+      "image_url": "https://sx.mangafunb.fun/x/xsjfyzseva/cover/1651084732.jpg.328x422.jpg",
+      "crop": [
+        16,
+        57,
+        264,
+        305
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "wuxia.png",
+      "categories": [
+        "wuxia"
+      ],
+      "title": "劍尊歸來",
+      "source_url": "https://www.copy20.com/comic/jianzhunguilai",
+      "image_url": "https://sj.mangafunb.fun/j/jianzhunguilai/cover/1668304087.jpg",
+      "crop": [
+        19,
+        38,
+        441,
+        460
+      ],
+      "original_size": [
+        480,
+        623
+      ]
+    },
+    {
+      "asset": "zhaixi.png",
+      "categories": [
+        "zhaixi"
+      ],
+      "title": "宅男腐女戀愛真難",
+      "source_url": "https://www.copy20.com/comic/znfnlazn",
+      "image_url": "https://sz.mangafunb.fun/z/znfnlazn/cover/1693145880.jpg",
+      "crop": [
+        81,
+        159,
+        1299,
+        1377
+      ],
+      "original_size": [
+        1353,
+        1920
+      ]
+    },
+    {
+      "asset": "fate.png",
+      "categories": [
+        "fate"
+      ],
+      "title": "FGO亞種特異點III屍山血河舞臺 下總國 英靈劍豪七番決勝",
+      "source_url": "https://www.copy20.com/comic/fgoyazhongteyidiansan",
+      "image_url": "https://sf.mangafunb.fun/f/fgoyazhongteyidiansan/cover/1651211182.jpg.328x422.jpg",
+      "crop": [
+        8,
+        23,
+        262,
+        277
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "Uncensored.png",
+      "categories": [
+        "Uncensored"
+      ],
+      "title": "搖曳莊的幽奈小姐",
+      "source_url": "https://www.copy20.com/comic/tangyaozhuangdeyounaitongxue",
+      "image_url": "https://st.mangafunb.fun/t/tangyaozhuangdeyounaitongxue/cover/1651423053.jpg",
+      "crop": [
+        128,
+        45,
+        892,
+        809
+      ],
+      "original_size": [
+        980,
+        1471
+      ]
+    },
+    {
+      "asset": "xianxia.png",
+      "categories": [
+        "xianxia"
+      ],
+      "title": "千年狐",
+      "source_url": "https://www.copy20.com/comic/qiannianhu",
+      "image_url": "https://sq.mangafunb.fun/q/qiannianhu/cover/1651102048.jpg.328x422.jpg",
+      "crop": [
+        38,
+        34,
+        270,
+        266
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "loveLive.png",
+      "categories": [
+        "loveLive"
+      ],
+      "title": "在星之海起舞",
+      "source_url": "https://www.copy20.com/comic/zaixingzhiahiqiwu",
+      "image_url": "https://sz.mangafunb.fun/z/zaixingzhiahiqiwu/cover/1651096706.jpg",
+      "crop": [
+        17,
+        102,
+        572,
+        657
+      ],
+      "original_size": [
+        702,
+        1000
+      ]
+    },
+    {
+      "asset": "zazhifuzengxiezhenji.png",
+      "categories": [
+        "zazhifuzengxiezhenji",
+        "zhenren"
+      ],
+      "title": "伊織もえ寫真合集",
+      "source_url": "https://www.copy20.com/comic/iorimoe",
+      "image_url": "https://si.mangafunb.fun/i/iorimoe/cover/1716200698.jpg",
+      "crop": [
+        100,
+        27,
+        408,
+        335
+      ],
+      "original_size": [
+        540,
+        696
+      ]
+    },
+    {
+      "asset": "maoxian.png",
+      "categories": [
+        "maoxian"
+      ],
+      "title": "全職獵人",
+      "source_url": "https://www.copy20.com/comic/lieren",
+      "image_url": "https://sl.mangafunb.fun/l/lieren/cover/1713348830.jpg",
+      "crop": [
+        157,
+        264,
+        1011,
+        1118
+      ],
+      "original_size": [
+        1124,
+        1772
+      ]
+    },
+    {
+      "asset": "baihe.png",
+      "categories": [
+        "baihe"
+      ],
+      "title": "終將成為你",
+      "source_url": "https://www.copy20.com/comic/zuizhongwochengleni",
+      "image_url": "https://sz.mangafunb.fun/z/zuizhongwochengleni/cover/1651423108.jpg.328x422.jpg",
+      "crop": [
+        6,
+        3,
+        265,
+        262
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "danmei.png",
+      "categories": [
+        "danmei"
+      ],
+      "title": "GIVEN 被贈與的未來",
+      "source_url": "https://www.copy20.com/comic/givenbeizengyudeweilai",
+      "image_url": "https://sg.mangafunb.fun/g/givenbeizengyudeweilai/cover/1651146635.jpg.328x422.jpg",
+      "crop": [
+        6,
+        38,
+        265,
+        297
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "shenghuo.png",
+      "categories": [
+        "shenghuo"
+      ],
+      "title": "四葉妹妹",
+      "source_url": "https://www.copy20.com/comic/siyemeimei",
+      "image_url": "https://ss.mangafunb.fun/s/siyemeimei/cover/1713348953.jpg",
+      "crop": [
+        753,
+        605,
+        1530,
+        1382
+      ],
+      "original_size": [
+        1586,
+        2257
+      ]
+    },
+    {
+      "asset": "xuanyi.png",
+      "categories": [
+        "xuanyi"
+      ],
+      "title": "夏日重現",
+      "source_url": "https://www.copy20.com/comic/summertimerendring",
+      "image_url": "https://ss.mangafunb.fun/s/summertimerendring/cover/1651208040.jpg.328x422.jpg",
+      "crop": [
+        13,
+        0,
+        267,
+        254
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "teenslove.png",
+      "categories": [
+        "teenslove"
+      ],
+      "title": "Coffee & Vanilla 咖啡和香草",
+      "source_url": "https://www.copy20.com/comic/kafeiyushangxiangcao",
+      "image_url": "https://sk.mangafunb.fun/k/kafeiyushangxiangcao/cover/1651022502.jpg.328x422.jpg",
+      "crop": [
+        15,
+        0,
+        266,
+        251
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "jiecao.png",
+      "categories": [
+        "jiecao"
+      ],
+      "title": "碧蓝之海",
+      "source_url": "https://www.copy20.com/comic/grandblue",
+      "image_url": "https://sg.mangafunb.fun/g/grandblue/cover/1773281570.jpg",
+      "crop": [
+        19,
+        349,
+        307,
+        637
+      ],
+      "original_size": [
+        640,
+        913
+      ]
+    },
+    {
+      "asset": "mohuan.png",
+      "categories": [
+        "mohuan"
+      ],
+      "title": "尖帽子的魔法工房",
+      "source_url": "https://www.copy20.com/comic/jianmaozidemofagongfang",
+      "image_url": "https://sj.mangafunb.fun/j/jianmaozidemofagongfang/cover/1690507022.jpg.328x422.jpg",
+      "crop": [
+        6,
+        11,
+        223,
+        228
+      ],
+      "original_size": [
+        310,
+        399
+      ]
+    },
+    {
+      "asset": "jingsong.png",
+      "categories": [
+        "jingsong"
+      ],
+      "title": "約定的夢幻島",
+      "source_url": "https://www.copy20.com/comic/yuedingdemenghuandao",
+      "image_url": "https://sy.mangafunb.fun/y/yuedingdemenghuandao/cover/1651423036.jpg.328x422.jpg",
+      "crop": [
+        46,
+        109,
+        246,
+        309
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "yishijie.png",
+      "categories": [
+        "yishijie"
+      ],
+      "title": "Re：從零開始的異世界生活 冰結之絆",
+      "source_url": "https://www.copy20.com/comic/reconglingkaishideyishijieshenghuobingjiezhiban",
+      "image_url": "https://sr.mangafunb.fun/r/reconglingkaishideyishijieshenghuobingjiezhiban/cover/1651390884.jpg.328x422.jpg",
+      "crop": [
+        1,
+        29,
+        117,
+        145
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "dushi.png",
+      "categories": [
+        "dushi"
+      ],
+      "title": "城市獵人",
+      "source_url": "https://www.copy20.com/comic/chenshilieren",
+      "image_url": "https://sc.mangafunb.fun/c/chenshilieren/cover/1651525694.jpg",
+      "crop": [
+        79,
+        0,
+        437,
+        358
+      ],
+      "original_size": [
+        437,
+        589
+      ]
+    },
+    {
+      "asset": "chuanyue.png",
+      "categories": [
+        "chuanyue"
+      ],
+      "title": "犬夜叉",
+      "source_url": "https://www.copy20.com/comic/qycinuyasha",
+      "image_url": "https://sq.mangafunb.fun/q/qycinuyasha/cover/1651408570.jpg.328x422.jpg",
+      "crop": [
+        16,
+        82,
+        270,
+        336
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "chongsheng.png",
+      "categories": [
+        "chongsheng"
+      ],
+      "title": "只有我不在的街道",
+      "source_url": "https://www.copy20.com/comic/zhiyouwobuzaidejiedao",
+      "image_url": "https://sz.mangafunb.fun/z/zhiyouwobuzaidejiedao/cover/1651437653.jpg.328x422.jpg",
+      "crop": [
+        13,
+        57,
+        267,
+        311
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "xuanhuan.png",
+      "categories": [
+        "xuanhuan"
+      ],
+      "title": "夏目友人帳",
+      "source_url": "https://www.copy20.com/comic/xiamuyourenzhang",
+      "image_url": "https://sx.mangafunb.fun/x/xiamuyourenzhang/cover/1651423126.jpg.328x422.jpg",
+      "crop": [
+        24,
+        91,
+        245,
+        312
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "yineng.png",
+      "categories": [
+        "yineng"
+      ],
+      "title": "路人超能100 官方設定集",
+      "source_url": "https://www.copy20.com/comic/lurenchaonengyibai",
+      "image_url": "https://sl.mangafunb.fun/l/lurenchaonengyibai/cover/1723998010.jpg.328x422.jpg",
+      "crop": [
+        3,
+        33,
+        257,
+        287
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "youxi.png",
+      "categories": [
+        "youxi"
+      ],
+      "title": "游戲王GX",
+      "source_url": "https://www.copy20.com/comic/youxiwanggx",
+      "image_url": "https://sy.mangafunb.fun/y/youxiwanggx/cover/1651084197.jpg.328x422.jpg",
+      "crop": [
+        38,
+        9,
+        150,
+        121
+      ],
+      "original_size": [
+        150,
+        192
+      ]
+    },
+    {
+      "asset": "kongbu.png",
+      "categories": [
+        "kongbu"
+      ],
+      "title": "伊藤潤二恐怖漫畫精選",
+      "source_url": "https://www.copy20.com/comic/ytrekbmhjx",
+      "image_url": "https://sy.mangafunb.fun/y/ytrekbmhjx/cover/1651538256.jpg",
+      "crop": [
+        70,
+        220,
+        521,
+        671
+      ],
+      "original_size": [
+        557,
+        755
+      ]
+    },
+    {
+      "asset": "shengcun.png",
+      "categories": [
+        "shengcun"
+      ],
+      "title": "Dr.STONE",
+      "source_url": "https://www.copy20.com/comic/drstone",
+      "image_url": "https://sd.mangafunb.fun/d/drstone/cover/1651424700.jpg.328x422.jpg",
+      "crop": [
+        5,
+        0,
+        243,
+        238
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "COLOR.png",
+      "categories": [
+        "COLOR"
+      ],
+      "title": "七龍珠 全彩版",
+      "source_url": "https://www.copy20.com/comic/qilongzhuwanquanban",
+      "image_url": "https://sq.mangafunb.fun/q/qilongzhuwanquanban/cover/1690370037.jpg",
+      "crop": [
+        26,
+        438,
+        1009,
+        1421
+      ],
+      "original_size": [
+        1035,
+        1500
+      ]
+    },
+    {
+      "asset": "zhuansheng.png",
+      "categories": [
+        "zhuansheng"
+      ],
+      "title": "關於我轉生後成為史萊姆的那件事",
+      "source_url": "https://www.copy20.com/comic/gywzshcwslmnjs",
+      "image_url": "https://sg.mangafunb.fun/g/gywzshcwslmnjs/cover/1658803029.jpg.328x422.jpg",
+      "crop": [
+        8,
+        95,
+        265,
+        352
+      ],
+      "original_size": [
+        310,
+        399
+      ]
+    },
+    {
+      "asset": "zhentan.png",
+      "categories": [
+        "zhentan"
+      ],
+      "title": "名偵探柯南",
+      "source_url": "https://www.copy20.com/comic/kenan",
+      "image_url": "https://sk.mangafunb.fun/k/kenan/cover/1651423053.jpg.328x422.jpg",
+      "crop": [
+        13,
+        9,
+        267,
+        263
+      ],
+      "original_size": [
+        270,
+        348
+      ]
+    },
+    {
+      "asset": "aiqing.png",
+      "categories": [
+        "aiqing"
+      ],
+      "title": "好想告诉你",
+      "source_url": "https://www.viz.com/manga-books/manga/kimi-ni-todoke-from-me-to-you-volume-1/product/2112/paperback",
+      "image_url": "https://dw9to29mmj727.cloudfront.net/products/1421527553.jpg",
+      "crop": [
+        3,
+        0,
+        297,
+        294
+      ],
+      "original_size": [
+        300,
+        450
+      ]
+    },
+    {
+      "asset": "qihuan.png",
+      "categories": [
+        "qihuan"
+      ],
+      "title": "葬送的芙莉莲",
+      "source_url": "https://www.viz.com/frieren-beyond-journeys-end",
+      "image_url": "https://dw9to29mmj727.cloudfront.net/products/1974725766.jpg",
+      "crop": [
+        32,
+        149,
+        243,
+        360
+      ],
+      "original_size": [
+        320,
+        480
+      ]
+    },
+    {
+      "asset": "comiket95.png",
+      "categories": [
+        "comiket95"
+      ],
+      "title": "C95 官方目录",
+      "source_url": "https://www.comiket.co.jp/archives/Chronology.html",
+      "image_url": "https://www.comiket.co.jp/info-a/C95/C95CtlgWeb.jpeg",
+      "crop": [
+        22,
+        51,
+        289,
+        318
+      ],
+      "original_size": [
+        300,
+        420
+      ],
+      "credit": "コミックマーケット９５カタログ（冊子版）　表紙：ワダアルコ（サークル：ワダメモ）"
+    },
+    {
+      "asset": "comiket96.png",
+      "categories": [
+        "comiket96"
+      ],
+      "title": "C96 官方目录",
+      "source_url": "https://www.comiket.co.jp/archives/Chronology.html",
+      "image_url": "https://www.comiket.co.jp/info-a/C96/C96CtlgWeb.jpeg",
+      "crop": [
+        21,
+        58,
+        291,
+        328
+      ],
+      "original_size": [
+        300,
+        420
+      ],
+      "credit": "コミックマーケット９６カタログ（冊子版）　表紙：加藤さやか（サークル：TRiS）"
+    },
+    {
+      "asset": "comiket97.png",
+      "categories": [
+        "comiket97"
+      ],
+      "title": "C97 官方目录",
+      "source_url": "https://www.comiket.co.jp/archives/Chronology.html",
+      "image_url": "https://www.comiket.co.jp/info-a/C97/C97CtlgWeb.jpeg",
+      "crop": [
+        60,
+        0,
+        300,
+        240
+      ],
+      "original_size": [
+        300,
+        420
+      ],
+      "credit": "コミックマーケット９７カタログ（冊子版）　表紙：ヤマコ（サークル：HoneyWorks）"
+    },
+    {
+      "asset": "C98.png",
+      "categories": [
+        "C98"
+      ],
+      "title": "C98 官方目录",
+      "source_url": "https://www.comiket.co.jp/archives/Chronology.html",
+      "image_url": "https://www.comiket.co.jp/info-a/C98/images/98CtlgWeb.jpeg",
+      "crop": [
+        10,
+        38,
+        271,
+        299
+      ],
+      "original_size": [
+        300,
+        420
+      ],
+      "credit": "コミックマーケット９８カタログ（冊子版）　表紙：いとうのいぢ（サークル：富士壺機械）"
+    },
+    {
+      "asset": "comiket99.png",
+      "categories": [
+        "comiket99"
+      ],
+      "title": "C99 官方目录",
+      "source_url": "https://www.comiket.co.jp/archives/Chronology.html",
+      "image_url": "https://www.comiket.co.jp/info-a/C99A/images/C99A_key_visual.png",
+      "crop": [
+        40,
+        62,
+        555,
+        577
+      ],
+      "original_size": [
+        572,
+        800
+      ],
+      "credit": "コミックマーケット９９キービジュアル　Hiten"
+    },
+    {
+      "asset": "comiket100.png",
+      "categories": [
+        "comiket100"
+      ],
+      "title": "C100 官方目录",
+      "source_url": "https://www.comiket.co.jp/archives/Chronology.html",
+      "image_url": "https://www.comiket.co.jp/info-a/C100/images/C100CtlgWeb.jpeg",
+      "crop": [
+        14,
+        0,
+        263,
+        249
+      ],
+      "original_size": [
+        300,
+        420
+      ],
+      "credit": "コミックマーケット１００カタログ　表紙原画：武内崇（サークル：竹帚）彩色・仕上げ：こやまひろかず 背景：ゆうろ ロゴ：WINFANWORKS"
+    },
+    {
+      "asset": "comiket101.png",
+      "categories": [
+        "comiket101"
+      ],
+      "title": "C101 官方目录",
+      "source_url": "https://www.comiket.co.jp/archives/Chronology.html",
+      "image_url": "https://www.comiket.co.jp/info-a/C101/images/C101CtlgWeb.jpeg",
+      "crop": [
+        18,
+        88,
+        288,
+        358
+      ],
+      "original_size": [
+        300,
+        420
+      ],
+      "credit": "コミックマーケット１０１カタログ　表紙：LAM / デザイン：カトウ　（サークル：雷雷公社）"
+    },
+    {
+      "asset": "comiket102.png",
+      "categories": [
+        "comiket102"
+      ],
+      "title": "C102 官方目录",
+      "source_url": "https://www.comiket.co.jp/archives/Chronology.html",
+      "image_url": "https://www.comiket.co.jp/info-a/C102/images/C102CtlgWeb.jpeg",
+      "crop": [
+        33,
+        373,
+        684,
+        1024
+      ],
+      "original_size": [
+        732,
+        1024
+      ],
+      "credit": "コミックマーケット１０２カタログ　表紙：とりヒコ（サークル：SUZURO）"
+    },
+    {
+      "asset": "comiket103.png",
+      "categories": [
+        "comiket103"
+      ],
+      "title": "C103 官方目录",
+      "source_url": "https://www.comiket.co.jp/archives/Chronology.html",
+      "image_url": "https://www.comiket.co.jp/info-a/C103/images/C103CtlgWeb.png",
+      "crop": [
+        33,
+        62,
+        728,
+        757
+      ],
+      "original_size": [
+        732,
+        1024
+      ],
+      "credit": "コミックマーケット１０３カタログ　表紙：バーニア600（サークル：ぢま鉄）"
+    },
+    {
+      "asset": "comiket104.png",
+      "categories": [
+        "comiket104"
+      ],
+      "title": "C104 官方目录",
+      "source_url": "https://www.comiket.co.jp/archives/Chronology.html",
+      "image_url": "https://www.comiket.co.jp/info-a/C104/images/C104CtlgWeb.jpeg",
+      "crop": [
+        6,
+        206,
+        594,
+        794
+      ],
+      "original_size": [
+        600,
+        847
+      ],
+      "credit": "コミックマーケット１０４カタログ　表紙：タカヤマトシアキ（サークル：T.com）　デザイン：宮本祐輔"
+    },
+    {
+      "asset": "comiket105.png",
+      "categories": [
+        "comiket105"
+      ],
+      "title": "C105 官方目录",
+      "source_url": "https://www.comiket.co.jp/archives/Chronology.html",
+      "image_url": "https://www.comiket.co.jp/info-a/C105/images/C105CtlgWeb.jpeg",
+      "crop": [
+        33,
+        203,
+        567,
+        737
+      ],
+      "original_size": [
+        600,
+        839
+      ],
+      "credit": "コミックマーケット１０５カタログ　表紙：美好よしみ"
+    },
+    {
+      "asset": "default.png",
+      "categories": [
+        "qita",
+        "unmapped"
+      ],
+      "title": "拷贝漫画官方应用图标",
+      "source_url": "https://www.copy20.com/download",
+      "image_url": "https://s3.mangafunb.fun/project/apk/copy/copymanga.release_20260622_3.0.9.apk",
+      "archive_entry": "res/CG.png",
+      "original_size": [
+        90,
+        90
+      ],
+      "placement": [
+        40,
+        40,
+        216,
+        216
+      ]
+    }
+  ]
+}
