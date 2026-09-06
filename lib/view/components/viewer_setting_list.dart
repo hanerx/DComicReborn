@@ -48,6 +48,8 @@ class ViewerSettingList extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final valueStyle = textTheme.labelMedium
         ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
+    final isChinese =
+        Localizations.localeOf(context).languageCode.startsWith('zh');
     return [
       _buildSectionHeader(context, '阅读', 'Reading'),
       ListTile(
@@ -123,6 +125,45 @@ class ViewerSettingList extends StatelessWidget {
           trailing: Text(config.horizontalClickAreaSize.toStringAsFixed(0),
               style: valueStyle)),
       _buildSectionHeader(context, '外观', 'Appearance'),
+      ListTile(
+        leading: const Icon(Icons.contrast),
+        title: Text(isChinese ? '阅读面板配色' : 'Reader panel theme'),
+        subtitle: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SegmentedButton<ReaderTheme>(
+            showSelectedIcon: false,
+            segments: [
+              for (final option in ReaderTheme.values)
+                ButtonSegment(
+                  value: option,
+                  tooltip: switch (option) {
+                    ReaderTheme.app => isChinese ? '跟随应用' : 'App theme',
+                    ReaderTheme.white => isChinese ? '纯白' : 'White',
+                    ReaderTheme.light => isChinese ? '浅色' : 'Light',
+                    ReaderTheme.dark => isChinese ? '深色' : 'Dark',
+                    ReaderTheme.black => isChinese ? '纯黑' : 'Black',
+                  },
+                  icon: option == ReaderTheme.app
+                      ? const Icon(Icons.brightness_auto_outlined)
+                      : Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: Theme.of(context).colorScheme.outline),
+                            color: option.surfaceColor,
+                          ),
+                        ),
+                ),
+            ],
+            selected: <ReaderTheme>{config.readerTheme},
+            onSelectionChanged: (output) {
+              config.readerTheme = output.first;
+            },
+          ),
+        ),
+      ),
       ListTile(
         leading: const Icon(Icons.color_lens),
         title: Text(S.of(context).ViewerSettingThemeColor),

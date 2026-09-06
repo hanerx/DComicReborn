@@ -246,3 +246,63 @@ class ThemeModel {
     ),
   };
 }
+
+enum ReaderTheme {
+  app(null),
+  white(Colors.white),
+  light(Color(0xFFD6D8DC)),
+  dark(Color(0xFF26303C)),
+  black(Colors.black);
+
+  const ReaderTheme(this.surfaceColor);
+
+  final Color? surfaceColor;
+
+  ThemeData resolve(ThemeData appTheme, {Color? seedColor}) {
+    if (this == app) return appTheme;
+    final base = ThemeModel.buildTheme(
+      brightness:
+          this == dark || this == black ? Brightness.dark : Brightness.light,
+      seedColor: seedColor,
+      useMaterial3: appTheme.useMaterial3,
+    );
+    final colors = base.colorScheme.copyWith(
+      surface: surfaceColor,
+      onSurfaceVariant: switch (this) {
+        light => const Color(0xFF434B56),
+        dark => const Color(0xFFC0CAD6),
+        _ => null,
+      },
+      surfaceContainerLowest: surfaceColor,
+      surfaceContainerLow: switch (this) {
+        light => const Color(0xFFCDD0D5),
+        dark => const Color(0xFF2E3947),
+        _ => surfaceColor,
+      },
+      surfaceContainer: switch (this) {
+        light => const Color(0xFFC5C9CF),
+        dark => const Color(0xFF344151),
+        _ => null,
+      },
+      surfaceContainerHigh: switch (this) {
+        light => const Color(0xFFBDC2C9),
+        dark => const Color(0xFF3A4859),
+        _ => null,
+      },
+      surfaceContainerHighest: switch (this) {
+        light => const Color(0xFFB5BCC5),
+        dark => const Color(0xFF404F61),
+        _ => null,
+      },
+      outlineVariant: switch (this) {
+        light => const Color(0xFFA5ADB8),
+        dark => const Color(0xFF526174),
+        _ => null,
+      },
+    );
+    return base.copyWith(
+      colorScheme: colors,
+      scaffoldBackgroundColor: surfaceColor,
+    );
+  }
+}

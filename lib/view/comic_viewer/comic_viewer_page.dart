@@ -35,12 +35,18 @@ class ComicViewerPage extends StatefulWidget {
 
 class _ComicViewerPageState extends State<ComicViewerPage>
     with SingleTickerProviderStateMixin {
+  static const _toolbarDuration = Duration(milliseconds: 300);
+  static const _toolbarCurve = Curves.easeInOutCubic;
+  static const double _appBarHeight = 70;
+  static const double _toolBarHeight = 96;
+
   final PageController _pageController = PageController();
   final EasyRefreshController _easyRefreshController = EasyRefreshController();
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
   final ItemScrollController _itemScrollController = ItemScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final GlobalKey _readerViewportKey = GlobalKey();
   late final TabController _drawerTabController;
   late ComicViewerPageController _viewerController;
   bool _verticalCommentsVisible = false;
@@ -100,88 +106,169 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     });
   }
 
+  Future<void> _turnPage(BuildContext context, {required bool forward}) async {
+    final direction = context.read<ConfigProvider>().readDirection;
+    final controller = context.read<ComicViewerPageController>();
+    if (direction == ReadDirectionType.vertical) {
+      final target = controller.currentPage + (forward ? 1 : -1);
+      if (target >= 0 && target < _pageCount) {
+        if (_itemScrollController.isAttached) {
+          await _itemScrollController.scrollTo(
+              index: target, duration: const Duration(milliseconds: 200));
+        }
+        return;
+      }
+    } else {
+      final position = _pageController.position;
+      final canTurn = forward
+          ? position.pixels < position.maxScrollExtent
+          : position.pixels > position.minScrollExtent;
+      if (canTurn) {
+        if (forward) {
+          await _pageController.nextPage(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeIn);
+        } else {
+          await _pageController.previousPage(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeIn);
+        }
+        return;
+      }
+    }
+    if (forward) {
+      await _easyRefreshController.callLoad();
+    } else {
+      await _easyRefreshController.callRefresh();
+    }
+  }
+
+  void _handleCommentsTap(BuildContext context, TapUpDetails details) {
+    final config = context.read<ConfigProvider>();
+    // Use viewport coordinates even when a vertical comments page is only
+    // partially visible. Buttons inside the page win their own tap gestures.
+    final viewport =
+        _readerViewportKey.currentContext!.findRenderObject() as RenderBox;
+    final position = viewport.globalToLocal(details.globalPosition);
+    final vertical = config.readDirection == ReadDirectionType.vertical;
+    final extent = vertical ? viewport.size.height : viewport.size.width;
+    final offset = vertical ? position.dy : position.dx;
+    final edgeSize = vertical
+        ? config.verticalClickAreaSize
+        : config.horizontalClickAreaSize;
+    if (offset >= extent - edgeSize) {
+      _turnPage(context,
+          forward: config.readDirection != ReadDirectionType.right);
+    } else if (offset < edgeSize) {
+      _turnPage(context,
+          forward: config.readDirection == ReadDirectionType.right);
+    } else {
+      final controller = context.read<ComicViewerPageController>();
+      controller.showToolBar = !controller.showToolBar;
+    }
+  }
+
   Widget _buildCommentsPage(BuildContext context) {
     final controller = context.watch<ComicViewerPageController>();
-    return Padding(
-      padding: EdgeInsets.only(
-        top: controller.showToolBar ? 70 : 0,
-        bottom: controller.showToolBar ? 96 : 0,
-      ),
-      child: ChapterCommentsPage(
-        key: ValueKey(controller.currentChapter?.chapterId),
-        comments: controller.comments,
-        onShowMore: () => _openDrawer(0),
-        onShowToolbar: () => controller.showToolBar = !controller.showToolBar,
+    // Keep the page surface behind the rounded bars; only its content reflows.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapUp: (details) => _handleCommentsTap(context, details),
+      child: ColoredBox(
+        color: Theme.of(context).colorScheme.surface,
+        child: AnimatedPadding(
+          duration: _toolbarDuration,
+          curve: _toolbarCurve,
+          padding: EdgeInsets.only(
+            top: controller.showToolBar ? _appBarHeight : 0,
+            bottom: controller.showToolBar ? _toolBarHeight : 0,
+          ),
+          child: ChapterCommentsPage(
+            key: ValueKey(controller.currentChapter?.chapterId),
+            comments: controller.comments,
+            onShowMore: () => _openDrawer(0),
+            onShowToolbar: () =>
+                controller.showToolBar = !controller.showToolBar,
+          ),
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<ComicViewerPageController>(
-      lazy: false,
-      create: (_) => _viewerController = ComicViewerPageController(
-          widget.detailModel, widget.chapters, widget.chapterId),
-      builder: (context, child) => Scaffold(
-          key: _scaffoldKey,
-          endDrawer: _buildDrawer(context),
-          body: Container(
-            color: Colors.black,
-            child: EasyRefresh(
-              controller: _easyRefreshController,
-              header: BezierHeader(
-                  triggerOffset: 50,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  showBalls: true,
-                  spinWidget: SpinKitDualRing(
-                    size: 32,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  )),
-              footer: BezierFooter(
-                  triggerOffset: 50,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  showBalls: true,
-                  spinWidget: SpinKitDualRing(
-                    size: 32,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  )),
-              refreshOnStart: true,
-              onRefresh: () async {
-                await Provider.of<ComicViewerPageController>(context,
-                        listen: false)
-                    .refresh();
-                _resetPage();
-              },
-              onLoad: () async {
-                await Provider.of<ComicViewerPageController>(context,
-                        listen: false)
-                    .load();
-                _resetPage();
-              },
-              child: SafeArea(
-                  child: Stack(
-                children: [
-                  _buildViewer(context),
-                  if (!(context.watch<ConfigProvider>().readDirection ==
-                          ReadDirectionType.vertical
-                      ? _verticalCommentsVisible
-                      : _pageCount > 0 &&
-                          context
-                                  .watch<ComicViewerPageController>()
-                                  .currentPage ==
-                              _pageCount - 1)) ...[
-                    _buildPrePageButton(context),
-                    _buildShowButton(context),
-                    _buildNextPageButton(context),
+    final config = context.watch<ConfigProvider>();
+    return Theme(
+      data: config.readerTheme.resolve(
+        Theme.of(context),
+        seedColor: config.themeColor.color,
+      ),
+      child: ChangeNotifierProvider<ComicViewerPageController>(
+        lazy: false,
+        create: (_) => _viewerController = ComicViewerPageController(
+            widget.detailModel, widget.chapters, widget.chapterId),
+        builder: (context, child) => Scaffold(
+            key: _scaffoldKey,
+            endDrawer: _buildDrawer(context),
+            body: Container(
+              color: Colors.black,
+              child: EasyRefresh(
+                controller: _easyRefreshController,
+                header: BezierHeader(
+                    triggerOffset: 50,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    showBalls: true,
+                    spinWidget: SpinKitDualRing(
+                      size: 32,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    )),
+                footer: BezierFooter(
+                    triggerOffset: 50,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    showBalls: true,
+                    spinWidget: SpinKitDualRing(
+                      size: 32,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    )),
+                refreshOnStart: true,
+                onRefresh: () async {
+                  await Provider.of<ComicViewerPageController>(context,
+                          listen: false)
+                      .refresh();
+                  _resetPage();
+                },
+                onLoad: () async {
+                  await Provider.of<ComicViewerPageController>(context,
+                          listen: false)
+                      .load();
+                  _resetPage();
+                },
+                child: SafeArea(
+                    child: Stack(
+                  key: _readerViewportKey,
+                  children: [
+                    _buildViewer(context),
+                    if (!(context.watch<ConfigProvider>().readDirection ==
+                            ReadDirectionType.vertical
+                        ? _verticalCommentsVisible
+                        : _pageCount > 0 &&
+                            context
+                                    .watch<ComicViewerPageController>()
+                                    .currentPage ==
+                                _pageCount - 1)) ...[
+                      _buildPrePageButton(context),
+                      _buildShowButton(context),
+                      _buildNextPageButton(context),
+                    ],
+                    _buildAppBar(context),
+                    _buildToolBar(context)
                   ],
-                  _buildAppBar(context),
-                  _buildToolBar(context)
-                ],
-              )),
-            ),
-          )),
+                )),
+              ),
+            )),
+      ),
     );
   }
 
@@ -272,22 +359,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
           top: 0,
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: () async {
-              if (Provider.of<ComicViewerPageController>(context, listen: false)
-                      .currentPage >
-                  0) {
-                if (_itemScrollController.isAttached) {
-                  _itemScrollController.scrollTo(
-                      index: Provider.of<ComicViewerPageController>(context,
-                                  listen: false)
-                              .currentPage -
-                          1,
-                      duration: const Duration(milliseconds: 200));
-                }
-              } else {
-                await _easyRefreshController.callRefresh();
-              }
-            },
+            onTap: () => _turnPage(context, forward: false),
             child: SizedBox(
               height:
                   Provider.of<ConfigProvider>(context).verticalClickAreaSize,
@@ -306,29 +378,9 @@ class _ComicViewerPageState extends State<ComicViewerPage>
         bottom: 0,
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
-          onTap: () {
-            if (Provider.of<ConfigProvider>(context, listen: false)
-                    .readDirection ==
-                ReadDirectionType.right) {
-              if (_pageController.position.pixels !=
-                  _pageController.position.maxScrollExtent) {
-                _pageController.nextPage(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeIn);
-              } else {
-                _easyRefreshController.callLoad();
-              }
-            } else {
-              if (_pageController.position.pixels !=
-                  _pageController.position.minScrollExtent) {
-                _pageController.previousPage(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeIn);
-              } else {
-                _easyRefreshController.callRefresh();
-              }
-            }
-          },
+          onTap: () => _turnPage(context,
+              forward: context.read<ConfigProvider>().readDirection ==
+                  ReadDirectionType.right),
           child: SizedBox(
             width: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
             child: Provider.of<ConfigProvider>(context).drawDebugWidget
@@ -350,22 +402,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
           bottom: 0,
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: () async {
-              if (Provider.of<ComicViewerPageController>(context, listen: false)
-                      .currentPage <
-                  _pageCount - 1) {
-                if (_itemScrollController.isAttached) {
-                  _itemScrollController.scrollTo(
-                      index: Provider.of<ComicViewerPageController>(context,
-                                  listen: false)
-                              .currentPage +
-                          1,
-                      duration: const Duration(milliseconds: 200));
-                }
-              } else {
-                await _easyRefreshController.callLoad();
-              }
-            },
+            onTap: () => _turnPage(context, forward: true),
             child: SizedBox(
               height:
                   Provider.of<ConfigProvider>(context).verticalClickAreaSize,
@@ -384,29 +421,9 @@ class _ComicViewerPageState extends State<ComicViewerPage>
         bottom: 0,
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
-          onTap: () {
-            if (Provider.of<ConfigProvider>(context, listen: false)
-                    .readDirection ==
-                ReadDirectionType.left) {
-              if (_pageController.position.pixels !=
-                  _pageController.position.maxScrollExtent) {
-                _pageController.nextPage(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeIn);
-              } else {
-                _easyRefreshController.callLoad();
-              }
-            } else {
-              if (_pageController.position.pixels !=
-                  _pageController.position.minScrollExtent) {
-                _pageController.previousPage(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeIn);
-              } else {
-                _easyRefreshController.callRefresh();
-              }
-            }
-          },
+          onTap: () => _turnPage(context,
+              forward: context.read<ConfigProvider>().readDirection !=
+                  ReadDirectionType.right),
           child: SizedBox(
             width: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
             child: Provider.of<ConfigProvider>(context).drawDebugWidget
@@ -480,13 +497,57 @@ class _ComicViewerPageState extends State<ComicViewerPage>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: true,
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       constraints:
           BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
-      builder: (context) => const ViewerSettingList(),
+      builder: (context) => Consumer<ConfigProvider>(
+        builder: (context, config, child) {
+          // Modal routes capture inherited themes. Resolve from the live app
+          // context instead, including when switching back to the app theme.
+          final theme = config.readerTheme.resolve(
+            Theme.of(this.context),
+            seedColor: config.themeColor.color,
+          );
+          return Theme(
+            data: theme,
+            child: Material(
+              color: theme.colorScheme.surfaceContainerLow,
+              shape: const RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(20))),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Semantics(
+                    label: MaterialLocalizations.of(context)
+                        .modalBarrierDismissLabel,
+                    button: true,
+                    onTap: () => Navigator.of(context).pop(),
+                    child: SizedBox(
+                      height: 48,
+                      child: Center(
+                        child: Container(
+                          width: 32,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Flexible(child: child!),
+                ],
+              ),
+            ),
+          );
+        },
+        child: const ViewerSettingList(),
+      ),
     );
   }
 
@@ -498,12 +559,13 @@ class _ComicViewerPageState extends State<ComicViewerPage>
         ? '${min(controller.currentPage, imageCount - 1) + 1}/$imageCount'
         : '';
     return AnimatedPositioned(
-      duration: const Duration(milliseconds: 300),
+      duration: _toolbarDuration,
+      curve: _toolbarCurve,
       left: 0,
       right: 0,
-      bottom: controller.showToolBar ? 0 : -96,
+      bottom: controller.showToolBar ? 0 : -_toolBarHeight,
       child: SizedBox(
-        height: 96,
+        height: _toolBarHeight,
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: colors.surfaceContainerLow,
@@ -587,15 +649,16 @@ class _ComicViewerPageState extends State<ComicViewerPage>
   Widget _buildAppBar(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return AnimatedPositioned(
-      duration: const Duration(milliseconds: 300),
+      duration: _toolbarDuration,
+      curve: _toolbarCurve,
       left: 0,
       right: 0,
       top: Provider.of<ComicViewerPageController>(context).showToolBar
           ? 0
-          : -100,
+          : -_appBarHeight,
       child: SafeArea(
         child: SizedBox(
-          height: 70,
+          height: _appBarHeight,
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: colors.surfaceContainerLow,
