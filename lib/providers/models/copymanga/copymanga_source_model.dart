@@ -679,10 +679,10 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                           comicSourceModel: parent,
                         ),
                     settings: const RouteSettings(name: 'ComicDetailPage')))
-                .then((value) {
+                .then((value) async {
               if (context.mounted) {
-                Provider.of<ComicFavoritePageController>(context, listen: false)
-                    .refresh();
+                await Provider.of<ComicFavoritePageController>(context, listen: false)
+                    .refreshBadges(rawData['path_word'].toString());
               }
             });
           }, DateTime.parse(rawData['datetime_updated']),

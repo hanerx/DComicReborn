@@ -435,6 +435,50 @@ void main() {
     expect(controller.data, isEmpty);
   });
 
+  test('badge refresh preserves loaded pages and the next page cursor',
+      () async {
+    final requests = <int>[];
+    mobile.dio.httpClientAdapter = ApiAdapter((request) {
+      final page = int.parse(request.uri.queryParameters['page']!);
+      requests.add(page);
+      return {
+        'errno': 0,
+        'data': {
+          'total': 3,
+          'list': [
+            {
+              'id': 'M_badge$page',
+              'contentType': 'comic',
+              'title': '漫画 $page',
+              'coverUrl': 'https://example.com/cover.jpg',
+              'lastUpdateChapterName': '第1话',
+              'lastUpdatedAt': '2020-01-01T00:00:00Z',
+            }
+          ]
+        }
+      };
+    });
+    final controller = ComicFavoritePageController(source);
+    addTearDown(controller.dispose);
+    await controller.refresh();
+    await controller.load();
+    final first = controller.data.first;
+    final second = controller.data.last;
+    expect(second.badges, isNotEmpty);
+    await source.accountModel!.addSubscribeState('badge2');
+    await controller.refreshBadges('badge2');
+    expect(controller.data, [first, second]);
+    expect(first.badges, isNotEmpty);
+    expect(second.badges, isEmpty);
+    expect(requests, [1, 2]);
+    await controller.load();
+    expect(requests, [1, 2, 3]);
+    expect(
+        controller.data
+            .map((item) => (item as GridItemEntityWithStatus).comicId),
+        ['badge1', 'badge2', 'badge3']);
+  });
+
   test('subscriptions keep server pagination across a novel-only page',
       () async {
     mobile.dio.httpClientAdapter = ApiAdapter((request) {

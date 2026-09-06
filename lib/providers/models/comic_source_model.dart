@@ -341,30 +341,34 @@ abstract class BaseComicAccountModel extends BaseModel {
 
   Future<List<GridItemEntity>> getSubscribeStateComics({int page = 0}) async {
     List<GridItemEntity> data = await getSubscribeComics(page: page);
-    var databaseInstance = await DatabaseInstance.instance;
-    for (var item in data) {
-      if (item is GridItemEntityWithStatus) {
-        var comicSubscribeState = await databaseInstance.comicSubscribeStateDao
-            .getOrCreateConfigByComicId(item.comicId, parent!.type.sourceId);
-        if (comicSubscribeState.timestamp != null) {
-          if (comicSubscribeState.timestamp!
-              .isBefore(item.lastUpdateTimestamp)) {
-            item.badges ??= {};
-            item.badges?.addAll({
-              BadgePosition.topEnd(top: -5, end: -5): (context) =>
-                  S.of(context).NewComicBadge
-            });
-          }
-        } else {
-          item.badges ??= {};
-          item.badges?.addAll({
-            BadgePosition.topEnd(top: -5, end: -5): (context) =>
-                S.of(context).NewComicBadge
-          });
-        }
-      }
-    }
+    await refreshSubscribeBadges(data);
     return data;
+  }
+
+  static final _newComicBadgePosition =
+      BadgePosition.topEnd(top: -5, end: -5);
+
+  /// Reconcile only the local read state; never fetch or reorder subscriptions.
+  Future<bool> refreshSubscribeBadges(Iterable<GridItemEntity> items) async {
+    final database = await DatabaseInstance.instance;
+    var changed = false;
+    for (final item in items) {
+      if (item is! GridItemEntityWithStatus) continue;
+      final state = await database.comicSubscribeStateDao
+          .getComicSubscribeStateByComicId(item.comicId, parent!.type.sourceId);
+      final isNew = state?.timestamp == null ||
+          state!.timestamp!.isBefore(item.lastUpdateTimestamp);
+      final hadBadge = item.badges?.containsKey(_newComicBadgePosition) ?? false;
+      if (isNew == hadBadge) continue;
+      if (isNew) {
+        (item.badges ??= {})[_newComicBadgePosition] =
+            (context) => S.of(context).NewComicBadge;
+      } else {
+        item.badges?.remove(_newComicBadgePosition);
+      }
+      changed = true;
+    }
+    return changed;
   }
 
   Future<void> addSubscribeState(String comicId) async {

@@ -939,10 +939,10 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                           comicSourceModel: parent,
                         ),
                     settings: const RouteSettings(name: 'ComicDetailPage')))
-                .then((value) {
+                .then((value) async {
               if (context.mounted) {
-                Provider.of<ComicFavoritePageController>(context, listen: false)
-                    .refresh();
+                await Provider.of<ComicFavoritePageController>(context, listen: false)
+                    .refreshBadges(rawData['id'].toString());
               }
             });
           }, DateTime.fromMillisecondsSinceEpoch(rawData['sub_uptime'] * 1000),
