@@ -172,7 +172,7 @@ class CopyMangaRequestHandler extends RequestHandler {
       _get('member/collect/comics', query: {
         'limit': limit,
         'offset': page * limit,
-        'ordering': '-datetime_modifier',
+        'ordering': '-datetime_updated',
       });
 
   Future<Response> getCategoryDetailList(
