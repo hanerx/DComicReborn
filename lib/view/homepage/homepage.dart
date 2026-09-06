@@ -84,7 +84,9 @@ class _HomePageState extends State<HomePage> {
       data.add(GridCard(
         entity.title,
         sideIcon: entity.icon,
-        crossAxisCount: entity.children.length % 3 == 0 ? 3 : 2,
+        crossAxisCount:
+            entity.crossAxisCount ?? (entity.children.length % 3 == 0 ? 3 : 2),
+        coverAspectRatio: entity.coverAspectRatio,
         onSideIconPressed: entity.onTap == null
             ? null
             : () {
@@ -96,6 +98,7 @@ class _HomePageState extends State<HomePage> {
           for (var cards in entity.children)
             GridCardItem(
               image: cards.cover,
+              coverAspectRatio: entity.coverAspectRatio,
               onTap: cards.onTap == null
                   ? null
                   : () {

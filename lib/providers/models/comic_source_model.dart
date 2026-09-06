@@ -497,8 +497,11 @@ class HomepageCardEntity {
   final IconData? icon;
   final void Function(BuildContext context)? onTap;
   final List<GridItemEntity> children;
+  final double coverAspectRatio;
+  final int? crossAxisCount;
 
-  HomepageCardEntity(this.title, this.icon, this.onTap, this.children);
+  HomepageCardEntity(this.title, this.icon, this.onTap, this.children,
+      {this.coverAspectRatio = 2 / 3, this.crossAxisCount});
 }
 
 class GridItemEntity {

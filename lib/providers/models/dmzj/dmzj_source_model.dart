@@ -694,79 +694,75 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                     ],
                   ),
                 )),
-            Row(
-              children: [
-                const Expanded(
-                  child: SizedBox(),
-                ),
-                Expanded(
-                    flex: 2,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          if (formKey.currentState!.validate()) {
-                            if (await login(usernameController.text,
-                                passwordController.text)) {
-                              if (!context.mounted) {
-                                return;
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: SizedBox(),
+                  ),
+                  Expanded(
+                      flex: 2,
+                      child: FilledButton.icon(
+                        onPressed: () async {
+                          try {
+                            if (formKey.currentState!.validate()) {
+                              if (await login(usernameController.text,
+                                  passwordController.text)) {
+                                if (!context.mounted) {
+                                  return;
+                                }
+                                Provider.of<NavigatorProvider>(context,
+                                        listen: false)
+                                    .getNavigator(
+                                        context, NavigatorType.defaultNavigator)
+                                    ?.pop();
                               }
-                              Provider.of<NavigatorProvider>(context,
-                                      listen: false)
-                                  .getNavigator(
-                                      context, NavigatorType.defaultNavigator)
-                                  ?.pop();
                             }
+                          } catch (e, s) {
+                            logger.e(e, error: e, stackTrace: s);
+                            if (!context.mounted) {
+                              return;
+                            }
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content:
+                                  Text(S.of(context).CommonLoginLoginFailed(e)),
+                            ));
                           }
-                        } catch (e, s) {
-                          logger.e(e, error: e, stackTrace: s);
-                          if (!context.mounted) {
-                            return;
-                          }
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content:
-                                Text(S.of(context).CommonLoginLoginFailed(e)),
-                          ));
-                        }
-                      },
-                      icon: const Icon(FontAwesome5.arrow_right),
-                      label: Text(S.of(context).CommonLoginLogin),
-                      style: ButtonStyle(
-                          shape: WidgetStateProperty.all(
-                              const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(3),
-                            bottomLeft: Radius.circular(3),
-                          ))),
-                          padding: WidgetStateProperty.all(
-                              const EdgeInsets.only(
-                                  top: 10, left: 10, bottom: 10))),
-                    ))
-              ],
+                        },
+                        icon: const Icon(Icons.arrow_forward_rounded),
+                        label: Text(S.of(context).CommonLoginLogin),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                        ),
+                      ))
+                ],
+              ),
             ),
-            Row(
-              children: [
-                const Expanded(
-                  child: SizedBox(),
-                ),
-                Expanded(
-                    flex: 1,
-                    child: ElevatedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(FontAwesome5.qq),
-                      label: Text(S.of(context).DMZJLoginQQLogin),
-                      style: ButtonStyle(
-                          backgroundColor: WidgetStateProperty.all(Colors.cyan),
-                          shape: WidgetStateProperty.all(
-                              const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(3),
-                            bottomLeft: Radius.circular(3),
-                          ))),
-                          padding: WidgetStateProperty.all(
-                              const EdgeInsets.only(
-                                  top: 10, left: 10, bottom: 10))),
-                    ))
-              ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Row(
+                children: [
+                  const Expanded(
+                    flex: 2,
+                    child: SizedBox(),
+                  ),
+                  Expanded(
+                      flex: 3,
+                      child: FilledButton.tonalIcon(
+                        onPressed: () {},
+                        icon: const Icon(FontAwesome5.qq),
+                        label: Text(S.of(context).DMZJLoginQQLogin),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                        ),
+                      ))
+                ],
+              ),
             )
           ],
         )
@@ -941,7 +937,8 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                     settings: const RouteSettings(name: 'ComicDetailPage')))
                 .then((value) async {
               if (context.mounted) {
-                await Provider.of<ComicFavoritePageController>(context, listen: false)
+                await Provider.of<ComicFavoritePageController>(context,
+                        listen: false)
                     .refreshBadges(rawData['id'].toString());
               }
             });
