@@ -1,5 +1,5 @@
 import 'package:dcomic/database/entity/entity_base.dart';
-import 'package:floor/floor.dart';
+import 'package:floor_community/floor.dart';
 
 @entity
 class CookieEntity extends EntityBase {

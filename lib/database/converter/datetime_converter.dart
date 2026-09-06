@@ -1,4 +1,4 @@
-import 'package:floor/floor.dart';
+import 'package:floor_community/floor.dart';
 
 class DateTimeConverter extends TypeConverter<DateTime, int> {
   @override

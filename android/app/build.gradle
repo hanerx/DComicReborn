@@ -34,8 +34,7 @@ keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 android {
     namespace "top.hanerx.dcomic"
     compileSdkVersion flutter.compileSdkVersion
-//    ndkVersion flutter.ndkVersion
-    ndkVersion "27.0.12077973"
+    ndkVersion flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_21
@@ -55,7 +54,7 @@ android {
         applicationId "top.hanerx.dcomic"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-build-configuration.
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

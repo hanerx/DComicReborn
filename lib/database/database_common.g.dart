@@ -58,11 +58,7 @@ class _$DComicDatabaseBuilder implements $DComicDatabaseBuilderContract {
         ? await sqfliteDatabaseFactory.getDatabasePath(name!)
         : ':memory:';
     final database = _$DComicDatabase();
-    database.database = await database.open(
-      path,
-      _migrations,
-      _callback,
-    );
+    database.database = await database.open(path, _migrations, _callback);
     return database;
   }
 }
@@ -100,23 +96,33 @@ class _$DComicDatabase extends DComicDatabase {
       },
       onUpgrade: (database, startVersion, endVersion) async {
         await MigrationAdapter.runMigrations(
-            database, startVersion, endVersion, migrations);
+          database,
+          startVersion,
+          endVersion,
+          migrations,
+        );
 
         await callback?.onUpgrade?.call(database, startVersion, endVersion);
       },
       onCreate: (database, version) async {
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `ConfigEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT)');
+          'CREATE TABLE IF NOT EXISTS `ConfigEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT)',
+        );
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `ComicHistoryEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `title` TEXT NOT NULL, `cover` TEXT NOT NULL, `coverType` INTEGER NOT NULL, `lastChapterTitle` TEXT NOT NULL, `lastChapterId` TEXT NOT NULL, `timestamp` INTEGER, `providerName` TEXT NOT NULL)');
+          'CREATE TABLE IF NOT EXISTS `ComicHistoryEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `title` TEXT NOT NULL, `cover` TEXT NOT NULL, `coverType` INTEGER NOT NULL, `lastChapterTitle` TEXT NOT NULL, `lastChapterId` TEXT NOT NULL, `timestamp` INTEGER, `providerName` TEXT NOT NULL)',
+        );
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `CookieEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT NOT NULL)');
+          'CREATE TABLE IF NOT EXISTS `CookieEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT NOT NULL)',
+        );
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `ModelConfigEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT, `sourceModel` TEXT)');
+          'CREATE TABLE IF NOT EXISTS `ModelConfigEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT, `sourceModel` TEXT)',
+        );
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `ComicMappingEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `sourceProviderName` TEXT NOT NULL, `targetProviderName` TEXT NOT NULL, `resultComicId` TEXT NOT NULL)');
+          'CREATE TABLE IF NOT EXISTS `ComicMappingEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `sourceProviderName` TEXT NOT NULL, `targetProviderName` TEXT NOT NULL, `resultComicId` TEXT NOT NULL)',
+        );
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `ComicSubscribeStateEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `timestamp` INTEGER, `providerName` TEXT NOT NULL)');
+          'CREATE TABLE IF NOT EXISTS `ComicSubscribeStateEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `timestamp` INTEGER, `providerName` TEXT NOT NULL)',
+        );
 
         await callback?.onCreate?.call(database, version);
       },
@@ -131,8 +137,10 @@ class _$DComicDatabase extends DComicDatabase {
 
   @override
   ComicHistoryDao get comicHistoryDao {
-    return _comicHistoryDaoInstance ??=
-        _$ComicHistoryDao(database, changeListener);
+    return _comicHistoryDaoInstance ??= _$ComicHistoryDao(
+      database,
+      changeListener,
+    );
   }
 
   @override
@@ -142,45 +150,51 @@ class _$DComicDatabase extends DComicDatabase {
 
   @override
   ModelConfigDao get modelConfigDao {
-    return _modelConfigDaoInstance ??=
-        _$ModelConfigDao(database, changeListener);
+    return _modelConfigDaoInstance ??= _$ModelConfigDao(
+      database,
+      changeListener,
+    );
   }
 
   @override
   ComicMappingDao get comicMappingDao {
-    return _comicMappingDaoInstance ??=
-        _$ComicMappingDao(database, changeListener);
+    return _comicMappingDaoInstance ??= _$ComicMappingDao(
+      database,
+      changeListener,
+    );
   }
 
   @override
   ComicSubscribeStateDao get comicSubscribeStateDao {
-    return _comicSubscribeStateDaoInstance ??=
-        _$ComicSubscribeStateDao(database, changeListener);
+    return _comicSubscribeStateDaoInstance ??= _$ComicSubscribeStateDao(
+      database,
+      changeListener,
+    );
   }
 }
 
 class _$ConfigDao extends ConfigDao {
-  _$ConfigDao(
-    this.database,
-    this.changeListener,
-  )   : _queryAdapter = QueryAdapter(database),
-        _configEntityInsertionAdapter = InsertionAdapter(
-            database,
-            'ConfigEntity',
-            (ConfigEntity item) => <String, Object?>{
-                  'id': item.id,
-                  'key': item.key,
-                  'value': item.value
-                }),
-        _configEntityUpdateAdapter = UpdateAdapter(
-            database,
-            'ConfigEntity',
-            ['id'],
-            (ConfigEntity item) => <String, Object?>{
-                  'id': item.id,
-                  'key': item.key,
-                  'value': item.value
-                });
+  _$ConfigDao(this.database, this.changeListener)
+    : _queryAdapter = QueryAdapter(database),
+      _configEntityInsertionAdapter = InsertionAdapter(
+        database,
+        'ConfigEntity',
+        (ConfigEntity item) => <String, Object?>{
+          'id': item.id,
+          'key': item.key,
+          'value': item.value,
+        },
+      ),
+      _configEntityUpdateAdapter = UpdateAdapter(
+        database,
+        'ConfigEntity',
+        ['id'],
+        (ConfigEntity item) => <String, Object?>{
+          'id': item.id,
+          'key': item.key,
+          'value': item.value,
+        },
+      );
 
   final sqflite.DatabaseExecutor database;
 
@@ -194,68 +208,80 @@ class _$ConfigDao extends ConfigDao {
 
   @override
   Future<List<ConfigEntity>> getAllConfig() async {
-    return _queryAdapter.queryList('SELECT * FROM ConfigEntity',
-        mapper: (Map<String, Object?> row) => ConfigEntity(
-            row['id'] as int?, row['key'] as String, row['value'] as String?));
+    return _queryAdapter.queryList(
+      'SELECT * FROM ConfigEntity',
+      mapper: (Map<String, Object?> row) => ConfigEntity(
+        row['id'] as int?,
+        row['key'] as String,
+        row['value'] as String?,
+      ),
+    );
   }
 
   @override
   Future<ConfigEntity?> getConfigByKey(String key) async {
-    return _queryAdapter.query('SELECT * FROM ConfigEntity WHERE `key` = ?1',
-        mapper: (Map<String, Object?> row) => ConfigEntity(
-            row['id'] as int?, row['key'] as String, row['value'] as String?),
-        arguments: [key]);
+    return _queryAdapter.query(
+      'SELECT * FROM ConfigEntity WHERE `key` = ?1',
+      mapper: (Map<String, Object?> row) => ConfigEntity(
+        row['id'] as int?,
+        row['key'] as String,
+        row['value'] as String?,
+      ),
+      arguments: [key],
+    );
   }
 
   @override
   Future<void> insertConfig(ConfigEntity configEntity) async {
     await _configEntityInsertionAdapter.insert(
-        configEntity, OnConflictStrategy.abort);
+      configEntity,
+      OnConflictStrategy.abort,
+    );
   }
 
   @override
   Future<void> updateConfig(ConfigEntity configEntity) async {
     await _configEntityUpdateAdapter.update(
-        configEntity, OnConflictStrategy.replace);
+      configEntity,
+      OnConflictStrategy.replace,
+    );
   }
 }
 
 class _$ComicHistoryDao extends ComicHistoryDao {
-  _$ComicHistoryDao(
-    this.database,
-    this.changeListener,
-  )   : _queryAdapter = QueryAdapter(database),
-        _comicHistoryEntityInsertionAdapter = InsertionAdapter(
-            database,
-            'ComicHistoryEntity',
-            (ComicHistoryEntity item) => <String, Object?>{
-                  'id': item.id,
-                  'comicId': item.comicId,
-                  'title': item.title,
-                  'cover': item.cover,
-                  'coverType': _imageTypeConverter.encode(item.coverType),
-                  'lastChapterTitle': item.lastChapterTitle,
-                  'lastChapterId': item.lastChapterId,
-                  'timestamp':
-                      _dateTimeNullableConverter.encode(item.timestamp),
-                  'providerName': item.providerName
-                }),
-        _comicHistoryEntityUpdateAdapter = UpdateAdapter(
-            database,
-            'ComicHistoryEntity',
-            ['id'],
-            (ComicHistoryEntity item) => <String, Object?>{
-                  'id': item.id,
-                  'comicId': item.comicId,
-                  'title': item.title,
-                  'cover': item.cover,
-                  'coverType': _imageTypeConverter.encode(item.coverType),
-                  'lastChapterTitle': item.lastChapterTitle,
-                  'lastChapterId': item.lastChapterId,
-                  'timestamp':
-                      _dateTimeNullableConverter.encode(item.timestamp),
-                  'providerName': item.providerName
-                });
+  _$ComicHistoryDao(this.database, this.changeListener)
+    : _queryAdapter = QueryAdapter(database),
+      _comicHistoryEntityInsertionAdapter = InsertionAdapter(
+        database,
+        'ComicHistoryEntity',
+        (ComicHistoryEntity item) => <String, Object?>{
+          'id': item.id,
+          'comicId': item.comicId,
+          'title': item.title,
+          'cover': item.cover,
+          'coverType': _imageTypeConverter.encode(item.coverType),
+          'lastChapterTitle': item.lastChapterTitle,
+          'lastChapterId': item.lastChapterId,
+          'timestamp': _dateTimeNullableConverter.encode(item.timestamp),
+          'providerName': item.providerName,
+        },
+      ),
+      _comicHistoryEntityUpdateAdapter = UpdateAdapter(
+        database,
+        'ComicHistoryEntity',
+        ['id'],
+        (ComicHistoryEntity item) => <String, Object?>{
+          'id': item.id,
+          'comicId': item.comicId,
+          'title': item.title,
+          'cover': item.cover,
+          'coverType': _imageTypeConverter.encode(item.coverType),
+          'lastChapterTitle': item.lastChapterTitle,
+          'lastChapterId': item.lastChapterId,
+          'timestamp': _dateTimeNullableConverter.encode(item.timestamp),
+          'providerName': item.providerName,
+        },
+      );
 
   final sqflite.DatabaseExecutor database;
 
@@ -264,23 +290,26 @@ class _$ComicHistoryDao extends ComicHistoryDao {
   final QueryAdapter _queryAdapter;
 
   final InsertionAdapter<ComicHistoryEntity>
-      _comicHistoryEntityInsertionAdapter;
+  _comicHistoryEntityInsertionAdapter;
 
   final UpdateAdapter<ComicHistoryEntity> _comicHistoryEntityUpdateAdapter;
 
   @override
   Future<List<ComicHistoryEntity>> getAllComicHistoryEntity() async {
-    return _queryAdapter.queryList('SELECT * FROM ComicHistoryEntity',
-        mapper: (Map<String, Object?> row) => ComicHistoryEntity(
-            row['id'] as int?,
-            row['comicId'] as String,
-            row['title'] as String,
-            row['cover'] as String,
-            _imageTypeConverter.decode(row['coverType'] as int),
-            row['lastChapterTitle'] as String,
-            row['lastChapterId'] as String,
-            _dateTimeNullableConverter.decode(row['timestamp'] as int?),
-            row['providerName'] as String));
+    return _queryAdapter.queryList(
+      'SELECT * FROM ComicHistoryEntity',
+      mapper: (Map<String, Object?> row) => ComicHistoryEntity(
+        row['id'] as int?,
+        row['comicId'] as String,
+        row['title'] as String,
+        row['cover'] as String,
+        _imageTypeConverter.decode(row['coverType'] as int),
+        row['lastChapterTitle'] as String,
+        row['lastChapterId'] as String,
+        _dateTimeNullableConverter.decode(row['timestamp'] as int?),
+        row['providerName'] as String,
+      ),
+    );
   }
 
   @override
@@ -289,55 +318,82 @@ class _$ComicHistoryDao extends ComicHistoryDao {
     String providerName,
   ) async {
     return _queryAdapter.query(
-        'SELECT * FROM ComicHistoryEntity WHERE `comicId`= ?1 AND `providerName`= ?2',
-        mapper: (Map<String, Object?> row) => ComicHistoryEntity(row['id'] as int?, row['comicId'] as String, row['title'] as String, row['cover'] as String, _imageTypeConverter.decode(row['coverType'] as int), row['lastChapterTitle'] as String, row['lastChapterId'] as String, _dateTimeNullableConverter.decode(row['timestamp'] as int?), row['providerName'] as String),
-        arguments: [comicId, providerName]);
+      'SELECT * FROM ComicHistoryEntity WHERE `comicId`= ?1 AND `providerName`= ?2',
+      mapper: (Map<String, Object?> row) => ComicHistoryEntity(
+        row['id'] as int?,
+        row['comicId'] as String,
+        row['title'] as String,
+        row['cover'] as String,
+        _imageTypeConverter.decode(row['coverType'] as int),
+        row['lastChapterTitle'] as String,
+        row['lastChapterId'] as String,
+        _dateTimeNullableConverter.decode(row['timestamp'] as int?),
+        row['providerName'] as String,
+      ),
+      arguments: [comicId, providerName],
+    );
   }
 
   @override
   Future<List<ComicHistoryEntity>> getComicHistoryByProvider(
-      String providerName) async {
+    String providerName,
+  ) async {
     return _queryAdapter.queryList(
-        'SELECT * FROM ComicHistoryEntity WHERE `providerName`= ?1 GROUP BY comicId',
-        mapper: (Map<String, Object?> row) => ComicHistoryEntity(row['id'] as int?, row['comicId'] as String, row['title'] as String, row['cover'] as String, _imageTypeConverter.decode(row['coverType'] as int), row['lastChapterTitle'] as String, row['lastChapterId'] as String, _dateTimeNullableConverter.decode(row['timestamp'] as int?), row['providerName'] as String),
-        arguments: [providerName]);
+      'SELECT * FROM ComicHistoryEntity WHERE `providerName`= ?1 GROUP BY comicId',
+      mapper: (Map<String, Object?> row) => ComicHistoryEntity(
+        row['id'] as int?,
+        row['comicId'] as String,
+        row['title'] as String,
+        row['cover'] as String,
+        _imageTypeConverter.decode(row['coverType'] as int),
+        row['lastChapterTitle'] as String,
+        row['lastChapterId'] as String,
+        _dateTimeNullableConverter.decode(row['timestamp'] as int?),
+        row['providerName'] as String,
+      ),
+      arguments: [providerName],
+    );
   }
 
   @override
   Future<void> insertComicHistory(ComicHistoryEntity comicHistoryEntity) async {
     await _comicHistoryEntityInsertionAdapter.insert(
-        comicHistoryEntity, OnConflictStrategy.replace);
+      comicHistoryEntity,
+      OnConflictStrategy.replace,
+    );
   }
 
   @override
   Future<void> updateComicHistory(ComicHistoryEntity comicHistoryEntity) async {
     await _comicHistoryEntityUpdateAdapter.update(
-        comicHistoryEntity, OnConflictStrategy.replace);
+      comicHistoryEntity,
+      OnConflictStrategy.replace,
+    );
   }
 }
 
 class _$CookieDao extends CookieDao {
-  _$CookieDao(
-    this.database,
-    this.changeListener,
-  )   : _queryAdapter = QueryAdapter(database),
-        _cookieEntityInsertionAdapter = InsertionAdapter(
-            database,
-            'CookieEntity',
-            (CookieEntity item) => <String, Object?>{
-                  'id': item.id,
-                  'key': item.key,
-                  'value': item.value
-                }),
-        _cookieEntityUpdateAdapter = UpdateAdapter(
-            database,
-            'CookieEntity',
-            ['id'],
-            (CookieEntity item) => <String, Object?>{
-                  'id': item.id,
-                  'key': item.key,
-                  'value': item.value
-                });
+  _$CookieDao(this.database, this.changeListener)
+    : _queryAdapter = QueryAdapter(database),
+      _cookieEntityInsertionAdapter = InsertionAdapter(
+        database,
+        'CookieEntity',
+        (CookieEntity item) => <String, Object?>{
+          'id': item.id,
+          'key': item.key,
+          'value': item.value,
+        },
+      ),
+      _cookieEntityUpdateAdapter = UpdateAdapter(
+        database,
+        'CookieEntity',
+        ['id'],
+        (CookieEntity item) => <String, Object?>{
+          'id': item.id,
+          'key': item.key,
+          'value': item.value,
+        },
+      );
 
   final sqflite.DatabaseExecutor database;
 
@@ -351,63 +407,78 @@ class _$CookieDao extends CookieDao {
 
   @override
   Future<List<CookieEntity>> getAllCookies() async {
-    return _queryAdapter.queryList('SELECT * FROM CookieEntity',
-        mapper: (Map<String, Object?> row) => CookieEntity(
-            row['id'] as int?, row['key'] as String, row['value'] as String));
+    return _queryAdapter.queryList(
+      'SELECT * FROM CookieEntity',
+      mapper: (Map<String, Object?> row) => CookieEntity(
+        row['id'] as int?,
+        row['key'] as String,
+        row['value'] as String,
+      ),
+    );
   }
 
   @override
   Future<CookieEntity?> getCookieByKey(String key) async {
-    return _queryAdapter.query('SELECT * FROM CookieEntity WHERE `key` = ?1',
-        mapper: (Map<String, Object?> row) => CookieEntity(
-            row['id'] as int?, row['key'] as String, row['value'] as String),
-        arguments: [key]);
+    return _queryAdapter.query(
+      'SELECT * FROM CookieEntity WHERE `key` = ?1',
+      mapper: (Map<String, Object?> row) => CookieEntity(
+        row['id'] as int?,
+        row['key'] as String,
+        row['value'] as String,
+      ),
+      arguments: [key],
+    );
   }
 
   @override
   Future<void> deleteCookie(String key) async {
     await _queryAdapter.queryNoReturn(
-        'DELETE FROM CookieEntity WHERE `key` = ?1',
-        arguments: [key]);
+      'DELETE FROM CookieEntity WHERE `key` = ?1',
+      arguments: [key],
+    );
   }
 
   @override
   Future<void> insertCookie(CookieEntity cookieEntity) async {
     await _cookieEntityInsertionAdapter.insert(
-        cookieEntity, OnConflictStrategy.replace);
+      cookieEntity,
+      OnConflictStrategy.replace,
+    );
   }
 
   @override
   Future<void> updateCookie(CookieEntity cookieEntity) async {
     await _cookieEntityUpdateAdapter.update(
-        cookieEntity, OnConflictStrategy.replace);
+      cookieEntity,
+      OnConflictStrategy.replace,
+    );
   }
 }
 
 class _$ModelConfigDao extends ModelConfigDao {
-  _$ModelConfigDao(
-    this.database,
-    this.changeListener,
-  )   : _queryAdapter = QueryAdapter(database),
-        _modelConfigEntityInsertionAdapter = InsertionAdapter(
-            database,
-            'ModelConfigEntity',
-            (ModelConfigEntity item) => <String, Object?>{
-                  'id': item.id,
-                  'key': item.key,
-                  'value': item.value,
-                  'sourceModel': item.sourceModel
-                }),
-        _modelConfigEntityUpdateAdapter = UpdateAdapter(
-            database,
-            'ModelConfigEntity',
-            ['id'],
-            (ModelConfigEntity item) => <String, Object?>{
-                  'id': item.id,
-                  'key': item.key,
-                  'value': item.value,
-                  'sourceModel': item.sourceModel
-                });
+  _$ModelConfigDao(this.database, this.changeListener)
+    : _queryAdapter = QueryAdapter(database),
+      _modelConfigEntityInsertionAdapter = InsertionAdapter(
+        database,
+        'ModelConfigEntity',
+        (ModelConfigEntity item) => <String, Object?>{
+          'id': item.id,
+          'key': item.key,
+          'value': item.value,
+          'sourceModel': item.sourceModel,
+        },
+      ),
+      _modelConfigEntityUpdateAdapter = UpdateAdapter(
+        database,
+        'ModelConfigEntity',
+        ['id'],
+        (ModelConfigEntity item) => <String, Object?>{
+          'id': item.id,
+          'key': item.key,
+          'value': item.value,
+          'sourceModel': item.sourceModel,
+        },
+      );
 
   final sqflite.DatabaseExecutor database;
 
@@ -421,12 +492,15 @@ class _$ModelConfigDao extends ModelConfigDao {
 
   @override
   Future<List<ModelConfigEntity>> getAllConfig() async {
-    return _queryAdapter.queryList('SELECT * FROM ModelConfigEntity',
-        mapper: (Map<String, Object?> row) => ModelConfigEntity(
-            row['id'] as int?,
-            row['key'] as String,
-            row['value'] as String?,
-            row['sourceModel'] as String?));
+    return _queryAdapter.queryList(
+      'SELECT * FROM ModelConfigEntity',
+      mapper: (Map<String, Object?> row) => ModelConfigEntity(
+        row['id'] as int?,
+        row['key'] as String,
+        row['value'] as String?,
+        row['sourceModel'] as String?,
+      ),
+    );
   }
 
   @override
@@ -435,50 +509,60 @@ class _$ModelConfigDao extends ModelConfigDao {
     String sourceModel,
   ) async {
     return _queryAdapter.query(
-        'SELECT * FROM ModelConfigEntity WHERE `key` = ?1 AND `sourceModel` = ?2',
-        mapper: (Map<String, Object?> row) => ModelConfigEntity(row['id'] as int?, row['key'] as String, row['value'] as String?, row['sourceModel'] as String?),
-        arguments: [key, sourceModel]);
+      'SELECT * FROM ModelConfigEntity WHERE `key` = ?1 AND `sourceModel` = ?2',
+      mapper: (Map<String, Object?> row) => ModelConfigEntity(
+        row['id'] as int?,
+        row['key'] as String,
+        row['value'] as String?,
+        row['sourceModel'] as String?,
+      ),
+      arguments: [key, sourceModel],
+    );
   }
 
   @override
   Future<void> insertConfig(ModelConfigEntity configEntity) async {
     await _modelConfigEntityInsertionAdapter.insert(
-        configEntity, OnConflictStrategy.replace);
+      configEntity,
+      OnConflictStrategy.replace,
+    );
   }
 
   @override
   Future<void> updateConfig(ModelConfigEntity configEntity) async {
     await _modelConfigEntityUpdateAdapter.update(
-        configEntity, OnConflictStrategy.replace);
+      configEntity,
+      OnConflictStrategy.replace,
+    );
   }
 }
 
 class _$ComicMappingDao extends ComicMappingDao {
-  _$ComicMappingDao(
-    this.database,
-    this.changeListener,
-  )   : _queryAdapter = QueryAdapter(database),
-        _comicMappingEntityInsertionAdapter = InsertionAdapter(
-            database,
-            'ComicMappingEntity',
-            (ComicMappingEntity item) => <String, Object?>{
-                  'id': item.id,
-                  'comicId': item.comicId,
-                  'sourceProviderName': item.sourceProviderName,
-                  'targetProviderName': item.targetProviderName,
-                  'resultComicId': item.resultComicId
-                }),
-        _comicMappingEntityUpdateAdapter = UpdateAdapter(
-            database,
-            'ComicMappingEntity',
-            ['id'],
-            (ComicMappingEntity item) => <String, Object?>{
-                  'id': item.id,
-                  'comicId': item.comicId,
-                  'sourceProviderName': item.sourceProviderName,
-                  'targetProviderName': item.targetProviderName,
-                  'resultComicId': item.resultComicId
-                });
+  _$ComicMappingDao(this.database, this.changeListener)
+    : _queryAdapter = QueryAdapter(database),
+      _comicMappingEntityInsertionAdapter = InsertionAdapter(
+        database,
+        'ComicMappingEntity',
+        (ComicMappingEntity item) => <String, Object?>{
+          'id': item.id,
+          'comicId': item.comicId,
+          'sourceProviderName': item.sourceProviderName,
+          'targetProviderName': item.targetProviderName,
+          'resultComicId': item.resultComicId,
+        },
+      ),
+      _comicMappingEntityUpdateAdapter = UpdateAdapter(
+        database,
+        'ComicMappingEntity',
+        ['id'],
+        (ComicMappingEntity item) => <String, Object?>{
+          'id': item.id,
+          'comicId': item.comicId,
+          'sourceProviderName': item.sourceProviderName,
+          'targetProviderName': item.targetProviderName,
+          'resultComicId': item.resultComicId,
+        },
+      );
 
   final sqflite.DatabaseExecutor database;
 
@@ -487,19 +571,22 @@ class _$ComicMappingDao extends ComicMappingDao {
   final QueryAdapter _queryAdapter;
 
   final InsertionAdapter<ComicMappingEntity>
-      _comicMappingEntityInsertionAdapter;
+  _comicMappingEntityInsertionAdapter;
 
   final UpdateAdapter<ComicMappingEntity> _comicMappingEntityUpdateAdapter;
 
   @override
   Future<List<ComicMappingEntity>> getAllComicMappingEntity() async {
-    return _queryAdapter.queryList('SELECT * FROM ComicMappingEntity',
-        mapper: (Map<String, Object?> row) => ComicMappingEntity(
-            row['id'] as int?,
-            row['comicId'] as String,
-            row['sourceProviderName'] as String,
-            row['targetProviderName'] as String,
-            row['resultComicId'] as String));
+    return _queryAdapter.queryList(
+      'SELECT * FROM ComicMappingEntity',
+      mapper: (Map<String, Object?> row) => ComicMappingEntity(
+        row['id'] as int?,
+        row['comicId'] as String,
+        row['sourceProviderName'] as String,
+        row['targetProviderName'] as String,
+        row['resultComicId'] as String,
+      ),
+    );
   }
 
   @override
@@ -509,21 +596,32 @@ class _$ComicMappingDao extends ComicMappingDao {
     String targetProviderName,
   ) async {
     return _queryAdapter.query(
-        'SELECT * FROM ComicMappingEntity WHERE `comicId` = ?1 AND `sourceProviderName` = ?2 AND `targetProviderName` = ?3',
-        mapper: (Map<String, Object?> row) => ComicMappingEntity(row['id'] as int?, row['comicId'] as String, row['sourceProviderName'] as String, row['targetProviderName'] as String, row['resultComicId'] as String),
-        arguments: [comicId, sourceProviderName, targetProviderName]);
+      'SELECT * FROM ComicMappingEntity WHERE `comicId` = ?1 AND `sourceProviderName` = ?2 AND `targetProviderName` = ?3',
+      mapper: (Map<String, Object?> row) => ComicMappingEntity(
+        row['id'] as int?,
+        row['comicId'] as String,
+        row['sourceProviderName'] as String,
+        row['targetProviderName'] as String,
+        row['resultComicId'] as String,
+      ),
+      arguments: [comicId, sourceProviderName, targetProviderName],
+    );
   }
 
   @override
   Future<void> insertComicMapping(ComicMappingEntity comicMappingEntity) async {
     await _comicMappingEntityInsertionAdapter.insert(
-        comicMappingEntity, OnConflictStrategy.replace);
+      comicMappingEntity,
+      OnConflictStrategy.replace,
+    );
   }
 
   @override
   Future<void> updateComicMapping(ComicMappingEntity comicMappingEntity) async {
     await _comicMappingEntityUpdateAdapter.update(
-        comicMappingEntity, OnConflictStrategy.replace);
+      comicMappingEntity,
+      OnConflictStrategy.replace,
+    );
   }
 
   @override
@@ -534,14 +632,21 @@ class _$ComicMappingDao extends ComicMappingDao {
   ) async {
     if (database is sqflite.Transaction) {
       return super.getOrCreateConfigByComicId(
-          comicId, sourceProviderName, targetProviderName);
+        comicId,
+        sourceProviderName,
+        targetProviderName,
+      );
     } else {
-      return (database as sqflite.Database)
-          .transaction<ComicMappingEntity>((transaction) async {
+      return (database as sqflite.Database).transaction<ComicMappingEntity>((
+        transaction,
+      ) async {
         final transactionDatabase = _$DComicDatabase(changeListener)
           ..database = transaction;
         return transactionDatabase.comicMappingDao.getOrCreateConfigByComicId(
-            comicId, sourceProviderName, targetProviderName);
+          comicId,
+          sourceProviderName,
+          targetProviderName,
+        );
       });
     }
   }
@@ -555,46 +660,53 @@ class _$ComicMappingDao extends ComicMappingDao {
   ) async {
     if (database is sqflite.Transaction) {
       return super.insertAutomaticMappingIfAbsent(
-          comicId, sourceProviderName, targetProviderName, resultComicId);
+        comicId,
+        sourceProviderName,
+        targetProviderName,
+        resultComicId,
+      );
     } else {
-      return (database as sqflite.Database)
-          .transaction<ComicMappingEntity>((transaction) async {
+      return (database as sqflite.Database).transaction<ComicMappingEntity>((
+        transaction,
+      ) async {
         final transactionDatabase = _$DComicDatabase(changeListener)
           ..database = transaction;
         return transactionDatabase.comicMappingDao
             .insertAutomaticMappingIfAbsent(
-                comicId, sourceProviderName, targetProviderName, resultComicId);
+              comicId,
+              sourceProviderName,
+              targetProviderName,
+              resultComicId,
+            );
       });
     }
   }
 }
 
 class _$ComicSubscribeStateDao extends ComicSubscribeStateDao {
-  _$ComicSubscribeStateDao(
-    this.database,
-    this.changeListener,
-  )   : _queryAdapter = QueryAdapter(database),
-        _comicSubscribeStateEntityInsertionAdapter = InsertionAdapter(
-            database,
-            'ComicSubscribeStateEntity',
-            (ComicSubscribeStateEntity item) => <String, Object?>{
-                  'id': item.id,
-                  'comicId': item.comicId,
-                  'timestamp':
-                      _dateTimeNullableConverter.encode(item.timestamp),
-                  'providerName': item.providerName
-                }),
-        _comicSubscribeStateEntityUpdateAdapter = UpdateAdapter(
-            database,
-            'ComicSubscribeStateEntity',
-            ['id'],
-            (ComicSubscribeStateEntity item) => <String, Object?>{
-                  'id': item.id,
-                  'comicId': item.comicId,
-                  'timestamp':
-                      _dateTimeNullableConverter.encode(item.timestamp),
-                  'providerName': item.providerName
-                });
+  _$ComicSubscribeStateDao(this.database, this.changeListener)
+    : _queryAdapter = QueryAdapter(database),
+      _comicSubscribeStateEntityInsertionAdapter = InsertionAdapter(
+        database,
+        'ComicSubscribeStateEntity',
+        (ComicSubscribeStateEntity item) => <String, Object?>{
+          'id': item.id,
+          'comicId': item.comicId,
+          'timestamp': _dateTimeNullableConverter.encode(item.timestamp),
+          'providerName': item.providerName,
+        },
+      ),
+      _comicSubscribeStateEntityUpdateAdapter = UpdateAdapter(
+        database,
+        'ComicSubscribeStateEntity',
+        ['id'],
+        (ComicSubscribeStateEntity item) => <String, Object?>{
+          'id': item.id,
+          'comicId': item.comicId,
+          'timestamp': _dateTimeNullableConverter.encode(item.timestamp),
+          'providerName': item.providerName,
+        },
+      );
 
   final sqflite.DatabaseExecutor database;
 
@@ -603,20 +715,23 @@ class _$ComicSubscribeStateDao extends ComicSubscribeStateDao {
   final QueryAdapter _queryAdapter;
 
   final InsertionAdapter<ComicSubscribeStateEntity>
-      _comicSubscribeStateEntityInsertionAdapter;
+  _comicSubscribeStateEntityInsertionAdapter;
 
   final UpdateAdapter<ComicSubscribeStateEntity>
-      _comicSubscribeStateEntityUpdateAdapter;
+  _comicSubscribeStateEntityUpdateAdapter;
 
   @override
   Future<List<ComicSubscribeStateEntity>>
-      getAllComicSubscribeStateEntity() async {
-    return _queryAdapter.queryList('SELECT * FROM ComicSubscribeStateEntity',
-        mapper: (Map<String, Object?> row) => ComicSubscribeStateEntity(
-            row['id'] as int?,
-            row['comicId'] as String,
-            _dateTimeNullableConverter.decode(row['timestamp'] as int?),
-            row['providerName'] as String));
+  getAllComicSubscribeStateEntity() async {
+    return _queryAdapter.queryList(
+      'SELECT * FROM ComicSubscribeStateEntity',
+      mapper: (Map<String, Object?> row) => ComicSubscribeStateEntity(
+        row['id'] as int?,
+        row['comicId'] as String,
+        _dateTimeNullableConverter.decode(row['timestamp'] as int?),
+        row['providerName'] as String,
+      ),
+    );
   }
 
   @override
@@ -625,32 +740,51 @@ class _$ComicSubscribeStateDao extends ComicSubscribeStateDao {
     String providerName,
   ) async {
     return _queryAdapter.query(
-        'SELECT * FROM ComicSubscribeStateEntity WHERE `comicId`= ?1 AND `providerName`= ?2',
-        mapper: (Map<String, Object?> row) => ComicSubscribeStateEntity(row['id'] as int?, row['comicId'] as String, _dateTimeNullableConverter.decode(row['timestamp'] as int?), row['providerName'] as String),
-        arguments: [comicId, providerName]);
+      'SELECT * FROM ComicSubscribeStateEntity WHERE `comicId`= ?1 AND `providerName`= ?2',
+      mapper: (Map<String, Object?> row) => ComicSubscribeStateEntity(
+        row['id'] as int?,
+        row['comicId'] as String,
+        _dateTimeNullableConverter.decode(row['timestamp'] as int?),
+        row['providerName'] as String,
+      ),
+      arguments: [comicId, providerName],
+    );
   }
 
   @override
   Future<List<ComicSubscribeStateEntity>> getComicSubscribeStateByProvider(
-      String providerName) async {
+    String providerName,
+  ) async {
     return _queryAdapter.queryList(
-        'SELECT * FROM ComicSubscribeStateEntity WHERE `providerName`= ?1 GROUP BY comicId',
-        mapper: (Map<String, Object?> row) => ComicSubscribeStateEntity(row['id'] as int?, row['comicId'] as String, _dateTimeNullableConverter.decode(row['timestamp'] as int?), row['providerName'] as String),
-        arguments: [providerName]);
+      'SELECT * FROM ComicSubscribeStateEntity WHERE `providerName`= ?1 GROUP BY comicId',
+      mapper: (Map<String, Object?> row) => ComicSubscribeStateEntity(
+        row['id'] as int?,
+        row['comicId'] as String,
+        _dateTimeNullableConverter.decode(row['timestamp'] as int?),
+        row['providerName'] as String,
+      ),
+      arguments: [providerName],
+    );
   }
 
   @override
   Future<void> insertComicSubscribeState(
-      ComicSubscribeStateEntity comicSubscribeStateEntity) async {
+    ComicSubscribeStateEntity comicSubscribeStateEntity,
+  ) async {
     await _comicSubscribeStateEntityInsertionAdapter.insert(
-        comicSubscribeStateEntity, OnConflictStrategy.replace);
+      comicSubscribeStateEntity,
+      OnConflictStrategy.replace,
+    );
   }
 
   @override
   Future<void> updateComicSubscribeState(
-      ComicSubscribeStateEntity comicSubscribeStateEntity) async {
+    ComicSubscribeStateEntity comicSubscribeStateEntity,
+  ) async {
     await _comicSubscribeStateEntityUpdateAdapter.update(
-        comicSubscribeStateEntity, OnConflictStrategy.replace);
+      comicSubscribeStateEntity,
+      OnConflictStrategy.replace,
+    );
   }
 }
 

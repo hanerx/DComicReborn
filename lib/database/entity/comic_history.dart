@@ -1,6 +1,6 @@
 import 'package:dcomic/database/entity/entity_base.dart';
 import 'package:dcomic/utils/image_utils.dart';
-import 'package:floor/floor.dart';
+import 'package:floor_community/floor.dart';
 
 @Entity()
 class ComicHistoryEntity extends EntityBase {

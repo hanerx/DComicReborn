@@ -67,18 +67,43 @@ DComic Ver2.0
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### 工具链
 
-A few resources to get you started if this is your first Flutter project:
+- Flutter stable **3.47.2** / Dart **3.13.2**，CI 使用同一 Flutter 版本。
+- 最低系统：Android **7.0 / API 24**、iOS **15**。
+- Android：JDK 21、SDK 36、NDK 28.2.13676358；NDK 版本跟随 Flutter。
+- AGP **8.13.2**、Gradle **8.14.5**、Kotlin **2.4.0**。保留 Gradle 8.x 是因为 `flutter_downloader 1.12.1` 的构建依赖尚不兼容 Gradle 9；Flutter 的相关弃用警告未被屏蔽。
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```sh
+flutter pub get
+flutter test
+flutter build apk --release
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Windows 上请将 Pub 缓存与项目放在同一盘符，避免 Kotlin 增量编译报 `this and base files have different roots`。例如项目在 D 盘时，在 PowerShell 中设置本次会话：
+
+```powershell
+$env:PUB_CACHE = 'D:\Pub\Cache'
+# 仅构建 Android 时可跳过 Windows 桌面插件链接，不改变全局 Flutter 配置。
+$env:FLUTTER_WINDOWS = 'false'
+flutter pub get
+flutter build apk --release
+```
+
+如果此前已经发生跨盘缓存错误，关闭当前构建后运行 `.\android\gradlew.bat --stop`、`flutter clean`，再执行上述获取依赖和构建命令。Windows 桌面构建不要设置 `FLUTTER_WINDOWS=false`，并需开发者模式或管理员权限来创建插件符号链接。
+
+iOS 原生依赖须在 macOS / Xcode 环境重新解析。本次 Firebase 升级后需运行 `pod update --repo-update`（在 `ios` 目录），再构建；现有 CI 会删除旧 `Podfile.lock` 并重新安装。Windows 上未验证 iOS 和 Windows 桌面产物。
+
+### 依赖清理
+
+已删除无实际调用的 `cupertino_icons`、`direct_select_flutter`、`extended_nested_scroll_view`、`folding_cell`、`flutter_adaptive_scaffold` 和 `open_file`。安装包打开仍使用 `FlutterDownloader.open`。
+
+`sqlite3_flutter_libs` 已由 `sqlite3 3.x` 的原生资产机制取代。`firebase_analytics` 虽无显式 Dart 埋点调用，但会自动采集事件，因此保留。
 
 
 ## ORM Database
-- run `flutter packages pub run build_runner build`
-- or run `flutter packages pub run build_runner watch`
+
+- 数据库已迁移到 `floor_community` / `floor_generator_community` **1.1.0**，避免原生成器依赖新版 Dart 已移除的 `_macros`。
+- 保持 `dcomic.db`、schema version 5、表结构及迁移链不变；`test/database_upgrade_test.dart` 验证旧库数据读取、更新和重新打开。
+- 生成代码：`dart run build_runner build`；持续生成：`dart run build_runner watch`。
+- Protobuf 使用 `protoc 36.1` / `protoc_plugin 25.0.0`，从 `lib/protobuf/comic.proto` 和 `lib/protobuf/novel_chapter.proto` 重新生成，兼容 `protobuf 6.0.0`。

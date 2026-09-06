@@ -1,5 +1,5 @@
 import 'package:dcomic/database/database_common.dart';
-import 'package:floor/floor.dart';
+import 'package:floor_community/floor.dart';
 
 class DatabaseInstance {
   static final List<Migration> migrations = [

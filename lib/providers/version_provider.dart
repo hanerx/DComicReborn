@@ -11,7 +11,6 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher_string.dart' as url_string_launcher;
 import 'package:version/version.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
-import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../generated/l10n.dart';

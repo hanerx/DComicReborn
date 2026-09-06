@@ -7,7 +7,7 @@ import 'package:dcomic/database/entity/cookie.dart';
 import 'package:dcomic/database/entity/model_config.dart';
 import 'package:dcomic/database/entity/somic_subscribe_state.dart';
 import 'dart:async';
-import 'package:floor/floor.dart';
+import 'package:floor_community/floor.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
 part 'database_common.g.dart';

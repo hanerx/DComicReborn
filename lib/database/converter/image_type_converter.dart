@@ -1,5 +1,5 @@
 import 'package:dcomic/utils/image_utils.dart';
-import 'package:floor/floor.dart';
+import 'package:floor_community/floor.dart';
 
 class ImageTypeConverter extends TypeConverter<ImageType, int> {
   @override

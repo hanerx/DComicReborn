@@ -1,6 +1,6 @@
 import 'package:dcomic/database/entity/entity_base.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:floor/floor.dart';
+import 'package:floor_community/floor.dart';
 
 @entity
 class ModelConfigEntity {
