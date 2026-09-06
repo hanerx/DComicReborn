@@ -100,10 +100,11 @@ iOS 原生依赖须在 macOS / Xcode 环境重新解析。本次 Firebase 升级
 
 `sqlite3_flutter_libs` 已由 `sqlite3 3.x` 的原生资产机制取代。`firebase_analytics` 虽无显式 Dart 埋点调用，但会自动采集事件，因此保留。
 
+DMZJ（大妈之家）已停止支持，专属 provider、请求处理器、Protobuf 协议及 `crypton`、`protobuf`、`fixnum` 直接依赖已移除。保留拷贝漫画和再漫画，不自动删除旧源的本地历史、收藏或配置；共享登录文案已改为通用字段。调试页网络检查复用 GitHub API 请求，不再访问 DMZJ。
+
 
 ## ORM Database
 
 - 数据库已迁移到 `floor_community` / `floor_generator_community` **1.1.0**，避免原生成器依赖新版 Dart 已移除的 `_macros`。
 - 保持 `dcomic.db`、schema version 5、表结构及迁移链不变；`test/database_upgrade_test.dart` 验证旧库数据读取、更新和重新打开。
 - 生成代码：`dart run build_runner build`；持续生成：`dart run build_runner watch`。
-- Protobuf 使用 `protoc 36.1` / `protoc_plugin 25.0.0`，从 `lib/protobuf/comic.proto` 和 `lib/protobuf/novel_chapter.proto` 重新生成，兼容 `protobuf 6.0.0`。

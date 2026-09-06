@@ -35,7 +35,7 @@ class _DebugPageState extends State<DebugPage> {
             subtitle: Text(S.of(context).DebugPageNetworkCheckDescription),
             onTap: () async {
               try {
-                var request = RequestHandler("https://dmzj.com");
+                var request = RequestHandlers.githubRequestHandler;
                 int ping = await request.ping();
                 if (!context.mounted) {
                   return;

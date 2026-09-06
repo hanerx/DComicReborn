@@ -41,14 +41,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.7.0"
-  asn1lib:
-    dependency: transitive
-    description:
-      name: asn1lib
-      sha256: "9a8f69025044eb466b9b60ef3bc3ac99b4dc6c158ae9c56d25eeccf5bc56d024"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.6.5"
   async:
     dependency: transitive
     description:
@@ -233,14 +225,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.7"
-  crypton:
-    dependency: "direct main"
-    description:
-      name: crypton
-      sha256: "17b6631fbf89e389d421b46629132287ed37d601b2ad1357445826ab85022271"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.2.1"
   cupertino_ui:
     dependency: transitive
     description:
@@ -418,7 +402,7 @@ packages:
     source: hosted
     version: "3.9.0"
   fixnum:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: fixnum
       sha256: b6dc7065e46c974bc7c5f143080a6764ec7a4be6da1285ececdc37be96de53be
@@ -613,14 +597,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
-  js:
-    dependency: transitive
-    description:
-      name: js
-      sha256: "53385261521cc4a0c4658fd0ad07a7d14591cf8fc33abbceae306ddb974888dc"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.7.2"
   json_annotation:
     dependency: transitive
     description:
@@ -885,14 +861,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
-  pointycastle:
-    dependency: transitive
-    description:
-      name: pointycastle
-      sha256: "4be0097fcf3fd3e8449e53730c631200ebc7b88016acecab2b0da2f0149222fe"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.9.1"
   pool:
     dependency: transitive
     description:
@@ -925,14 +893,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.5"
-  protobuf:
-    dependency: "direct main"
-    description:
-      name: protobuf
-      sha256: "75ec242d22e950bdcc79ee38dd520ce4ee0bc491d7fadc4ea47694604d22bf06"
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.0.0"
   provider:
     dependency: "direct main"
     description:

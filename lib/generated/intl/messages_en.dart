@@ -47,7 +47,6 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m9(sourceId) => "${Intl.select(sourceId, {
             'BaseComicSource':
                 'A Base Class, If you see it, Please report an issue.',
-            'dmzj': 'DMZJ Source, The Tear of Ages.',
             'copymanga': 'Copy Managa, Powerful but may not connectable.',
             'zaimanhua': 'ZaiManHua Source, Maybe New Home?',
             'other': 'Bug!!!!!'
@@ -170,6 +169,11 @@ class MessageLookup extends MessageLookupByLibrary {
         "CommonLoginLogin": MessageLookupByLibrary.simpleMessage("Login"),
         "CommonLoginLoginFailed": m5,
         "CommonLoginLogout": MessageLookupByLibrary.simpleMessage("Logout"),
+        "CommonLoginPassword": MessageLookupByLibrary.simpleMessage("Password"),
+        "CommonLoginUsername": MessageLookupByLibrary.simpleMessage("Username"),
+        "CommonLoginUsernameHint": MessageLookupByLibrary.simpleMessage(
+          "Email/Username/PhoneNumber",
+        ),
         "CopyMangaApiDomain": MessageLookupByLibrary.simpleMessage(
           "Comic and image API",
         ),
@@ -190,16 +194,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "CopyMangaTokenHint": MessageLookupByLibrary.simpleMessage(
           "Use Token to Login(No need input password or username if you are using token login)",
         ),
-        "DMZJLoginPassword": MessageLookupByLibrary.simpleMessage("Password"),
-        "DMZJLoginPasswordHint": MessageLookupByLibrary.simpleMessage(
-          "Your DMZJ Password!",
-        ),
-        "DMZJLoginQQLogin": MessageLookupByLibrary.simpleMessage("QQ Login"),
-        "DMZJLoginUsername": MessageLookupByLibrary.simpleMessage("Username"),
-        "DMZJLoginUsernameHint": MessageLookupByLibrary.simpleMessage(
-          "Email/Username/PhoneNumber",
-        ),
-        "DMZJTitle": MessageLookupByLibrary.simpleMessage("DMZJ"),
         "DatabaseDebugPageTitle": MessageLookupByLibrary.simpleMessage(
           "Database Debug Page",
         ),

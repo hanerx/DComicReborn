@@ -113,12 +113,9 @@
   "TimeOrRankFilterEntityName": "排序方式",
   "TimeOrRankFilterEntityModes": "{modes, select, ranking{热度} latestUpdate{更新} other{未知}}",
 
-  "DMZJLoginUsername": "用户名",
-  "DMZJLoginUsernameHint": "邮箱/用户名/手机号",
-  "DMZJLoginPassword": "密码",
-  "DMZJLoginPasswordHint": "你的大妈之家密码",
-  "DMZJTitle": "大妈之家",
-  "DMZJLoginQQLogin": "QQ登录",
+  "CommonLoginUsername": "用户名",
+  "CommonLoginUsernameHint": "邮箱/用户名/手机号",
+  "CommonLoginPassword": "密码",
 
 
   "CommonLoginLogin": "登录",
@@ -145,7 +142,7 @@
   "ViewerSettingThemeColor": "主题颜色",
   "ViewerSettingUseMaterial3Design": "使用Material3",
   "ViewerSettingUseMaterial3DesignSubTitle": "好像关了也不难看欸",
-  "SourceProviderDesc": "{sourceId, select, BaseComicSource{所有漫画源的基类，如果你看到这玩意了，说明作者冲晕过去了，请提交issue} dmzj{大妈之家，现在可以认为是赛博墓碑} copymanga{拷贝漫画，资源齐全但是评论有向8u靠拢的趋势，而且你不一定能连上} zaimanhua{再漫画，新出的不知道是哪位的部将} other{出bug力!}}",
+  "SourceProviderDesc": "{sourceId, select, BaseComicSource{所有漫画源的基类，如果你看到这玩意了，说明作者冲晕过去了，请提交issue} copymanga{拷贝漫画，资源齐全但是评论有向8u靠拢的趋势，而且你不一定能连上} zaimanhua{再漫画，新出的不知道是哪位的部将} other{出bug力!}}",
   "@SourceProviderDesc": {
     "placeholders": {
       "sourceId": {}

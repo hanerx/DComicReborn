@@ -684,55 +684,30 @@ class S {
   }
 
   /// `Username`
-  String get DMZJLoginUsername {
+  String get CommonLoginUsername {
     return Intl.message(
       'Username',
-      name: 'DMZJLoginUsername',
+      name: 'CommonLoginUsername',
       desc: '',
       args: [],
     );
   }
 
   /// `Email/Username/PhoneNumber`
-  String get DMZJLoginUsernameHint {
+  String get CommonLoginUsernameHint {
     return Intl.message(
       'Email/Username/PhoneNumber',
-      name: 'DMZJLoginUsernameHint',
+      name: 'CommonLoginUsernameHint',
       desc: '',
       args: [],
     );
   }
 
   /// `Password`
-  String get DMZJLoginPassword {
+  String get CommonLoginPassword {
     return Intl.message(
       'Password',
-      name: 'DMZJLoginPassword',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Your DMZJ Password!`
-  String get DMZJLoginPasswordHint {
-    return Intl.message(
-      'Your DMZJ Password!',
-      name: 'DMZJLoginPasswordHint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `DMZJ`
-  String get DMZJTitle {
-    return Intl.message('DMZJ', name: 'DMZJTitle', desc: '', args: []);
-  }
-
-  /// `QQ Login`
-  String get DMZJLoginQQLogin {
-    return Intl.message(
-      'QQ Login',
-      name: 'DMZJLoginQQLogin',
+      name: 'CommonLoginPassword',
       desc: '',
       args: [],
     );
@@ -943,14 +918,13 @@ class S {
     );
   }
 
-  /// `{sourceId, select, BaseComicSource{A Base Class, If you see it, Please report an issue.} dmzj{DMZJ Source, The Tear of Ages.} copymanga{Copy Managa, Powerful but may not connectable.} zaimanhua{ZaiManHua Source, Maybe New Home?} other{Bug!!!!!}}`
+  /// `{sourceId, select, BaseComicSource{A Base Class, If you see it, Please report an issue.} copymanga{Copy Managa, Powerful but may not connectable.} zaimanhua{ZaiManHua Source, Maybe New Home?} other{Bug!!!!!}}`
   String SourceProviderDesc(Object sourceId) {
     return Intl.select(
       sourceId,
       {
         'BaseComicSource':
             'A Base Class, If you see it, Please report an issue.',
-        'dmzj': 'DMZJ Source, The Tear of Ages.',
         'copymanga': 'Copy Managa, Powerful but may not connectable.',
         'zaimanhua': 'ZaiManHua Source, Maybe New Home?',
         'other': 'Bug!!!!!',

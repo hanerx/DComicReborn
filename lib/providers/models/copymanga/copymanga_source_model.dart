@@ -491,7 +491,7 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                                       border: const OutlineInputBorder(
                                           gapPadding: 1),
                                       labelText:
-                                          S.of(context).DMZJLoginUsername,
+                                          S.of(context).CommonLoginUsername,
                                       prefixIcon:
                                           const Icon(Icons.account_circle),
                                       hintText: S
@@ -509,7 +509,7 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                                       border: const OutlineInputBorder(
                                           gapPadding: 1),
                                       labelText:
-                                          S.of(context).DMZJLoginPassword,
+                                          S.of(context).CommonLoginPassword,
                                       prefixIcon: const Icon(Icons.lock),
                                       hintText: S
                                           .of(context)

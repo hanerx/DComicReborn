@@ -51,9 +51,6 @@ dependencies:
   http_cache_drift_store: ^7.0.1
   dio: ^5.11.1
   path_provider: ^2.1.6
-  crypton: ^2.2.1
-  protobuf: ^6.0.0
-  fixnum: ^1.1.1
   intl: ^0.20.3
   date_format: ^2.0.9
   photo_view: ^0.15.0

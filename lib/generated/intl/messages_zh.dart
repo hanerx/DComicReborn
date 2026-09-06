@@ -42,7 +42,6 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m9(sourceId) => "${Intl.select(sourceId, {
             'BaseComicSource': '所有漫画源的基类，如果你看到这玩意了，说明作者冲晕过去了，请提交issue',
-            'dmzj': '大妈之家，现在可以认为是赛博墓碑',
             'copymanga': '拷贝漫画，资源齐全但是评论有向8u靠拢的趋势，而且你不一定能连上',
             'zaimanhua': '再漫画，新出的不知道是哪位的部将',
             'other': '出bug力!'
@@ -145,6 +144,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "CommonLoginLogin": MessageLookupByLibrary.simpleMessage("登录"),
         "CommonLoginLoginFailed": m5,
         "CommonLoginLogout": MessageLookupByLibrary.simpleMessage("登出"),
+        "CommonLoginPassword": MessageLookupByLibrary.simpleMessage("密码"),
+        "CommonLoginUsername": MessageLookupByLibrary.simpleMessage("用户名"),
+        "CommonLoginUsernameHint":
+            MessageLookupByLibrary.simpleMessage("邮箱/用户名/手机号"),
         "CopyMangaApiDomain":
             MessageLookupByLibrary.simpleMessage("漫画与图片 API 线路"),
         "CopyMangaChapterCommentDomain": MessageLookupByLibrary.simpleMessage(
@@ -163,14 +166,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "CopyMangaTokenHint": MessageLookupByLibrary.simpleMessage(
           "使用Token进行登录（无需填写用户名密码）",
         ),
-        "DMZJLoginPassword": MessageLookupByLibrary.simpleMessage("密码"),
-        "DMZJLoginPasswordHint":
-            MessageLookupByLibrary.simpleMessage("你的大妈之家密码"),
-        "DMZJLoginQQLogin": MessageLookupByLibrary.simpleMessage("QQ登录"),
-        "DMZJLoginUsername": MessageLookupByLibrary.simpleMessage("用户名"),
-        "DMZJLoginUsernameHint":
-            MessageLookupByLibrary.simpleMessage("邮箱/用户名/手机号"),
-        "DMZJTitle": MessageLookupByLibrary.simpleMessage("大妈之家"),
         "DatabaseDebugPageTitle":
             MessageLookupByLibrary.simpleMessage("本地数据库老巢"),
         "DebugPageNetworkCheck": MessageLookupByLibrary.simpleMessage("网络检查"),

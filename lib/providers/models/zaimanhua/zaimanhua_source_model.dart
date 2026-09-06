@@ -341,11 +341,11 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
                                       border: const OutlineInputBorder(
                                           gapPadding: 1),
                                       labelText:
-                                          S.of(context).DMZJLoginUsername,
+                                          S.of(context).CommonLoginUsername,
                                       prefixIcon:
                                           const Icon(Icons.account_circle),
                                       hintText:
-                                          S.of(context).DMZJLoginUsernameHint),
+                                          S.of(context).CommonLoginUsernameHint),
                                 ),
                               ),
                               Padding(
@@ -358,7 +358,7 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
                                       border: const OutlineInputBorder(
                                           gapPadding: 1),
                                       labelText:
-                                          S.of(context).DMZJLoginPassword,
+                                          S.of(context).CommonLoginPassword,
                                       prefixIcon: const Icon(Icons.lock),
                                       hintText: S
                                           .of(context)
@@ -833,8 +833,7 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
             children.add(GridItemEntity(
                 rawItem['title'],
                 rawItem['sub_title'],
-                ImageEntity(ImageType.network, rawItem['cover'],
-                    imageHeaders: {"referer": "https://i.dmzj.com"}),
+                ImageEntity(ImageType.network, rawItem['cover']),
                 (context) {
               if (rawItem['type'] == 1) {
                 Provider.of<NavigatorProvider>(context, listen: false)
@@ -879,8 +878,7 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
         var rawData = recommendations[0];
         for (var rawItem in rawData['data']) {
           data.add(CarouselEntity(
-              ImageEntity(ImageType.network, rawItem['cover'],
-                  imageHeaders: {"referer": "https://i.dmzj.com"}),
+              ImageEntity(ImageType.network, rawItem['cover']),
               rawItem['title'], (context) {
             if (rawItem['type'] == 1) {
               Provider.of<NavigatorProvider>(context, listen: false)

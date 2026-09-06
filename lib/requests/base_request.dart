@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dcomic/requests/copymanga/copymanga_request.dart';
-import 'package:dcomic/requests/dmzj/dmzj_request.dart';
 import 'package:dcomic/requests/github/github_request.dart';
 import 'package:dcomic/requests/zaimanhua/zaimanhua_request.dart';
 import 'package:dcomic/utils/db_cookie_jar.dart';
@@ -93,12 +92,6 @@ class RequestHandler {
 }
 
 class RequestHandlers{
-  static DMZJV3RequestHandler dmzjv3requestHandler=DMZJV3RequestHandler();
-  static DMZJV4RequestHandler dmzjv4requestHandler=DMZJV4RequestHandler();
-  static DMZJUserRequestHandler dmzjUserRequestHandler=DMZJUserRequestHandler();
-  static DMZJCommentRequestHandler dmzjCommentRequestHandler=DMZJCommentRequestHandler();
-  static DMZJInterfaceRequestHandler dmzjInterfaceRequestHandler=DMZJInterfaceRequestHandler();
-
   static CopyMangaRequestHandler copyMangaRequestHandler=CopyMangaRequestHandler();
 
   static ZaiManHuaRequestHandler zaiManHuaRequestHandler=ZaiManHuaRequestHandler();
