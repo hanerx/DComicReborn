@@ -6,6 +6,7 @@ import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/models/zaimanhua/zaimanhua_source_model.dart';
 import 'package:dcomic/providers/page_controllers/comic_category_detail_page_controller.dart';
+import 'package:dcomic/providers/page_controllers/comic_favorite_page_controller.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -383,35 +384,90 @@ void main() {
     expect(pages, ['1', '2']);
   });
 
-  test('subscriptions use the complete server page instead of merging subsets',
+  test('subscriptions retain read comics on refresh and remove cancelled ones',
       () async {
-    final statuses = <String?>[];
+    var read = false;
+    var subscribed = true;
     mobile.dio.httpClientAdapter = ApiAdapter((request) {
-      expect(request.uri.path, '/app/v1/comic/sub/list');
-      expect(request.uri.queryParameters['page'], '2');
-      final status = request.uri.queryParameters['status'];
-      statuses.add(status);
+      if (request.uri.path == '/app/v1/comic/sub/list') {
+        return {
+          'errno': 0,
+          'data': {'subList': []}
+        };
+      }
+      expect(request.uri.path, '/app/v1/bookshelf/updates/list');
       return {
         'errno': 0,
         'data': {
-          'subList': status == '0'
-              ? [
-                  {
-                    'id': 64556,
-                    'title': '示例漫画',
-                    'cover': 'https://example.com/cover.jpg',
-                    'last_update_chapter_name': '第 2 话',
-                    'last_updatetime': 1778766202
-                  }
-                ]
-              : []
+          'total': subscribed ? 1 : 0,
+          'list': [
+            if (subscribed)
+              {
+                'id': 'M_64556',
+                'contentType': 'comic',
+                'title': '示例漫画',
+                'coverUrl': 'https://example.com/cover.jpg',
+                'lastUpdateChapterId': 186872,
+                'lastUpdateChapterName': '第16话',
+                'lastUpdatedAt': '2026-05-14T03:14:58Z',
+                'readingRecord': {'chapterId': read ? 186872 : 0}
+              }
+          ]
         }
       };
     });
-    final comics = await source.accountModel!.getSubscribeComics(page: 1);
-    expect(comics.map((item) => (item as GridItemEntityWithStatus).comicId),
+    final controller = ComicFavoritePageController(source);
+    addTearDown(controller.dispose);
+    await controller.refresh();
+    expect(
+        controller.data
+            .map((item) => (item as GridItemEntityWithStatus).comicId),
         ['64556']);
-    expect(statuses, ['0']);
+    read = true;
+    await source.accountModel!.addSubscribeState('64556');
+    await controller.refresh();
+    final comic = controller.data.single as GridItemEntityWithStatus;
+    expect(comic.comicId, '64556');
+    expect(comic.subtitle, '第16话');
+    expect(comic.lastUpdateTimestamp, DateTime.utc(2026, 5, 14, 3, 14, 58));
+    subscribed = false;
+    await controller.refresh();
+    expect(controller.data, isEmpty);
+  });
+
+  test('subscriptions keep server pagination across a novel-only page',
+      () async {
+    mobile.dio.httpClientAdapter = ApiAdapter((request) {
+      expect(request.uri.path, '/app/v1/bookshelf/updates/list');
+      final page = int.parse(request.uri.queryParameters['page']!);
+      expect(request.uri.queryParameters['pageSize'], '20');
+      return {
+        'errno': 0,
+        'data': {
+          'total': 41,
+          'list': [
+            for (var index = 0; index < (page < 3 ? 20 : 1); index++)
+              {
+                'id': page == 2 ? 'N_$index' : 'M_${page * 100 + index}',
+                'contentType': page == 2 ? 'novel' : 'comic',
+                'title': '条目 $index',
+                'coverUrl': 'https://example.com/cover.jpg',
+                'lastUpdateChapterName': '第1话',
+                'lastUpdatedAt': '2026-05-14T03:14:58Z',
+              }
+          ]
+        }
+      };
+    });
+    final controller = ComicFavoritePageController(source);
+    addTearDown(controller.dispose);
+    await controller.refresh();
+    await controller.load();
+    await controller.load();
+    expect(
+        controller.data
+            .map((item) => (item as GridItemEntityWithStatus).comicId),
+        [for (var index = 0; index < 20; index++) '${100 + index}', '300']);
   });
 
   test('login preserves JSON username and restores personalInfo profile',

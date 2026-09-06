@@ -153,13 +153,9 @@ class ZaiManHuaMobileRequestHandler extends RequestHandler {
         options: await setHeader());
   }
 
-  Future<Response> getSubscribe(
-      {int status = 0,
-      String firstLetter = '',
-      int page = 0,
-      int limit = 20}) async {
-    return dio.get(
-        '/comic/sub/list?status=$status&firstLetter=$firstLetter&page=${page + 1}&size=$limit',
+  Future<Response> getSubscribe({int page = 0, int limit = 20}) async {
+    return dio.get('/bookshelf/updates/list',
+        queryParameters: {'page': page + 1, 'pageSize': limit},
         options: await setHeader());
   }
 

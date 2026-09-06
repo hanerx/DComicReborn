@@ -482,22 +482,24 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
           response.data['errno'] != 0) {
         return data;
       }
-      var subList = response.data['data']['subList'];
+      var subList = response.data['data']['list'];
       if (subList.isNotEmpty) {
         for (var rawData in subList) {
+          if (rawData['contentType'] != 'comic') continue;
+          final comicId = (rawData['id'] as String).substring(2);
           data.add(GridItemEntityWithStatus(
               rawData['title'],
-              rawData['last_update_chapter_name'],
+              rawData['lastUpdateChapterName'],
               ImageEntity(
                 ImageType.network,
-                rawData['cover'],
+                rawData['coverUrl'],
               ), (context) {
             Provider.of<NavigatorProvider>(context, listen: false)
                 .getNavigator(context, NavigatorType.defaultNavigator)
                 ?.push(MaterialPageRoute(
                     builder: (context) => ComicDetailPage(
                           title: rawData['title'],
-                          comicId: rawData['id'].toString(),
+                          comicId: comicId,
                           comicSourceModel: parent,
                         ),
                     settings: const RouteSettings(name: 'ComicDetailPage')))
@@ -508,9 +510,8 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
               }
             });
           },
-              DateTime.fromMillisecondsSinceEpoch(
-                  rawData['last_updatetime'] * 1000),
-              rawData['id'].toString()));
+              DateTime.parse(rawData['lastUpdatedAt']),
+              comicId));
         }
       }
     } catch (e, s) {
