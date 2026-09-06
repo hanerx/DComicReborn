@@ -1,5 +1,4 @@
 import 'package:dcomic/providers/page_controllers/comic_category_page_controller.dart';
-import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/components/grid_card.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
@@ -27,10 +26,7 @@ class _CategoryPageState extends State<CategoryPage> {
           child: LayoutBuilder(builder: (context, constraints) {
             var categories =
                 Provider.of<ComicCategoryPageController>(context).categories;
-            var coverAspectRatio = categories.every(
-                    (entity) => entity.cover.imageType == ImageType.asset)
-                ? 1.0
-                : 2 / 3;
+            const coverAspectRatio = 1.0;
             return ColoredBox(
               color: Theme.of(context).colorScheme.surface,
               child: GridView.builder(
