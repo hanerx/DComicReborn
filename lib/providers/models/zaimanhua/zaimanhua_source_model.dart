@@ -82,6 +82,39 @@ class ZaiManHuaSourceModel extends BaseComicSourceModel {
   }
 
   @override
+  Future<List<ListItemEntity>> getComicHistory(
+      ComicHistorySourceType sourceType,
+      {int page = 0}) async {
+    if (sourceType == ComicHistorySourceType.local) {
+      return super.getComicHistory(sourceType, page: page);
+    }
+    final response = await RequestHandlers.zaiManHuaMobileRequestHandler
+        .getHistory(page: page);
+    if (response.statusCode != 200 || response.data['errno'] != 0) {
+      throw StateError('再漫画云端历史加载失败，请检查登录状态后重试');
+    }
+    final records = response.data['data']['recordList'] as List? ?? [];
+    return records.map<ListItemEntity>((item) {
+      final comicId = item['biz_id'].toString();
+      final title = item['title'] as String;
+      return ListItemEntity(
+          title, ImageEntity(ImageType.network, item['cover']), {
+        Icons.history: date_format.formatDate(
+            DateTime.fromMillisecondsSinceEpoch(item['viewing_time'] * 1000),
+            [date_format.yyyy, '-', date_format.mm, '-', date_format.dd]),
+        Icons.history_edu: item['chapter_name'],
+      }, (context) {
+        Provider.of<NavigatorProvider>(context, listen: false)
+            .getNavigator(context, NavigatorType.defaultNavigator)
+            ?.push(MaterialPageRoute(
+                builder: (context) => ComicDetailPage(
+                    title: title, comicId: comicId, comicSourceModel: this),
+                settings: const RouteSettings(name: 'ComicDetailPage')));
+      });
+    }).toList();
+  }
+
+  @override
   BaseComicHomepageModel? get homepage => ZaiManHuaHomepageModel(this);
 
   @override
@@ -505,13 +538,12 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
                     settings: const RouteSettings(name: 'ComicDetailPage')))
                 .then((value) async {
               if (context.mounted) {
-                await Provider.of<ComicFavoritePageController>(context, listen: false)
+                await Provider.of<ComicFavoritePageController>(context,
+                        listen: false)
                     .refreshBadges(comicId);
               }
             });
-          },
-              DateTime.parse(rawData['lastUpdatedAt']),
-              comicId));
+          }, DateTime.parse(rawData['lastUpdatedAt']), comicId));
         }
       }
     } catch (e, s) {
@@ -1030,6 +1062,21 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
   bool _isSubscribe = false;
 
   ZaiManHuaComicDetailModel(this.rawData, this.sourceModel);
+
+  @override
+  Future<bool> addComicHistory(String chapterId, String chapterName,
+      {int page = 1}) async {
+    final saved =
+        await super.addComicHistory(chapterId, chapterName, page: page);
+    try {
+      await RequestHandlers.zaiManHuaMobileRequestHandler
+          .addHistory(comicId, chapterId, page: page);
+    } catch (_) {
+      // Request exceptions can contain the bearer token.
+      logger.w('再漫画阅读进度上传失败，不影响本地阅读');
+    }
+    return saved;
+  }
 
   @override
   Future<void> doInit() async {

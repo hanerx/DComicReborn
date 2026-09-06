@@ -61,7 +61,9 @@ class _Detail extends Fake implements BaseComicDetailModel {
   Future<BaseComicChapterDetailModel> getChapter(String chapterId) async =>
       chapterId == 'next' ? _ChapterDetail(nextComments!) : chapter;
   @override
-  Future<bool> addComicHistory(String chapterId, String title) async => true;
+  Future<bool> addComicHistory(String chapterId, String title,
+          {int page = 1}) async =>
+      true;
 }
 
 Future<void> _openReader(WidgetTester tester, ReadDirectionType direction,

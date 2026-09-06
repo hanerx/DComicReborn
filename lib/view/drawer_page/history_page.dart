@@ -20,6 +20,23 @@ class _HistoryPageState extends State<HistoryPage> {
     ComicHistorySourceType.local: Icons.sd_storage
   };
 
+  Future<IndicatorResult> _loadHistory(
+      BuildContext context, Future<void> Function() action) async {
+    try {
+      await action();
+      return IndicatorResult.success;
+    } catch (_) {
+      if (context.mounted) {
+        final isChinese = Localizations.localeOf(context).languageCode == 'zh';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(isChinese
+                ? '历史记录加载失败，请检查网络和对应漫画源的登录状态后重试'
+                : 'Could not load history. Check your connection and source login, then retry.')));
+      }
+      return IndicatorResult.fail;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -33,11 +50,11 @@ class _HistoryPageState extends State<HistoryPage> {
                 title: Text(S.of(context).DrawerHistory),
                 actions: [
                   IconButton(
-                      onPressed: () async {
-                        await Provider.of<ComicHistoryPageController>(context,
-                                listen: false)
-                            .addSourceType();
-                      },
+                      onPressed: () => _loadHistory(
+                          context,
+                          Provider.of<ComicHistoryPageController>(context,
+                                  listen: false)
+                              .addSourceType),
                       icon: Icon(_iconMap[
                           Provider.of<ComicHistoryPageController>(context)
                               .sourceType]))
@@ -57,43 +74,40 @@ class _HistoryPageState extends State<HistoryPage> {
               body: TabBarView(children: [
                 for (var item
                     in Provider.of<ComicSourceProvider>(context).orderedSources)
-                  EasyRefresh(
-                      onRefresh: () async {
-                        await Provider.of<ComicHistoryPageController>(context,
-                                listen: false)
-                            .refresh(item);
-                      },
-                      onLoad: () async {
-                        await Provider.of<ComicHistoryPageController>(context,
-                                listen: false)
-                            .load(item);
-                      },
-                      refreshOnStart: true,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.only(top: 4, bottom: 12),
-                        itemCount: Provider.of<ComicHistoryPageController>(
-                                context)
-                            .data[item]
-                            ?.data[
-                                Provider.of<ComicHistoryPageController>(context)
-                                    .sourceType]
-                            ?.length,
-                        itemBuilder: (context, index) {
-                          var dataList =
-                              Provider.of<ComicHistoryPageController>(context)
-                                  .data[item]!
-                                  .data[Provider.of<ComicHistoryPageController>(
-                                      context)
-                                  .sourceType];
-                          var entity = dataList![index];
-                          return CardListItem(
-                            cover: entity.cover,
-                            title: entity.title,
-                            details: entity.details,
-                            onTap: entity.onTap,
-                          );
-                        },
-                      ))
+                  Builder(builder: (context) {
+                    final controller =
+                        context.watch<ComicHistoryPageController>();
+                    final records =
+                        controller.data[item]?.data[controller.sourceType] ??
+                            const <ListItemEntity>[];
+                    return EasyRefresh(
+                        onRefresh: () => _loadHistory(
+                            context,
+                            () => Provider.of<ComicHistoryPageController>(
+                                    context,
+                                    listen: false)
+                                .refresh(item)),
+                        onLoad: () => _loadHistory(
+                            context,
+                            () => Provider.of<ComicHistoryPageController>(
+                                    context,
+                                    listen: false)
+                                .load(item)),
+                        refreshOnStart: true,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.only(top: 4, bottom: 12),
+                          itemCount: records.length,
+                          itemBuilder: (context, index) {
+                            final entity = records[index];
+                            return CardListItem(
+                              cover: entity.cover,
+                              title: entity.title,
+                              details: entity.details,
+                              onTap: entity.onTap,
+                            );
+                          },
+                        ));
+                  })
               ]),
             )));
   }

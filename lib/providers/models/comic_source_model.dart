@@ -227,7 +227,16 @@ abstract class BaseComicDetailModel extends BaseModel {
     }
   }
 
-  Future<bool> addComicHistory(String chapterId, String chapterName) async {
+  Future<bool> _historyWrites = Future.value(true);
+
+  Future<bool> addComicHistory(String chapterId, String chapterName,
+      {int page = 1}) {
+    // Chapter entry and page changes may arrive before the first insert ends.
+    return _historyWrites =
+        _historyWrites.then((_) => _saveComicHistory(chapterId, chapterName));
+  }
+
+  Future<bool> _saveComicHistory(String chapterId, String chapterName) async {
     try {
       var databaseInstance = await DatabaseInstance.instance;
       var comicHistoryEntity = (await databaseInstance.comicHistoryDao
@@ -345,8 +354,7 @@ abstract class BaseComicAccountModel extends BaseModel {
     return data;
   }
 
-  static final _newComicBadgePosition =
-      BadgePosition.topEnd(top: -5, end: -5);
+  static final _newComicBadgePosition = BadgePosition.topEnd(top: -5, end: -5);
 
   /// Reconcile only the local read state; never fetch or reorder subscriptions.
   Future<bool> refreshSubscribeBadges(Iterable<GridItemEntity> items) async {
@@ -358,7 +366,8 @@ abstract class BaseComicAccountModel extends BaseModel {
           .getComicSubscribeStateByComicId(item.comicId, parent!.type.sourceId);
       final isNew = state?.timestamp == null ||
           state!.timestamp!.isBefore(item.lastUpdateTimestamp);
-      final hadBadge = item.badges?.containsKey(_newComicBadgePosition) ?? false;
+      final hadBadge =
+          item.badges?.containsKey(_newComicBadgePosition) ?? false;
       if (isNew == hadBadge) continue;
       if (isNew) {
         (item.badges ??= {})[_newComicBadgePosition] =

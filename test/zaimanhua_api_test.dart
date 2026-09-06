@@ -7,6 +7,8 @@ import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/models/zaimanhua/zaimanhua_source_model.dart';
 import 'package:dcomic/providers/page_controllers/comic_category_detail_page_controller.dart';
 import 'package:dcomic/providers/page_controllers/comic_favorite_page_controller.dart';
+import 'package:dcomic/providers/page_controllers/comic_viewer_page_controller.dart';
+import 'package:dcomic/providers/page_controllers/comic_history_page_controller.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -76,6 +78,137 @@ void main() {
     await (await DatabaseInstance.instance).close();
     await (await RequestStatics.store).close();
     await temporaryDirectory.delete(recursive: true);
+  });
+
+  Future<void> signInForHistory() async {
+    final dao = (await DatabaseInstance.instance).modelConfigDao;
+    await dao.getOrCreateConfigByKey('isLogin', 'zaimanhua', value: true);
+    await dao.getOrCreateConfigByKey('token', 'zaimanhua',
+        value: 'history-session');
+  }
+
+  test('cloud history reads comic pages and accepts a null end page', () async {
+    await signInForHistory();
+    mobile.dio.httpClientAdapter = ApiAdapter((request) {
+      expect(request.uri.path, '/app/v1/readingRecord/list');
+      expect(request.headers['Authorization'], 'Bearer history-session');
+      expect(request.uri.queryParameters['source'], 'mh');
+      return {
+        'errno': 0,
+        'data': {
+          'recordList': request.uri.queryParameters['page'] == '1'
+              ? [
+                  {
+                    'biz_id': 64556,
+                    'title': '云端漫画',
+                    'cover': 'https://example.com/cover.jpg',
+                    'chapter_id': 186872,
+                    'chapter_name': '第 2 话',
+                    'viewing_time': 1778766322,
+                  }
+                ]
+              : null,
+        }
+      };
+    });
+    final first = await source.getComicHistory(ComicHistorySourceType.network);
+    expect(first.single.title, '云端漫画');
+    expect(first.single.details.values, contains('第 2 话'));
+    expect(
+        await source.getComicHistory(ComicHistorySourceType.network, page: 1),
+        isEmpty);
+  });
+  test('cloud history retries the failed page without skipping records',
+      () async {
+    await signInForHistory();
+    var failSecondPage = true;
+    final requestedPages = <String?>[];
+    mobile.dio.httpClientAdapter = ApiAdapter((request) {
+      final page = request.uri.queryParameters['page'];
+      requestedPages.add(page);
+      if (page == '2' && failSecondPage) {
+        return {'errno': 500, 'data': {}};
+      }
+      return {
+        'errno': 0,
+        'data': {'recordList': null}
+      };
+    });
+    final controller = ComicHistoryPageController([source]);
+    await controller.addSourceType();
+    await expectLater(controller.load(source), throwsStateError);
+    failSecondPage = false;
+    await controller.load(source);
+    expect(requestedPages, ['1', '2', '2']);
+    controller.dispose();
+  });
+
+  test('cloud history rejects business failures rather than showing empty',
+      () async {
+    await signInForHistory();
+    mobile.dio.httpClientAdapter =
+        ApiAdapter((_) => {'errno': 401, 'errmsg': 'expired', 'data': {}});
+    await expectLater(source.getComicHistory(ComicHistorySourceType.network),
+        throwsStateError);
+  });
+
+  test('reading progress uploads actual page while retaining local history',
+      () async {
+    await signInForHistory();
+    final uploaded = <Map<String, dynamic>>[];
+    mobile.dio.httpClientAdapter = ApiAdapter((request) {
+      if (request.uri.path.endsWith('/checkIsSub')) {
+        return {
+          'errno': 0,
+          'data': {'isSub': false}
+        };
+      }
+      expect(request.uri.path, '/app/v1/readingRecord/add');
+      expect(request.method, 'POST');
+      expect(request.contentType, Headers.formUrlEncodedContentType);
+      final form = request.data as Map;
+      expect(form['source'], 'mh');
+      uploaded.add(Map<String, dynamic>.from(
+          (jsonDecode(form['json']!) as List).single as Map));
+      return {'errno': 0, 'data': {}};
+    });
+    final detail = ZaiManHuaComicDetailModel({
+      'data': {
+        'id': 64556,
+        'title': '进度漫画',
+        'cover': 'https://example.com/cover.jpg',
+      }
+    }, source);
+    detail.logger = quietLogger;
+    await detail.init();
+    final chapter =
+        DefaultComicChapterEntityModel('第 2 话', '186872', DateTime(2026));
+    final viewer = ComicViewerPageController(detail, [chapter], '186872');
+    viewer.chapterDetailModel = ZaiManHuaComicChapterDetailModel({
+      'chapter_id': 186872,
+      'page_url_hd': List.filled(5, 'https://example.com/page.jpg'),
+    }, detail);
+    viewer.currentPage = 4;
+    await viewer.addComicHistory();
+    expect(uploaded.last, {'bizId': 64556, 'chapterId': 186872, 'page': 5});
+    // The reader's synthetic comments page is not a sixth comic image.
+    viewer.currentPage = 5;
+    await viewer.addComicHistory();
+    expect(uploaded.last['page'], 5);
+    final local = await (await DatabaseInstance.instance)
+        .comicHistoryDao
+        .getComicHistoryByComicId('64556', 'zaimanhua');
+    expect(local!.lastChapterId, '186872');
+    expect(local.lastChapterTitle, '第 2 话');
+    viewer.dispose();
+
+    mobile.dio.httpClientAdapter =
+        ApiAdapter((_) => {'errno': 401, 'data': {}});
+    expect(await detail.addComicHistory('186873', '第 3 话'), isTrue);
+    final afterFailure = await (await DatabaseInstance.instance)
+        .comicHistoryDao
+        .getComicHistoryByComicId('64556', 'zaimanhua');
+    expect(afterFailure!.lastChapterId, '186873');
   });
 
   test('client version prevents false missing-comic errors for reader APIs',

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dcomic/providers/base_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 
@@ -51,7 +53,7 @@ class ComicViewerPageController extends BaseProvider {
     chapterDetailModel?.downloadPages();
     _currentPage = 0;
     await loadComment();
-    await addComicHistory();
+    unawaited(addComicHistory());
     notifyListeners();
   }
 
@@ -64,7 +66,7 @@ class ComicViewerPageController extends BaseProvider {
     chapterDetailModel?.downloadPages();
     _currentPage = 0;
     await loadComment();
-    await addComicHistory();
+    unawaited(addComicHistory());
     notifyListeners();
   }
 
@@ -75,7 +77,7 @@ class ComicViewerPageController extends BaseProvider {
     chapterDetailModel?.downloadPages();
     _currentPage = 0;
     await loadComment();
-    await addComicHistory();
+    unawaited(addComicHistory());
     notifyListeners();
   }
 
@@ -88,15 +90,22 @@ class ComicViewerPageController extends BaseProvider {
 
   Future<void> addComicHistory() async {
     if (currentChapter != null) {
+      final imageCount = chapterDetailModel?.pages.length ?? 0;
+      final page = imageCount > 0
+          ? (_currentPage + 1).clamp(1, imageCount)
+          : _currentPage + 1;
       await detailModel.addComicHistory(
-          currentChapter!.chapterId, currentChapter!.title);
+          currentChapter!.chapterId, currentChapter!.title,
+          page: page);
     }
   }
 
   int get currentPage => _currentPage;
 
   set currentPage(int value) {
+    if (value == _currentPage || value < 0) return;
     _currentPage = value;
+    unawaited(addComicHistory());
     notifyListeners();
   }
 

@@ -153,6 +153,53 @@ class ZaiManHuaMobileRequestHandler extends RequestHandler {
         options: await setHeader());
   }
 
+  Future<Response> getHistory({int page = 0}) async {
+    final requestOptions = await setHeader();
+    if (!requestOptions.headers!.containsKey('Authorization')) {
+      throw StateError('请先登录再漫画后查看云端历史');
+    }
+    requestOptions.extra =
+        const CacheOptions(store: null, policy: CachePolicy.noCache).toExtra();
+    return dio.get('/readingRecord/list',
+        queryParameters: {'source': 'mh', 'page': page + 1},
+        options: requestOptions);
+  }
+
+  Future<void> _historyUploads = Future.value();
+
+  Future<bool> addHistory(String comicId, String chapterId,
+      {int page = 1}) async {
+    final requestOptions = await setHeader();
+    if (!requestOptions.headers!.containsKey('Authorization')) return false;
+    requestOptions.contentType = Headers.formUrlEncodedContentType;
+    requestOptions.sendTimeout = const Duration(seconds: 10);
+    requestOptions.receiveTimeout = const Duration(seconds: 10);
+    requestOptions.extra =
+        const CacheOptions(store: null, policy: CachePolicy.noCache).toExtra();
+    // Capture authentication before queueing, never borrow a later login.
+    final upload = _historyUploads.then((_) async {
+      final response = await dio.post('/readingRecord/add',
+          data: {
+            'source': 'mh',
+            'json': jsonEncode([
+              {
+                'bizId': int.parse(comicId),
+                'chapterId': int.parse(chapterId),
+                'page': page,
+              }
+            ]),
+          },
+          options: requestOptions);
+      if (response.statusCode != 200 || response.data['errno'] != 0) {
+        throw StateError('再漫画阅读进度上传失败');
+      }
+      return true;
+    });
+    _historyUploads =
+        upload.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    return upload;
+  }
+
   Future<Response> getSubscribe({int page = 0, int limit = 20}) async {
     return dio.get('/bookshelf/updates/list',
         queryParameters: {'page': page + 1, 'pageSize': limit},
