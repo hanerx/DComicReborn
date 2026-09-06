@@ -223,7 +223,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "MainPageHome": MessageLookupByLibrary.simpleMessage("主页"),
         "MainPageLatest": MessageLookupByLibrary.simpleMessage("最近"),
         "MainPageRank": MessageLookupByLibrary.simpleMessage("排行"),
-        "NewComicBadge": MessageLookupByLibrary.simpleMessage("新"),
+        "NewComicBadge": MessageLookupByLibrary.simpleMessage("更新"),
         "ReaderSettings": MessageLookupByLibrary.simpleMessage("阅读器设置"),
         "ReaderSettingsDescription": MessageLookupByLibrary.simpleMessage(
           "漫画阅读器通用设置",

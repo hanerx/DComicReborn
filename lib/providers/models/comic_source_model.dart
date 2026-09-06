@@ -354,7 +354,7 @@ abstract class BaseComicAccountModel extends BaseModel {
     return data;
   }
 
-  static final _newComicBadgePosition = BadgePosition.topEnd(top: -5, end: -5);
+  static final _newComicBadgePosition = BadgePosition.topEnd(top: 6, end: 6);
 
   /// Reconcile only the local read state; never fetch or reorder subscriptions.
   Future<bool> refreshSubscribeBadges(Iterable<GridItemEntity> items) async {

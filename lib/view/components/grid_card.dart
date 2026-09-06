@@ -221,6 +221,7 @@ class GridCardItem extends StatelessWidget {
   }
 
   Widget _buildBadge(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     Widget child = _buildColumn(context);
     if (badgeMaps == null) {
       return child;
@@ -229,13 +230,20 @@ class GridCardItem extends StatelessWidget {
       child = badges.Badge(
         badgeContent: Text(
           tuple.value(context),
-          style: TextStyle(color: Theme.of(context).colorScheme.onError),
+          style: TextStyle(
+            color: colors.onPrimary,
+            fontSize: 10,
+            height: 1.2,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         position: tuple.key,
         badgeStyle: badges.BadgeStyle(
           shape: badges.BadgeShape.square,
-          borderRadius: BorderRadius.circular(4),
-          badgeColor: Theme.of(context).colorScheme.error.withAlpha(210),
+          borderRadius: BorderRadius.circular(20),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          badgeColor: colors.primary,
+          elevation: 0,
         ),
         child: child,
       );
