@@ -7,92 +7,58 @@ class CarouselItem extends StatelessWidget {
   final ImageEntity cover;
   final void Function(BuildContext context)? onTap;
 
-  const CarouselItem({super.key, required this.title, required this.cover, this.onTap});
+  const CarouselItem(
+      {super.key, required this.title, required this.cover, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap==null?null:(){onTap!(context);},
-      child: Container(
-        margin: const EdgeInsets.all(5.0),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: InkWell(
+        onTap: onTap == null ? null : () => onTap!(context),
         child: ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(5.0)),
+          borderRadius: BorderRadius.circular(16),
           child: Stack(
+            fit: StackFit.expand,
             children: <Widget>[
-              Center(
-                child: DComicImage(
-                  cover,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                ),
+              DComicImage(
+                cover,
+                fit: BoxFit.cover,
+                width: double.infinity,
               ),
               Positioned(
-                bottom: 0.0,
-                left: 0.0,
-                right: 0.0,
-                child: Container(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: DecoratedBox(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
                         Color.fromARGB(200, 0, 0, 0),
+                        Color.fromARGB(110, 0, 0, 0),
                         Color.fromARGB(0, 0, 0, 0),
                       ],
+                      stops: [0, 0.55, 1],
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                     ),
                   ),
-                  padding:
-                  const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.bold,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 28, 16, 14),
+                    child: Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        height: 1.25,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 3, 4, 0),
-      child: InkWell(
-        onTap: onTap==null?null:(){onTap!(context);},
-        child: Center(
-          child: Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(5),
-                child: DComicImage(
-                  cover,
-                  fit: BoxFit.fill,
-                ),
-              ),
-              Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Card(
-                    margin: EdgeInsets.zero,
-                    color: Color.fromARGB(
-                        200,
-                        Theme.of(context).colorScheme.primary.red,
-                        Theme.of(context).colorScheme.primary.green,
-                        Theme.of(context).colorScheme.primary.blue),
-                    elevation: 0,
-                    child: Padding(
-                      padding: const EdgeInsets.all(5),
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.onPrimary),
-                      ),
-                    ),
-                  ))
             ],
           ),
         ),

@@ -26,14 +26,10 @@ class _LatestPageState extends State<LatestPage> {
             await Provider.of<ComicLatestPageController>(context, listen: false)
                 .load(context);
           },
-          // noMoreLoad: !Provider.of<ComicLatestPageController>(context).canLoad,
-          child: Container(
-            height: double.infinity,
-            color: Theme.of(context).colorScheme.surfaceVariant,
-            child: GridView.builder(
-              shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 1, childAspectRatio: 3 / 1),
+          child: ColoredBox(
+            color: Theme.of(context).colorScheme.surface,
+            child: ListView.builder(
+              padding: const EdgeInsets.only(top: 4, bottom: 12),
               itemCount: Provider.of<ComicLatestPageController>(context)
                   .latestList
                   .length,

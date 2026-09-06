@@ -34,6 +34,7 @@ class ZaiManHuaSourceModel extends BaseComicSourceModel {
       }
     } catch (e, s) {
       logger.e('$e', error: e, stackTrace: s);
+      rethrow;
     }
     return null;
   }
@@ -46,6 +47,12 @@ class ZaiManHuaSourceModel extends BaseComicSourceModel {
         .search(keyword, page: page);
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
+        // errno 非零是业务失败（此时负载形状不同），必须作为加载错误抛出，
+        // 不能落入下面的解析逻辑被误判为解析失败。
+        var errno = response.data['errno'];
+        if (errno != null && errno != 0) {
+          throw StateError('ZaiManHua search failed: errno $errno');
+        }
         var searchList = response.data['data']['list'];
         for (var item in searchList) {
           data.add(ComicListItemEntity(
@@ -65,11 +72,13 @@ class ZaiManHuaSourceModel extends BaseComicSourceModel {
                     settings: const RouteSettings(name: 'ComicDetailPage')));
           }, item['id'].toString()));
         }
+        return data;
       }
     } catch (e, s) {
       logger.e('$e', error: e, stackTrace: s);
+      rethrow;
     }
-    return data;
+    throw StateError('ZaiManHua search failed: HTTP ${response.statusCode}');
   }
 
   @override
@@ -1022,8 +1031,8 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
   ZaiManHuaComicDetailModel(this.rawData, this.sourceModel);
 
   @override
-  Future<void> init() async {
-    super.init();
+  Future<void> doInit() async {
+    await super.doInit();
     _isSubscribe = await parent.accountModel!.getIfSubscribed(comicId);
   }
 

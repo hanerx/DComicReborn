@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:badges/badges.dart';
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/generated/l10n.dart';
@@ -85,45 +87,64 @@ abstract class BaseComicSourceModel extends BaseModel {
     }
   }
 
-  Future<BaseComicDetailModel?> searchAndGetComicDetail(
+  /// 解析 origin 侧书目 ID（[comicId] 来自 [sourceModel]）在当前源上的绑定结果：
+  /// - 已存在的映射（含同源显式覆盖）优先，空 [ComicMappingEntity.resultComicId]
+  ///   表示用户显式解绑，直接返回 null，不再触发自动搜索；
+  /// - 同源且无映射时直接返回原始 ID；
+  /// - 跨源且无映射时按标题自动匹配（唯一结果或简体中文标题相等），
+  ///   仅在匹配成功后才以事务方式写入（不覆盖显式绑定/解绑）。
+  Future<String?> resolveComicId(
       String comicId, String title, BaseComicSourceModel sourceModel) async {
-    if (sourceModel == this) {
-      return await getComicDetail(comicId, title);
+    var databaseInstance = await DatabaseInstance.instance;
+    var comicMappingEntity = await databaseInstance.comicMappingDao
+        .getComicMappingByComicId(
+            comicId, sourceModel.type.sourceId, type.sourceId);
+    if (comicMappingEntity != null) {
+      if (comicMappingEntity.resultComicId.isEmpty) {
+        return null;
+      }
+      return comicMappingEntity.resultComicId;
     }
+    if (sourceModel.type.sourceId == type.sourceId) {
+      return comicId;
+    }
+    var searchResultList = await searchComicDetail(title);
+    String? matchedComicId;
+    if (searchResultList.length == 1) {
+      matchedComicId = searchResultList.first.comicId;
+    } else {
+      var targetTitle = ChineseHelper.convertToSimplifiedChinese(title);
+      for (var item in searchResultList) {
+        var sourceTitle = ChineseHelper.convertToSimplifiedChinese(item.title);
+        if (sourceTitle == targetTitle) {
+          matchedComicId = item.comicId;
+          break;
+        }
+      }
+    }
+    if (matchedComicId == null) {
+      // 未匹配成功时不持久化空结果；但搜索期间可能已有显式绑定/解绑
+      // 落库，此时按显式结果返回。
+      var existing = await databaseInstance.comicMappingDao
+          .getComicMappingByComicId(
+              comicId, sourceModel.type.sourceId, type.sourceId);
+      if (existing != null) {
+        return existing.resultComicId.isEmpty ? null : existing.resultComicId;
+      }
+      return null;
+    }
+    var entity = await databaseInstance.comicMappingDao
+        .insertAutomaticMappingIfAbsent(
+            comicId, sourceModel.type.sourceId, type.sourceId, matchedComicId);
+    return entity.resultComicId.isEmpty ? null : entity.resultComicId;
+  }
+
+  Future<void> bindComicIdFromSourceModel(String comicId, String targetComicId,
+      BaseComicSourceModel sourceModel) async {
     var databaseInstance = await DatabaseInstance.instance;
     var comicMappingEntity = await databaseInstance.comicMappingDao
         .getOrCreateConfigByComicId(
             comicId, sourceModel.type.sourceId, type.sourceId);
-    if (comicMappingEntity.resultComicId.isEmpty) {
-      var searchResultList = await searchComicDetail(title);
-      if (searchResultList.length == 1) {
-        comicMappingEntity.resultComicId = searchResultList.first.comicId;
-        await databaseInstance.comicMappingDao
-            .updateComicMapping(comicMappingEntity);
-      } else {
-        for (var item in searchResultList) {
-          var sourceTitle = ChineseHelper.convertToSimplifiedChinese(item.title);
-          var targetTitle = ChineseHelper.convertToSimplifiedChinese(title);
-          if (sourceTitle == targetTitle) {
-            comicMappingEntity.resultComicId = item.comicId;
-            await databaseInstance.comicMappingDao
-                .updateComicMapping(comicMappingEntity);
-            break;
-          }
-        }
-      }
-    }
-    if (comicMappingEntity.resultComicId.isNotEmpty) {
-      return await getComicDetail(comicMappingEntity.resultComicId, title);
-    }
-    return null;
-  }
-
-  Future<void> bindComicIdFromSourceModel(String comicId, String targetComicId, BaseComicSourceModel sourceModel) async{
-    var databaseInstance = await DatabaseInstance.instance;
-    var comicMappingEntity = await databaseInstance.comicMappingDao
-        .getOrCreateConfigByComicId(
-        comicId, sourceModel.type.sourceId, type.sourceId);
     comicMappingEntity.resultComicId = targetComicId;
     await databaseInstance.comicMappingDao
         .updateComicMapping(comicMappingEntity);
@@ -175,9 +196,23 @@ abstract class BaseComicDetailModel extends BaseModel {
 
   Future<List<ComicCommentEntity>> getComments({int page = 0});
 
+  Future<void>? _initFuture;
+
   @override
-  Future<void> init() async {
-    await super.init();
+  Future<void> init() {
+    // BaseProvider 的构造函数会虚调用 init()：缓存共享 Future，
+    // 让控制器随后的 await 不会重复执行初始化，也能拿到构造期已抛出的错误。
+    if (_initFuture == null) {
+      var future = doInit();
+      // 构造期的调用没有被 await，忽略其异步错误以避免泄漏为未处理异常；
+      // 之后 await 同一 Future 的调用方仍会收到该错误。
+      future.ignore();
+      _initFuture = future;
+    }
+    return _initFuture!;
+  }
+
+  Future<void> doInit() async {
     await loadComicHistory();
   }
 
@@ -254,10 +289,12 @@ abstract class BaseComicChapterDetailModel extends BaseModel {
 
   Future<List<FileInfo>> downloadPages() async {
     List<FileInfo> data = [];
-    for(var page in pages){
-      if(page.imageType == ImageType.network){
-        var cacheResult = await DefaultCacheManager().getFileFromCache(page.imageUrl);
-        cacheResult ??= await DefaultCacheManager().downloadFile(page.imageUrl, authHeaders: page.imageHeaders);
+    for (var page in pages) {
+      if (page.imageType == ImageType.network) {
+        var cacheResult =
+            await DefaultCacheManager().getFileFromCache(page.imageUrl);
+        cacheResult ??= await DefaultCacheManager()
+            .downloadFile(page.imageUrl, authHeaders: page.imageHeaders);
         data.add(cacheResult);
       }
     }
@@ -302,23 +339,27 @@ abstract class BaseComicAccountModel extends BaseModel {
 
   Future<List<GridItemEntity>> getSubscribeComics({int page = 0});
 
-  Future<List<GridItemEntity>> getSubscribeStateComics({int page=0}) async {
+  Future<List<GridItemEntity>> getSubscribeStateComics({int page = 0}) async {
     List<GridItemEntity> data = await getSubscribeComics(page: page);
     var databaseInstance = await DatabaseInstance.instance;
-    for(var item in data){
-      if(item is GridItemEntityWithStatus){
-        var comicSubscribeState = await databaseInstance.comicSubscribeStateDao.getOrCreateConfigByComicId(item.comicId, parent!.type.sourceId);
-        if(comicSubscribeState.timestamp!=null){
-          if(comicSubscribeState.timestamp!.isBefore(item.lastUpdateTimestamp)){
-            item.badges??={};
+    for (var item in data) {
+      if (item is GridItemEntityWithStatus) {
+        var comicSubscribeState = await databaseInstance.comicSubscribeStateDao
+            .getOrCreateConfigByComicId(item.comicId, parent!.type.sourceId);
+        if (comicSubscribeState.timestamp != null) {
+          if (comicSubscribeState.timestamp!
+              .isBefore(item.lastUpdateTimestamp)) {
+            item.badges ??= {};
             item.badges?.addAll({
-              BadgePosition.topEnd(top: -5, end: -5): (context) => S.of(context).NewComicBadge
+              BadgePosition.topEnd(top: -5, end: -5): (context) =>
+                  S.of(context).NewComicBadge
             });
           }
-        }else{
-          item.badges??={};
+        } else {
+          item.badges ??= {};
           item.badges?.addAll({
-            BadgePosition.topEnd(top: -5, end: -5): (context) => S.of(context).NewComicBadge
+            BadgePosition.topEnd(top: -5, end: -5): (context) =>
+                S.of(context).NewComicBadge
           });
         }
       }
@@ -326,11 +367,13 @@ abstract class BaseComicAccountModel extends BaseModel {
     return data;
   }
 
-  Future<void> addSubscribeState(String comicId) async{
+  Future<void> addSubscribeState(String comicId) async {
     var databaseInstance = await DatabaseInstance.instance;
-    var comicSubscribeState = await databaseInstance.comicSubscribeStateDao.getOrCreateConfigByComicId(comicId, parent!.type.sourceId);
+    var comicSubscribeState = await databaseInstance.comicSubscribeStateDao
+        .getOrCreateConfigByComicId(comicId, parent!.type.sourceId);
     comicSubscribeState.timestamp = DateTime.now();
-    await databaseInstance.comicSubscribeStateDao.updateComicSubscribeState(comicSubscribeState);
+    await databaseInstance.comicSubscribeStateDao
+        .updateComicSubscribeState(comicSubscribeState);
   }
 }
 
@@ -452,15 +495,16 @@ class GridItemEntity {
   final void Function(BuildContext context)? onTap;
   Map<BadgePosition, String Function(BuildContext context)>? badges;
 
-  GridItemEntity(this.title, this.subtitle, this.cover, this.onTap, {this.badges});
+  GridItemEntity(this.title, this.subtitle, this.cover, this.onTap,
+      {this.badges});
 }
 
 class GridItemEntityWithStatus extends GridItemEntity {
   final String comicId;
   final DateTime lastUpdateTimestamp;
 
-  GridItemEntityWithStatus(super.title, super.subtitle, super.cover, super.onTap, this.lastUpdateTimestamp, this.comicId);
-
+  GridItemEntityWithStatus(super.title, super.subtitle, super.cover,
+      super.onTap, this.lastUpdateTimestamp, this.comicId);
 }
 
 class ListItemEntity {

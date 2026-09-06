@@ -5,16 +5,16 @@ import 'package:dcomic/view/settings/account_manage_page.dart';
 import 'package:dcomic/view/settings/debug_page.dart';
 import 'package:dcomic/view/settings/source_manage_page.dart';
 import 'package:dcomic/view/settings/viewer_setting_page.dart';
-import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:provider/provider.dart';
 
 class MainSettingPage extends StatefulWidget {
   const MainSettingPage({super.key});
 
   @override
-  State<StatefulWidget> createState() => _MainSettingPageState();
+  State<StatefulWidget> createState() {
+    return _MainSettingPageState();
+  }
 }
 
 class _MainSettingPageState extends State<MainSettingPage> {
@@ -24,98 +24,106 @@ class _MainSettingPageState extends State<MainSettingPage> {
       appBar: AppBar(
         title: Text(S.of(context).DrawerSetting),
       ),
-      body: EasyRefresh(
-        header: SecondaryBuilderHeader(
-            header: const ClassicHeader(
-              mainAxisAlignment: MainAxisAlignment.end,
-              position: IndicatorPosition.locator,
-              safeArea: false,
-              clipBehavior: Clip.none,
-            ),
-            builder: (context, state, header) => const Center(
-                  child: SizedBox(),
-                ),
-            secondaryDimension: MediaQuery.of(context).size.height - kToolbarHeight - MediaQuery.of(context).padding.top,
-            secondaryTriggerOffset: 120),
-        onRefresh: (){},
-        child: ListView(
-          shrinkWrap: false,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.chrome_reader_mode),
-              title: Text(S.of(context).ReaderSettings),
-              subtitle: Text(S.of(context).ReaderSettingsDescription),
-              onTap: (){
-                Provider.of<NavigatorProvider>(context, listen: false)
-                    .getNavigator(context, NavigatorType.defaultNavigator)
-                    ?.push(MaterialPageRoute(
-                    builder: (context) => const ViewerSettingPage(),
-                    settings: const RouteSettings(name: 'ViewerSettingPage')));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.ad_units_outlined),
-              title: Text(S.of(context).SourceSettings),
-              subtitle: Text(S.of(context).SourceSettingsDescription),
-              onTap: (){
-                Provider.of<NavigatorProvider>(context, listen: false)
-                    .getNavigator(context, NavigatorType.defaultNavigator)
-                    ?.push(MaterialPageRoute(
-                    builder: (context) => const SourceManagePage(),
-                    settings: const RouteSettings(name: 'SourceManagePage')));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.account_box),
-              title: Text(S.of(context).AccountSettings),
-              subtitle: Text(S.of(context).AccountSettingsDescription),
-              onTap: (){
-                Provider.of<NavigatorProvider>(context, listen: false)
-                    .getNavigator(context, NavigatorType.defaultNavigator)
-                    ?.push(MaterialPageRoute(
-                    builder: (context) => const AccountManagePage(),
-                    settings: const RouteSettings(name: 'AccountManagePage')));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.file_download_outlined),
-              title: Text(S.of(context).DownloadSettings),
-              subtitle: Text(S.of(context).DownloadSettingsDescription),
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.code),
-              title: Text(S.of(context).DebugSettings),
-              subtitle: Text(S.of(context).DebugSettingsDescription),
-              onTap: (){
-                Provider.of<NavigatorProvider>(context, listen: false)
-                    .getNavigator(context, NavigatorType.defaultNavigator)
-                    ?.push(MaterialPageRoute(
-                    builder: (context) => const DebugPage(),
-                    settings: const RouteSettings(name: 'DebugPage')));
-              },
-            ),
-            ListTile(
-              leading: const Icon(FontAwesome5.flask),
-              title: Text(S.of(context).ExperimentalSettings),
-              subtitle: Text(S.of(context).ExperimentalSettingsDescription),
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.apps),
-              title: Text(S.of(context).AboutSettings),
-              subtitle: Text(S.of(context).AboutSettingsDescription),
-              onTap: (){
-                Provider.of<NavigatorProvider>(context, listen: false)
-                    .getNavigator(context, NavigatorType.defaultNavigator)
-                    ?.push(MaterialPageRoute(
-                    builder: (context) => const AboutPage(),
-                    settings: const RouteSettings(name: 'AboutPage')));
-              },
-            ),
-          ],
+      body: ListView(
+        padding: EdgeInsets.only(
+          top: 8,
+          bottom: 8 + MediaQuery.paddingOf(context).bottom,
         ),
+        children: [
+          _sectionHeader(context, '阅读', 'Reading', top: 8),
+          _settingTile(
+            context,
+            icon: Icons.auto_stories_outlined,
+            title: S.of(context).ReaderSettings,
+            subtitle: S.of(context).ReaderSettingsDescription,
+            routeName: 'ViewerSettingPage',
+            builder: (context) => const ViewerSettingPage(),
+          ),
+          _sectionHeader(context, '内容源', 'Content Sources'),
+          _settingTile(
+            context,
+            icon: Icons.apps_outlined,
+            title: S.of(context).SourceSettings,
+            subtitle: S.of(context).SourceSettingsDescription,
+            routeName: 'SourceManagePage',
+            builder: (context) => const SourceManagePage(),
+          ),
+          _sectionHeader(context, '账户', 'Account'),
+          _settingTile(
+            context,
+            icon: Icons.account_box_outlined,
+            title: S.of(context).AccountSettings,
+            subtitle: S.of(context).AccountSettingsDescription,
+            routeName: 'AccountManagePage',
+            builder: (context) => const AccountManagePage(),
+          ),
+          _sectionHeader(context, '高级与关于', 'Advanced & About'),
+          _settingTile(
+            context,
+            icon: Icons.code,
+            title: S.of(context).DebugSettings,
+            subtitle: S.of(context).DebugSettingsDescription,
+            routeName: 'DebugPage',
+            builder: (context) => const DebugPage(),
+          ),
+          _settingTile(
+            context,
+            icon: Icons.info_outline,
+            title: S.of(context).AboutSettings,
+            subtitle: S.of(context).AboutSettingsDescription,
+            routeName: 'AboutPage',
+            builder: (context) => const AboutPage(),
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _sectionHeader(BuildContext context, String zh, String en,
+      {double top = 24}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, top, 16, 4),
+      child: Text(
+        _locale(context, zh, en),
+        style: Theme.of(context)
+            .textTheme
+            .titleSmall
+            ?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  Widget _settingTile(BuildContext context,
+      {required IconData icon,
+      required String title,
+      required String subtitle,
+      required String routeName,
+      required WidgetBuilder builder}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ListTile(
+      leading: Icon(icon, color: colorScheme.primary),
+      title: Text(
+        title,
+        style: Theme.of(context)
+            .textTheme
+            .bodyLarge
+            ?.copyWith(color: colorScheme.onSurface),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(color: colorScheme.onSurfaceVariant),
+      ),
+      onTap: () {
+        Provider.of<NavigatorProvider>(context, listen: false)
+            .getNavigator(context, NavigatorType.defaultNavigator)
+            ?.push(MaterialPageRoute(
+                builder: builder, settings: RouteSettings(name: routeName)));
+      },
+    );
+  }
+
+  String _locale(BuildContext context, String zh, String en) {
+    return Localizations.localeOf(context).languageCode == 'zh' ? zh : en;
   }
 }

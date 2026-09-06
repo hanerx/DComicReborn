@@ -25,7 +25,6 @@ class _FavoritePageState extends State<FavoritePage> {
             .length,
         child: Scaffold(
           appBar: AppBar(
-            elevation: 0,
             title: Text(S.of(context).DrawerFavorite),
             bottom: TabBar(
               isScrollable: true,
@@ -38,6 +37,7 @@ class _FavoritePageState extends State<FavoritePage> {
               ],
             ),
           ),
+          backgroundColor: Theme.of(context).colorScheme.surface,
           body: TabBarView(children: [
             for (var item in Provider.of<ComicSourceProvider>(context)
                 .hasAccountSettingSources)
@@ -45,35 +45,36 @@ class _FavoritePageState extends State<FavoritePage> {
                   ? ChangeNotifierProvider(
                       create: (_) => ComicFavoritePageController(item),
                       builder: (context, child) => EasyRefresh(
-                          onRefresh: () async {
-                            await Provider.of<ComicFavoritePageController>(
+                            onRefresh: () async {
+                              await Provider.of<ComicFavoritePageController>(
+                                      context,
+                                      listen: false)
+                                  .refresh();
+                            },
+                            onLoad: () async {
+                              await Provider.of<ComicFavoritePageController>(
+                                      context,
+                                      listen: false)
+                                  .load();
+                            },
+                            refreshOnStart: true,
+                            child:
+                                LayoutBuilder(builder: (context, constraints) {
+                              var data =
+                                  Provider.of<ComicFavoritePageController>(
+                                          context)
+                                      .data;
+                              return GridView(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                                gridDelegate: GridCardItem.coverGridDelegate(
                                     context,
-                                    listen: false)
-                                .refresh();
-                          },
-                          onLoad: () async {
-                            await Provider.of<ComicFavoritePageController>(
-                                    context,
-                                    listen: false)
-                                .load();
-                          },
-                          refreshOnStart: true,
-                          child: Container(
-                              color:
-                                  Theme.of(context).colorScheme.surfaceContainerHighest,
-                              height: double.infinity,
-                              child: GridView(
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                        mainAxisSpacing: 3,
-                                        crossAxisSpacing: 3,
-                                        crossAxisCount: 3,
-                                        childAspectRatio: 3 / 5),
-                                shrinkWrap: true,
+                                    gridWidth: constraints.maxWidth - 32,
+                                    crossAxisCount: 3,
+                                    hasSubtitle: data.any((entity) =>
+                                        (entity.subtitle ?? '').isNotEmpty)),
                                 children: [
-                                  for (var item in Provider.of<
-                                          ComicFavoritePageController>(context)
-                                      .data)
+                                  for (var item in data)
                                     GridCardItem(
                                       image: item.cover,
                                       title: item.title,
@@ -86,8 +87,9 @@ class _FavoritePageState extends State<FavoritePage> {
                                       badgeMaps: item.badges,
                                     )
                                 ],
-                              ))),
-                    )
+                              );
+                            }),
+                          ))
                   : EmptyWidget(
                       title: S.of(context).RequireLogin,
                       children: [
@@ -104,7 +106,8 @@ class _FavoritePageState extends State<FavoritePage> {
                                       settings: const RouteSettings(
                                           name: 'AccountLoginPage')))
                                   .then((value) =>
-                                      Provider.of<ComicSourceProvider>(context, listen: false)
+                                      Provider.of<ComicSourceProvider>(context,
+                                              listen: false)
                                           .callNotify());
                             },
                             child: Text(S.of(context).JumpToLogin))

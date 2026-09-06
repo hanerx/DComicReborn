@@ -26,14 +26,10 @@ class _RankPageState extends State<RankPage> {
             await Provider.of<ComicRankPageController>(context, listen: false)
                 .load(context);
           },
-          // noMoreLoad: !Provider.of<ComicRankPageController>(context).canLoad,
-          child: Container(
-            height: double.infinity,
-            color: Theme.of(context).colorScheme.surfaceVariant,
-            child: GridView.builder(
-              shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 1, childAspectRatio: 3 / 1),
+          child: ColoredBox(
+            color: Theme.of(context).colorScheme.surface,
+            child: ListView.builder(
+              padding: const EdgeInsets.only(top: 4, bottom: 12),
               itemCount: Provider.of<ComicRankPageController>(context)
                   .rankingList
                   .length,

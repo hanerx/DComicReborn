@@ -433,8 +433,8 @@ class DMZJV4ComicDetailModel extends BaseComicDetailModel {
   DMZJV4ComicDetailModel(this.rawData, this.parent);
 
   @override
-  Future<void> init() async {
-    super.init();
+  Future<void> doInit() async {
+    await super.doInit();
     _isSubscribe = await parent.accountModel!.getIfSubscribed(comicId);
   }
 
@@ -755,8 +755,7 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                       icon: const Icon(FontAwesome5.qq),
                       label: Text(S.of(context).DMZJLoginQQLogin),
                       style: ButtonStyle(
-                          backgroundColor:
-                              WidgetStateProperty.all(Colors.cyan),
+                          backgroundColor: WidgetStateProperty.all(Colors.cyan),
                           shape: WidgetStateProperty.all(
                               const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.only(
@@ -941,9 +940,10 @@ class DMZJComicAccountModel extends BaseComicAccountModel {
                         ),
                     settings: const RouteSettings(name: 'ComicDetailPage')))
                 .then((value) {
-                  if(context.mounted){
-                    Provider.of<ComicFavoritePageController>(context, listen: false).refresh();
-                  }
+              if (context.mounted) {
+                Provider.of<ComicFavoritePageController>(context, listen: false)
+                    .refresh();
+              }
             });
           }, DateTime.fromMillisecondsSinceEpoch(rawData['sub_uptime'] * 1000),
               rawData['id'].toString()));

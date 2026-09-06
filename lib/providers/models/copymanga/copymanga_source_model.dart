@@ -129,8 +129,9 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
                   settings: const RouteSettings(name: 'ComicDetailPage')));
         }, item['path_word']));
       }
+      return data;
     }
-    return data;
+    throw StateError('CopyManga search failed: HTTP ${response.statusCode}');
   }
 
   @override
@@ -246,8 +247,8 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
   CopyMangaComicDetailModel(this.rawData, this.parent, this.groupsRawData);
 
   @override
-  Future<void> init() async {
-    super.init();
+  Future<void> doInit() async {
+    await super.doInit();
     _isSubscribe = await parent.accountModel!.getIfSubscribed(comicId);
   }
 

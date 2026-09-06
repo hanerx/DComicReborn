@@ -105,7 +105,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     return Padding(
       padding: EdgeInsets.only(
         top: controller.showToolBar ? 70 : 0,
-        bottom: controller.showToolBar ? 90 : 0,
+        bottom: controller.showToolBar ? 96 : 0,
       ),
       child: ChapterCommentsPage(
         key: ValueKey(controller.currentChapter?.chapterId),
@@ -470,68 +470,122 @@ class _ComicViewerPageState extends State<ComicViewerPage>
         ));
   }
 
+  String _localeText(BuildContext context, String zh, String other) =>
+      Localizations.localeOf(context).languageCode.startsWith('zh')
+          ? zh
+          : other;
+
+  void _openViewerSettings(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      constraints:
+          BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+      builder: (context) => const ViewerSettingList(),
+    );
+  }
+
   Widget _buildToolBar(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final controller = Provider.of<ComicViewerPageController>(context);
+    final imageCount = _pageCount - 1;
+    final pageLabel = imageCount > 0
+        ? '${min(controller.currentPage, imageCount - 1) + 1}/$imageCount'
+        : '';
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 300),
       left: 0,
       right: 0,
-      bottom:
-          Provider.of<ComicViewerPageController>(context).showToolBar ? 0 : -90,
+      bottom: controller.showToolBar ? 0 : -96,
       child: SizedBox(
-        height: 90,
-        child: Card(
-            child: Column(
-          children: [
-            _buildSlider(context),
-            Expanded(
-                child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ExpandCardButton(
-                    onTap: () {
-                      _easyRefreshController.callRefresh();
-                    },
-                    icon: Icons.keyboard_double_arrow_left),
-                Builder(
-                  builder: (context) => ExpandCardButton(
-                      onTap: () {
-                        _openDrawer(0);
-                      },
-                      icon: Icons.message_outlined),
-                ),
-                Builder(
-                    builder: (context) => ExpandCardButton(
-                        onTap: () {
-                          _openDrawer(1);
-                        },
-                        icon: Icons.list_alt)),
-                ExpandCardButton(
-                    onTap: () {
-                      showModalBottomSheet(
-                          backgroundColor: Colors.transparent,
-                          context: context,
-                          builder: (context) => const SizedBox(
-                                height: 300,
-                                child: Card(
-                                  child: ViewerSettingList(),
-                                ),
-                              ));
-                    },
-                    icon: Icons.settings),
-                ExpandCardButton(
-                    onTap: () {
-                      _easyRefreshController.callLoad();
-                    },
-                    icon: Icons.keyboard_double_arrow_right)
-              ],
-            ))
-          ],
-        )),
+        height: 96,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.surfaceContainerLow,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            border: Border(top: BorderSide(color: colors.outlineVariant)),
+          ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 48,
+                    child: Row(
+                      children: [
+                        Expanded(child: _buildSlider(context)),
+                        if (pageLabel.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Text(pageLabel,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(
+                                      color: colors.onSurfaceVariant,
+                                      fontFeatures: const [
+                                    FontFeature.tabularFigures()
+                                  ])),
+                        ],
+                        const SizedBox(width: 16),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        ExpandCardButton(
+                            onTap: () {
+                              _easyRefreshController.callRefresh();
+                            },
+                            icon: Icons.keyboard_double_arrow_left,
+                            tooltip: _localeText(
+                                context, '上一章', 'Previous chapter')),
+                        ExpandCardButton(
+                            onTap: () {
+                              _openDrawer(0);
+                            },
+                            icon: Icons.message_outlined,
+                            tooltip: S.of(context).ComicViewerPageComments),
+                        ExpandCardButton(
+                            onTap: () {
+                              _openDrawer(1);
+                            },
+                            icon: Icons.list_alt,
+                            tooltip: S.of(context).ComicViewerPageDirectory),
+                        ExpandCardButton(
+                            onTap: () {
+                              _openViewerSettings(context);
+                            },
+                            icon: Icons.settings,
+                            tooltip: S.of(context).ReaderSettings),
+                        ExpandCardButton(
+                            onTap: () {
+                              _easyRefreshController.callLoad();
+                            },
+                            icon: Icons.keyboard_double_arrow_right,
+                            tooltip:
+                                _localeText(context, '下一章', 'Next chapter')),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildAppBar(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 300),
       left: 0,
@@ -542,192 +596,163 @@ class _ComicViewerPageState extends State<ComicViewerPage>
       child: SafeArea(
         child: SizedBox(
           height: 70,
-          child: Card(
-              child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              BackButton(
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              Expanded(
-                  child: Padding(
-                padding: const EdgeInsets.only(left: 10),
-                child: Text(
-                  Provider.of<ComicViewerPageController>(context).title,
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerLow,
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(16)),
+              border: Border(bottom: BorderSide(color: colors.outlineVariant)),
+            ),
+            child: ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(16)),
+              child: Material(
+                type: MaterialType.transparency,
+                child: Row(
+                  children: [
+                    BackButton(color: colors.onSurface),
+                    Expanded(
+                        child: Padding(
+                      padding: const EdgeInsets.only(left: 8, right: 16),
+                      child: Text(
+                        Provider.of<ComicViewerPageController>(context).title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ))
+                  ],
                 ),
-              ))
-            ],
-          )),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildDrawer(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final controller = Provider.of<ComicViewerPageController>(context);
+    final chapters = controller.chapters.reversed.toList();
     return Drawer(
       width: MediaQuery.of(context).size.width * 0.9,
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.horizontal(left: Radius.circular(20))),
       child: SafeArea(
-        child: Card(
-          child: SizedBox.expand(
-            child: Column(
-              children: [
-                TabBar(
-                  controller: _drawerTabController,
-                  tabs: [
-                    Tab(
-                      child: Row(
-                        children: [
-                          const Icon(Icons.message_outlined),
-                          Expanded(
-                              child: Text(S.of(context).ComicViewerPageComments,
-                                  textAlign: TextAlign.center))
-                        ],
-                      ),
-                    ),
-                    Tab(
-                        child: Row(
-                      children: [
-                        const Icon(Icons.list_alt),
-                        Expanded(
-                            child: Text(S.of(context).ComicViewerPageDirectory,
-                                textAlign: TextAlign.center))
-                      ],
-                    ))
-                  ],
-                  labelColor: Theme.of(context).colorScheme.primary,
-                  indicatorColor: Theme.of(context).colorScheme.primary,
+        child: Column(
+          children: [
+            TabBar(
+              controller: _drawerTabController,
+              tabs: [
+                Tab(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.message_outlined),
+                      Expanded(
+                          child: Text(S.of(context).ComicViewerPageComments,
+                              textAlign: TextAlign.center))
+                    ],
+                  ),
                 ),
-                Expanded(
-                    child: TabBarView(
-                  controller: _drawerTabController,
+                Tab(
+                    child: Row(
                   children: [
-                    SizedBox.expand(
-                      child: EasyRefresh(
-                          onRefresh: () async {
-                            await Provider.of<ComicViewerPageController>(
-                                    context,
-                                    listen: false)
-                                .loadComment();
-                          },
-                          child: SizedBox.expand(
-                            child: SingleChildScrollView(
-                              child: Wrap(
-                                children: [
-                                  for (var item
-                                      in Provider.of<ComicViewerPageController>(
-                                              context)
-                                          .comments)
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 5),
-                                      child: ActionChip(
-                                          onPressed: () {},
-                                          avatar: CircleAvatar(
-                                            child: item.avatar == null
-                                                ? Text(
-                                                    "${Provider.of<ComicViewerPageController>(context).maxLikes > 100 ? (item.likes / Provider.of<ComicViewerPageController>(context).maxLikes * 100).toInt() : item.likes}",
-                                                    style: const TextStyle(
-                                                        fontSize: 13),
-                                                  )
-                                                : DComicImage(item.avatar!),
-                                          ),
-                                          label: TextScroll(
-                                            item.comment,
-                                            velocity: const Velocity(
-                                                pixelsPerSecond: Offset(40, 0)),
-                                            pauseBetween:
-                                                const Duration(seconds: 3),
-                                          ),
-                                          backgroundColor: Color.lerp(
-                                              Theme.of(context)
-                                                  .colorScheme
-                                                  .primaryContainer,
-                                              Theme.of(context)
-                                                  .colorScheme
-                                                  .errorContainer,
-                                              item.likes /
-                                                  Provider.of<ComicViewerPageController>(
-                                                          context)
-                                                      .maxLikes),
-                                          visualDensity: const VisualDensity(
-                                              vertical: -1)),
-                                    )
-                                ],
-                              ),
-                            ),
-                          )),
-                    ),
-                    SizedBox.expand(
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        itemCount:
-                            Provider.of<ComicViewerPageController>(context)
-                                .chapters
-                                .reversed
-                                .toList()
-                                .length,
-                        itemBuilder: (context, index) => ListTile(
-                          selected: Provider.of<ComicViewerPageController>(
-                                      context)
-                                  .currentChapter ==
-                              Provider.of<ComicViewerPageController>(context)
-                                  .chapters
-                                  .reversed
-                                  .toList()[index],
-                          title: Text(
-                              Provider.of<ComicViewerPageController>(context)
-                                  .chapters
-                                  .reversed
-                                  .toList()[index]
-                                  .title),
-                          subtitle: Text(S
-                              .of(context)
-                              .ComicDetailPageChapterEntitySubtitle(
-                                  formatdate.formatDate(
-                                      Provider.of<ComicViewerPageController>(
-                                              context)
-                                          .chapters
-                                          .reversed
-                                          .toList()[index]
-                                          .uploadTime,
-                                      [
-                                        formatdate.yyyy,
-                                        '-',
-                                        formatdate.mm,
-                                        '-',
-                                        formatdate.dd
-                                      ]),
-                                  Provider.of<ComicViewerPageController>(
-                                          context)
-                                      .chapters
-                                      .reversed
-                                      .toList()[index]
-                                      .chapterId)),
-                          onTap: () {
-                            Provider.of<ComicViewerPageController>(context,
-                                    listen: false)
-                                .loadChapter(
-                                    Provider.of<ComicViewerPageController>(
-                                            context,
-                                            listen: false)
-                                        .chapters
-                                        .reversed
-                                        .toList()[index]);
-                            _easyRefreshController.callRefresh();
-                            Navigator.of(context).pop();
-                          },
-                        ),
-                      ),
-                    )
+                    const Icon(Icons.list_alt),
+                    Expanded(
+                        child: Text(S.of(context).ComicViewerPageDirectory,
+                            textAlign: TextAlign.center))
                   ],
                 ))
               ],
+              labelColor: colors.primary,
+              unselectedLabelColor: colors.onSurfaceVariant,
+              indicatorColor: colors.primary,
+              dividerColor: colors.outlineVariant,
             ),
-          ),
+            Expanded(
+                child: TabBarView(
+              controller: _drawerTabController,
+              children: [
+                SizedBox.expand(
+                  child: EasyRefresh(
+                      onRefresh: () async {
+                        await controller.loadComment();
+                      },
+                      child: SizedBox.expand(
+                        child: SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (var item in controller.comments)
+                                  Chip(
+                                    avatar: CircleAvatar(
+                                      child: item.avatar == null
+                                          ? Text(
+                                              '${controller.maxLikes > 100 ? (item.likes / controller.maxLikes * 100).toInt() : item.likes}',
+                                              style:
+                                                  const TextStyle(fontSize: 13),
+                                            )
+                                          : DComicImage(item.avatar!),
+                                    ),
+                                    label: TextScroll(
+                                      item.comment,
+                                      velocity: const Velocity(
+                                          pixelsPerSecond: Offset(40, 0)),
+                                      pauseBetween: const Duration(seconds: 3),
+                                    ),
+                                    backgroundColor: Color.lerp(
+                                        colors.primaryContainer,
+                                        colors.errorContainer,
+                                        controller.maxLikes > 0
+                                            ? item.likes / controller.maxLikes
+                                            : 0),
+                                    visualDensity:
+                                        const VisualDensity(vertical: -1),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )),
+                ),
+                SizedBox.expand(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: chapters.length,
+                    itemBuilder: (context, index) => ListTile(
+                      selected: controller.currentChapter == chapters[index],
+                      title: Text(chapters[index].title),
+                      subtitle: Text(S
+                          .of(context)
+                          .ComicDetailPageChapterEntitySubtitle(
+                              formatdate.formatDate(
+                                  chapters[index].uploadTime, [
+                                formatdate.yyyy,
+                                '-',
+                                formatdate.mm,
+                                '-',
+                                formatdate.dd
+                              ]),
+                              chapters[index].chapterId)),
+                      onTap: () {
+                        controller.loadChapter(chapters[index]);
+                        _easyRefreshController.callRefresh();
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ),
+                )
+              ],
+            ))
+          ],
         ),
       ),
     );

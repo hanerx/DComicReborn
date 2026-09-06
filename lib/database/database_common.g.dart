@@ -525,6 +525,48 @@ class _$ComicMappingDao extends ComicMappingDao {
     await _comicMappingEntityUpdateAdapter.update(
         comicMappingEntity, OnConflictStrategy.replace);
   }
+
+  @override
+  Future<ComicMappingEntity> getOrCreateConfigByComicId(
+    String comicId,
+    String sourceProviderName,
+    String targetProviderName,
+  ) async {
+    if (database is sqflite.Transaction) {
+      return super.getOrCreateConfigByComicId(
+          comicId, sourceProviderName, targetProviderName);
+    } else {
+      return (database as sqflite.Database)
+          .transaction<ComicMappingEntity>((transaction) async {
+        final transactionDatabase = _$DComicDatabase(changeListener)
+          ..database = transaction;
+        return transactionDatabase.comicMappingDao.getOrCreateConfigByComicId(
+            comicId, sourceProviderName, targetProviderName);
+      });
+    }
+  }
+
+  @override
+  Future<ComicMappingEntity> insertAutomaticMappingIfAbsent(
+    String comicId,
+    String sourceProviderName,
+    String targetProviderName,
+    String resultComicId,
+  ) async {
+    if (database is sqflite.Transaction) {
+      return super.insertAutomaticMappingIfAbsent(
+          comicId, sourceProviderName, targetProviderName, resultComicId);
+    } else {
+      return (database as sqflite.Database)
+          .transaction<ComicMappingEntity>((transaction) async {
+        final transactionDatabase = _$DComicDatabase(changeListener)
+          ..database = transaction;
+        return transactionDatabase.comicMappingDao
+            .insertAutomaticMappingIfAbsent(
+                comicId, sourceProviderName, targetProviderName, resultComicId);
+      });
+    }
+  }
 }
 
 class _$ComicSubscribeStateDao extends ComicSubscribeStateDao {

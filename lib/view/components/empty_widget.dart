@@ -10,30 +10,32 @@ class EmptyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var color = Theme.of(context).colorScheme.onSurfaceVariant;
     return Center(
-      child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: _buildWidgetList(context)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon ?? Icons.folder_off_outlined, size: 48, color: color),
+            const SizedBox(height: 12),
+            Text(
+              title ?? S.of(context).Empty,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: color),
+            ),
+            if (children != null) ...[
+              const SizedBox(height: 12),
+              ...children!,
+            ],
+          ],
+        ),
+      ),
     );
-  }
-
-  List<Widget> _buildWidgetList(BuildContext context) {
-    List<Widget> data = [
-      Icon(
-        icon ?? Icons.folder_off_outlined,
-        size: 60,
-        color: Theme.of(context).disabledColor,
-      ),
-      Text(
-        title == null ? S.of(context).Empty : title!,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(color: Theme.of(context).disabledColor, fontSize: 18),
-      ),
-    ];
-    if (children != null) {
-      data += children!;
-    }
-    return data;
   }
 }
 

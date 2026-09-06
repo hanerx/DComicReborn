@@ -2,6 +2,9 @@ import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:flutter/material.dart';
 
+/// Unified comic list row: a fixed aspect-ratio cover on the left, the title
+/// and secondary metadata on the right. Rows size intrinsically, so long
+/// titles or extra metadata can never overflow.
 class CardListItem extends StatelessWidget {
   final String title;
   final Map<IconData, String> details;
@@ -17,86 +20,73 @@ class CardListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap == null
-            ? null
-            : () {
-                onTap!(context);
-              },
-        child: Card(
-          margin: const EdgeInsets.only(left: 3,right: 3),
-          color: Colors.transparent,
-          elevation: 0,
-          child: Row(
-            children: [
-              Expanded(
-                  flex: 1,
-                  child: Card(
-                    elevation: 0,
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.all(Radius.circular(3)),
-                      child: DComicImage(
-                        cover,
-                        fit: BoxFit.fill,
-                        showErrorMessage: false,
+    var theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap == null
+          ? null
+          : () {
+              onTap!(context);
+            },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                width: 76,
+                height: 102,
+                child: DComicImage(
+                  cover,
+                  fit: BoxFit.cover,
+                  showErrorMessage: false,
+                  errorLogoSize: 32,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  for (var tuple in details.entries)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Row(
+                        children: [
+                          Icon(
+                            tuple.key,
+                            size: 14,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              tuple.value,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  )),
-              Expanded(
-                  flex: 3,
-                  child: Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 3, 3, 3),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: _buildDetails(context),
-                      ),
-                    ),
-                  ))
-            ],
-          ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
-  }
-
-  List<Widget> _buildDetails(BuildContext context) {
-    List<Widget> data = [
-      Expanded(
-          flex: 3,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.titleSmall,
-              overflow: TextOverflow.ellipsis,
-            ),
-          )),
-      Divider(color: Theme.of(context).disabledColor,height: 1,),
-    ];
-    for (var tuple in details.entries) {
-      data.add(Expanded(
-          flex: 2,
-          child: Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 5),
-                child: Icon(
-                  tuple.key,
-                  color: Theme.of(context).textTheme.bodySmall?.color,
-                ),
-              ),
-              Expanded(
-                  child: Text(tuple.value,
-                      style: Theme.of(context).textTheme.bodySmall,
-                      overflow: TextOverflow.ellipsis))
-            ],
-          )));
-    }
-    return data;
   }
 }

@@ -37,12 +37,10 @@ class DComicImage extends StatelessWidget {
         return CachedNetworkImage(
           fit: fit,
           imageUrl: imageEntity.imageUrl,
-          progressIndicatorBuilder: (context, url, downloadProgress) => Center(
-              child:
-                  CircularProgressIndicator(value: downloadProgress.progress)),
+          progressIndicatorBuilder: (context, url, downloadProgress) =>
+              _buildPlaceholder(context),
           httpHeaders: imageEntity.imageHeaders,
-          errorWidget: (context, url, error) =>
-              _buildErrorWidget(context, "$url Load Failed: $error"),
+          errorWidget: (context, url, error) => _buildLoadErrorWidget(context),
           cacheManager: DefaultCacheManager(),
           width: width,
         );
@@ -51,7 +49,7 @@ class DComicImage extends StatelessWidget {
           File(imageEntity.imageUrl),
           fit: fit,
           errorBuilder: (context, object, error) =>
-              _buildErrorWidget(context, "$object Load Failed: $error"),
+              _buildLoadErrorWidget(context),
           width: width,
         );
       case ImageType.asset:
@@ -59,42 +57,66 @@ class DComicImage extends StatelessWidget {
           imageEntity.imageUrl,
           fit: fit,
           errorBuilder: (context, object, error) =>
-              _buildErrorWidget(context, "$object Load Failed: $error"),
+              _buildLoadErrorWidget(context),
           width: width,
         );
     }
   }
 
-  Widget _buildErrorWidget(BuildContext context, String errorMessage) {
-    return Center(
-      child: Column(
-        children: [
-              const Expanded(child: SizedBox()),
-              Icon(
-                Icons.broken_image,
-                size: errorLogoSize,
-                color:
-                    customErrorMessageColor ?? Theme.of(context).disabledColor,
-              ),
-            ] +
-            _showErrorMessage(context, errorMessage),
+  Widget _buildPlaceholder(BuildContext context) {
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2.5),
+        ),
       ),
     );
   }
 
-  List<Widget> _showErrorMessage(BuildContext context, String errorMessage) {
-    if (showErrorMessage) {
-      return [
-        Text(
-          errorMessage,
-          style: TextStyle(
-              color: customErrorMessageColor ?? Theme.of(context).disabledColor,
-              overflow: errorMessageOverflow),
+  Widget _buildLoadErrorWidget(BuildContext context) {
+    return _buildErrorWidget(
+        context,
+        Localizations.localeOf(context).languageCode == 'zh'
+            ? '图片加载失败'
+            : 'Image load failed');
+  }
+
+  Widget _buildErrorWidget(BuildContext context, String errorMessage) {
+    var color =
+        customErrorMessageColor ?? Theme.of(context).colorScheme.outline;
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.broken_image_outlined,
+                size: errorLogoSize, color: color),
+            ..._showErrorMessage(context, errorMessage, color),
+          ],
         ),
-        const Expanded(child: SizedBox())
-      ];
-    } else {
-      return [const Expanded(child: SizedBox())];
+      ),
+    );
+  }
+
+  List<Widget> _showErrorMessage(
+      BuildContext context, String errorMessage, Color color) {
+    if (!showErrorMessage) {
+      return const [];
     }
+    return [
+      const SizedBox(height: 4),
+      Text(
+        errorMessage,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+            color: color,
+            fontSize: 12,
+            overflow: errorMessageOverflow ?? TextOverflow.clip),
+      ),
+    ];
   }
 }

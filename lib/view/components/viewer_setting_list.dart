@@ -21,7 +21,8 @@ class ViewerSettingList extends StatelessWidget {
     var list = _buildSettingList(context);
     return ListView.builder(
       shrinkWrap: true,
-      padding: EdgeInsets.zero,
+      padding: EdgeInsets.only(
+          top: 4, bottom: MediaQuery.paddingOf(context).bottom + 12),
       itemCount: list.length,
       itemBuilder: (context, index) {
         return list[index];
@@ -29,8 +30,26 @@ class ViewerSettingList extends StatelessWidget {
     );
   }
 
+  Widget _buildSectionHeader(BuildContext context, String zh, String other) {
+    final isChinese =
+        Localizations.localeOf(context).languageCode.startsWith('zh');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Text(isChinese ? zh : other,
+          style: Theme.of(context)
+              .textTheme
+              .titleSmall
+              ?.copyWith(color: Theme.of(context).colorScheme.primary)),
+    );
+  }
+
   List<Widget> _buildSettingList(BuildContext context) {
+    var config = Provider.of<ConfigProvider>(context);
+    final textTheme = Theme.of(context).textTheme;
+    final valueStyle = textTheme.labelMedium
+        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
     return [
+      _buildSectionHeader(context, '阅读', 'Reading'),
       ListTile(
         leading: const Icon(Icons.align_horizontal_left),
         title: Text(S.of(context).ViewerSettingAlign),
@@ -40,9 +59,7 @@ class ViewerSettingList extends StatelessWidget {
             return ButtonSegment<ReadDirectionType>(
                 value: item.$1, label: Icon(item.$2));
           }).toList(),
-          selected: <ReadDirectionType>{
-            Provider.of<ConfigProvider>(context).readDirection
-          },
+          selected: <ReadDirectionType>{config.readDirection},
           onSelectionChanged: (output) {
             Provider.of<ConfigProvider>(context, listen: false).readDirection =
                 output.first;
@@ -53,12 +70,10 @@ class ViewerSettingList extends StatelessWidget {
         leading: const Icon(Icons.bug_report_outlined),
         title: Text(S.of(context).ViewerSettingDebugView),
         trailing: Switch(
-          value: Provider.of<ConfigProvider>(context).drawDebugWidget,
+          value: config.drawDebugWidget,
           onChanged: (bool value) {
             Provider.of<ConfigProvider>(context, listen: false)
-                    .drawDebugWidget =
-                !Provider.of<ConfigProvider>(context, listen: false)
-                    .drawDebugWidget;
+                .drawDebugWidget = value;
           },
         ),
       ),
@@ -69,12 +84,9 @@ class ViewerSettingList extends StatelessWidget {
             data: const SliderThemeData(
                 showValueIndicator: ShowValueIndicator.always),
             child: Slider(
-              value: Provider.of<ConfigProvider>(context).verticalClickAreaSize,
-              label: Provider.of<ConfigProvider>(context)
-                  .verticalClickAreaSize
-                  .toStringAsFixed(2),
-              onChanged: Provider.of<ConfigProvider>(context).readDirection ==
-                      ReadDirectionType.vertical
+              value: config.verticalClickAreaSize,
+              label: config.verticalClickAreaSize.toStringAsFixed(2),
+              onChanged: config.readDirection == ReadDirectionType.vertical
                   ? (double value) {
                       Provider.of<ConfigProvider>(context, listen: false)
                           .verticalClickAreaSize = value;
@@ -83,7 +95,9 @@ class ViewerSettingList extends StatelessWidget {
               min: 10,
               max: 300,
             ),
-          )),
+          ),
+          trailing: Text(config.verticalClickAreaSize.toStringAsFixed(0),
+              style: valueStyle)),
       ListTile(
           leading: Transform.rotate(
             angle: 90 * pi / 180,
@@ -94,13 +108,9 @@ class ViewerSettingList extends StatelessWidget {
             data: const SliderThemeData(
                 showValueIndicator: ShowValueIndicator.always),
             child: Slider(
-              value:
-                  Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
-              label: Provider.of<ConfigProvider>(context)
-                  .horizontalClickAreaSize
-                  .toStringAsFixed(2),
-              onChanged: Provider.of<ConfigProvider>(context).readDirection !=
-                      ReadDirectionType.vertical
+              value: config.horizontalClickAreaSize,
+              label: config.horizontalClickAreaSize.toStringAsFixed(2),
+              onChanged: config.readDirection != ReadDirectionType.vertical
                   ? (double value) {
                       Provider.of<ConfigProvider>(context, listen: false)
                           .horizontalClickAreaSize = value;
@@ -109,8 +119,10 @@ class ViewerSettingList extends StatelessWidget {
               min: 10,
               max: 200,
             ),
-          )),
-      const Divider(),
+          ),
+          trailing: Text(config.horizontalClickAreaSize.toStringAsFixed(0),
+              style: valueStyle)),
+      _buildSectionHeader(context, '外观', 'Appearance'),
       ListTile(
         leading: const Icon(Icons.color_lens),
         title: Text(S.of(context).ViewerSettingThemeColor),
@@ -122,13 +134,11 @@ class ViewerSettingList extends StatelessWidget {
                 .map<ButtonSegment<ThemeModel>>((e) => ButtonSegment(
                     value: e,
                     icon: Icon(
-                      Icons.photo,
+                      Icons.circle,
                       color: e.color!,
                     )))
                 .toList(),
-            selected: <ThemeModel>{
-              Provider.of<ConfigProvider>(context).themeColor
-            },
+            selected: <ThemeModel>{config.themeColor},
             onSelectionChanged: (output) {
               Provider.of<ConfigProvider>(context, listen: false).themeColor =
                   output.first;
@@ -141,12 +151,10 @@ class ViewerSettingList extends StatelessWidget {
         title: Text(S.of(context).ViewerSettingUseMaterial3Design),
         subtitle: Text(S.of(context).ViewerSettingUseMaterial3DesignSubTitle),
         trailing: Switch(
-          value: Provider.of<ConfigProvider>(context).useMaterial3Design,
+          value: config.useMaterial3Design,
           onChanged: (bool value) {
             Provider.of<ConfigProvider>(context, listen: false)
-                .useMaterial3Design =
-            !Provider.of<ConfigProvider>(context, listen: false)
-                .useMaterial3Design;
+                .useMaterial3Design = value;
           },
         ),
       ),

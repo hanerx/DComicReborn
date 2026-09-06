@@ -29,7 +29,7 @@ class _ChapterCommentsPageState extends State<ChapterCommentsPage> {
     return Material(
       color: colors.surface,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -37,7 +37,10 @@ class _ChapterCommentsPageState extends State<ChapterCommentsPage> {
               children: [
                 Expanded(
                   child: Text(S.of(context).ComicViewerPageChapterComments,
-                      style: Theme.of(context).textTheme.titleMedium),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w600)),
                 ),
                 IconButton(
                   iconSize: 20,
@@ -47,10 +50,15 @@ class _ChapterCommentsPageState extends State<ChapterCommentsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Expanded(
               child: widget.comments.isEmpty
-                  ? Center(child: Text(S.of(context).ComicViewerPageNoComments))
+                  ? Center(
+                      child: Text(S.of(context).ComicViewerPageNoComments,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: colors.onSurfaceVariant)))
                   : NotificationListener<ScrollMetricsNotification>(
                       onNotification: (notification) {
                         final overflow =
@@ -72,15 +80,15 @@ class _ChapterCommentsPageState extends State<ChapterCommentsPage> {
                           children: [
                             for (final comment in widget.comments)
                               Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
+                                padding: const EdgeInsets.only(bottom: 8),
                                 child: DecoratedBox(
                                   decoration: BoxDecoration(
                                     color: colors.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 6),
+                                        horizontal: 12, vertical: 8),
                                     child: Row(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -92,23 +100,28 @@ class _ChapterCommentsPageState extends State<ChapterCommentsPage> {
                                                 child: DComicImage(
                                                     comment.avatar!)),
                                           ),
-                                          const SizedBox(width: 6),
+                                          const SizedBox(width: 8),
                                         ],
                                         Expanded(
                                           child: Text(comment.comment,
                                               style: Theme.of(context)
                                                   .textTheme
-                                                  .bodySmall),
+                                                  .bodySmall
+                                                  ?.copyWith(
+                                                      color: colors.onSurface)),
                                         ),
-                                        const SizedBox(width: 6),
+                                        const SizedBox(width: 8),
                                         Icon(Icons.thumb_up_outlined,
-                                            size: 12,
+                                            size: 14,
                                             color: colors.onSurfaceVariant),
                                         const SizedBox(width: 4),
                                         Text('${comment.likes}',
                                             style: Theme.of(context)
                                                 .textTheme
-                                                .labelSmall),
+                                                .labelSmall
+                                                ?.copyWith(
+                                                    color: colors
+                                                        .onSurfaceVariant)),
                                       ],
                                     ),
                                   ),

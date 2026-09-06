@@ -1,4 +1,5 @@
 import 'package:dcomic/providers/page_controllers/comic_category_page_controller.dart';
+import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/components/grid_card.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
@@ -23,29 +24,39 @@ class _CategoryPageState extends State<CategoryPage> {
                     listen: false)
                 .refresh(context);
           },
-          child: Container(
-            color: Theme.of(context).colorScheme.surfaceVariant,
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, childAspectRatio: 1 / 1.2),
-              itemCount: Provider.of<ComicCategoryPageController>(context)
-                  .categories
-                  .length,
-              itemBuilder: (BuildContext context, int index) {
-                var entity = Provider.of<ComicCategoryPageController>(context)
-                    .categories[index];
-                return GridCardItem(
-                  image: entity.cover,
-                  onTap: entity.onTap == null
-                      ? null
-                      : () {
-                          entity.onTap!(context);
-                        },
-                  title: entity.title,
-                );
-              },
-            ),
-          )),
+          child: LayoutBuilder(builder: (context, constraints) {
+            var categories =
+                Provider.of<ComicCategoryPageController>(context).categories;
+            var coverAspectRatio = categories.every(
+                    (entity) => entity.cover.imageType == ImageType.asset)
+                ? 1.0
+                : 2 / 3;
+            return ColoredBox(
+              color: Theme.of(context).colorScheme.surface,
+              child: GridView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                gridDelegate: GridCardItem.coverGridDelegate(context,
+                    gridWidth: constraints.maxWidth - 32,
+                    crossAxisCount: 3,
+                    coverAspectRatio: coverAspectRatio,
+                    hasSubtitle: false),
+                itemCount: categories.length,
+                itemBuilder: (BuildContext context, int index) {
+                  var entity = categories[index];
+                  return GridCardItem(
+                    image: entity.cover,
+                    coverAspectRatio: coverAspectRatio,
+                    onTap: entity.onTap == null
+                        ? null
+                        : () {
+                            entity.onTap!(context);
+                          },
+                    title: entity.title,
+                  );
+                },
+              ),
+            );
+          })),
     );
   }
 }

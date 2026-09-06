@@ -7,23 +7,19 @@ class AccountLoginPage extends StatefulWidget {
   const AccountLoginPage({super.key, required this.sourceModel});
 
   @override
-  State<StatefulWidget> createState() => _AccountLoginPageState();
+  State<StatefulWidget> createState() {
+    return _AccountLoginPageState();
+  }
 }
 
 class _AccountLoginPageState extends State<AccountLoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-          appBar: AppBar(
-            title: Text(S.of(context).LoginPageTitle),
-            elevation: 0,
-          ),
-          body: Container(
-            color: Theme.of(context).colorScheme.surfaceVariant,
-            child: widget.sourceModel
-                .accountModel!
-                .buildLoginWidget(context),
-          ),
-        );
+      appBar: AppBar(
+        title: Text(S.of(context).LoginPageTitle),
+      ),
+      body: widget.sourceModel.accountModel!.buildLoginWidget(context),
+    );
   }
 }

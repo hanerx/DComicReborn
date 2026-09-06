@@ -31,41 +31,40 @@ class _ComicCategoryDetailPageState extends State<ComicCategoryDetailPage> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => ComicCategoryDetailPageController(
-          widget.sourceModel, widget.categoryId, categoryType:widget.categoryType),
+          widget.sourceModel, widget.categoryId,
+          categoryType: widget.categoryType),
       builder: (context, child) => Scaffold(
         appBar: AppBar(
-          elevation: 0,
           title: Text(widget.categoryTitle),
           actions: [
-            IconButton(onPressed: (){
-              Clipboard.setData(ClipboardData(text: widget.categoryTitle)).then((value){
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(S.of(context).TitleCopied),
-                  ));
-                }
-              });
-            }, icon: Icon(Icons.copy))
+            IconButton(
+                tooltip: S.of(context).TitleCopied,
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: widget.categoryTitle))
+                      .then((value) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(S.of(context).TitleCopied),
+                      ));
+                    }
+                  });
+                },
+                icon: const Icon(Icons.copy))
           ],
         ),
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: Column(
           children: [
-            Card(
-              elevation: 0,
-              margin: const EdgeInsets.only(bottom: 5),
-              shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.only(
-                      bottomRight: Radius.circular(10),
-                      bottomLeft: Radius.circular(10))),
-              child: ChipTheme(
-                  data: ChipThemeData(
-                      backgroundColor:
-                          Theme.of(context).colorScheme.primaryContainer,
-                      iconTheme: Theme.of(context).iconTheme),
-                  child: Row(
-                    children: _buildFilter(context),
-                  )),
+            SizedBox(
+              width: double.infinity,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _buildFilter(context),
+                ),
+              ),
             ),
             Expanded(
                 child: EasyRefresh(
@@ -83,30 +82,24 @@ class _ComicCategoryDetailPageState extends State<ComicCategoryDetailPage> {
                           .load();
                     },
                     refreshOnStart: true,
-                    child: SizedBox.expand(
-                      child: GridView.builder(
-                        shrinkWrap: true,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 1, childAspectRatio: 3 / 1),
-                        itemCount:
+                    child: ListView.builder(
+                      padding: const EdgeInsets.only(top: 4, bottom: 12),
+                      itemCount: Provider.of<ComicCategoryDetailPageController>(
+                              context)
+                          .data
+                          .length,
+                      itemBuilder: (context, index) {
+                        var entity =
                             Provider.of<ComicCategoryDetailPageController>(
                                     context)
-                                .data
-                                .length,
-                        itemBuilder: (context, index) {
-                          var entity =
-                              Provider.of<ComicCategoryDetailPageController>(
-                                      context)
-                                  .data[index];
-                          return CardListItem(
-                            cover: entity.cover,
-                            title: entity.title,
-                            details: entity.details,
-                            onTap: entity.onTap,
-                          );
-                        },
-                      ),
+                                .data[index];
+                        return CardListItem(
+                          cover: entity.cover,
+                          title: entity.title,
+                          details: entity.details,
+                          onTap: entity.onTap,
+                        );
+                      },
                     )))
           ],
         ),
@@ -115,42 +108,50 @@ class _ComicCategoryDetailPageState extends State<ComicCategoryDetailPage> {
   }
 
   List<Widget> _buildFilter(BuildContext context) {
+    var theme = Theme.of(context);
+    var controller = Provider.of<ComicCategoryDetailPageController>(context);
     List<Widget> data = [];
-    for (var item in Provider.of<ComicCategoryDetailPageController>(context)
-        .homepageModel
-        .categoryFilter) {
+    for (var item in controller.homepageModel.categoryFilter) {
       data.add(Padding(
-        padding: const EdgeInsets.fromLTRB(10, 1, 1, 1),
+        padding: const EdgeInsets.only(right: 8),
         child: PopupMenuButton(
-          offset: const Offset(0, 10),
+          offset: const Offset(0, 6),
+          position: PopupMenuPosition.under,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
           itemBuilder: (context) => [
             for (var menuItem
                 in item.getLocalizedMappingChoice(context).entries)
               PopupMenuItem(
-                  height: 10,
                   value: menuItem.value,
-                  child: Chip(
-                    visualDensity: const VisualDensity(vertical: -4),
-                    label: Text(menuItem.key),
+                  child: Text(
+                    menuItem.key,
+                    style: theme.textTheme.bodyMedium,
                   ))
           ],
-          child: Chip(
-            side: BorderSide(color: Theme.of(context).colorScheme.surfaceTint),
-            visualDensity: const VisualDensity(vertical: -3),
-            avatar: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              child: Icon(item.filterIcon),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            constraints: const BoxConstraints(minHeight: 48),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
             ),
-            label: Row(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(item.getLocalizedStringByValue(
-                    context,
-                    Provider.of<ComicCategoryDetailPageController>(context)
-                        .filter[item.filterName])),
-                const Icon(Icons.arrow_drop_down)
+                Icon(item.filterIcon,
+                    size: 16, color: theme.colorScheme.onSurfaceVariant),
+                const SizedBox(width: 6),
+                Text(
+                  item.getLocalizedStringByValue(
+                      context, controller.filter[item.filterName]),
+                  style: theme.textTheme.bodyMedium,
+                ),
+                Icon(Icons.arrow_drop_down,
+                    size: 18, color: theme.colorScheme.onSurfaceVariant),
               ],
             ),
           ),
