@@ -1,5 +1,6 @@
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
+import 'package:dcomic/utils/layout_utils.dart';
 import 'package:flutter/material.dart';
 
 class AccountLoginPage extends StatefulWidget {
@@ -16,10 +17,13 @@ class _AccountLoginPageState extends State<AccountLoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(S.of(context).LoginPageTitle),
+      appBar: AppBar(title: Text(S.of(context).LoginPageTitle)),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppLayout.formMaxWidth),
+          child: widget.sourceModel.accountModel!.buildLoginWidget(context),
+        ),
       ),
-      body: widget.sourceModel.accountModel!.buildLoginWidget(context),
     );
   }
 }

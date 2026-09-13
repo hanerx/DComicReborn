@@ -202,6 +202,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Extract version from tag
         id: extract_version
@@ -215,16 +217,16 @@ jobs:
         run: |
           echo "release_title=DComicReborn v${{ steps.extract_version.outputs.version }}" >> $GITHUB_OUTPUT
 
-      - name: Generate release body from commit logs
+      - name: Test release note generator
+        run: python3 -m unittest discover -s .github/scripts -p test_generate_release_note.py -v
+
+      - name: Generate release body from version notes and commits
         run: |
-          TAG_NAME="${GITHUB_REF##*/}"
-          PREV_TAG=$(git describe --tags --abbrev=0 "${TAG_NAME}^" 2>/dev/null || echo "")
-          echo "## 更新日志" > release-note.md
-          if [ -n "$PREV_TAG" ]; then
-            git log $PREV_TAG..$TAG_NAME --pretty=format:"- %s (%an)" >> release-note.md
-          else
-            git log $TAG_NAME --pretty=format:"- %s (%an)" >> release-note.md
-          fi
+          python3 .github/scripts/generate_release_note.py \
+            --tag "$GITHUB_REF_NAME" \
+            --repository "$GITHUB_REPOSITORY" \
+            --notes RELEASE_NOTES.md \
+            --output release-note.md
       - name: Upload release-note as artifact
         uses: actions/upload-artifact@v4
         with:

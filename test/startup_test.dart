@@ -51,8 +51,9 @@ class _OfflineHomepage extends ZaiManHuaHomepageModel {
 }
 
 void main() {
-  testWidgets('home navigation is usable while the update check is pending',
-      (tester) async {
+  testWidgets('home navigation is usable while the update check is pending', (
+    tester,
+  ) async {
     final version = _PendingVersionProvider();
     final source = _ReadySourceProvider();
     final config = _MemoryConfigProvider();
@@ -63,32 +64,35 @@ void main() {
       config.dispose();
     });
 
-    await tester.pumpWidget(MultiProvider(
-      providers: [
-        ChangeNotifierProvider<ComicSourceProvider>.value(value: source),
-        ChangeNotifierProvider<VersionProvider>.value(value: version),
-        ChangeNotifierProvider<ConfigProvider>.value(value: config),
-      ],
-      child: MaterialApp(
-        locale: const Locale('en'),
-        supportedLocales: S.delegate.supportedLocales,
-        localizationsDelegates: const [
-          S.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ComicSourceProvider>.value(value: source),
+          ChangeNotifierProvider<VersionProvider>.value(value: version),
+          ChangeNotifierProvider<ConfigProvider>.value(value: config),
         ],
-        home: const MainFramework(),
+        child: MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: S.delegate.supportedLocales,
+          localizationsDelegates: const [
+            S.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: const MainFramework(),
+        ),
       ),
-    ));
+    );
     await tester.pump();
 
     expect(find.byType(SplashPage), findsNothing);
-    expect(find.byType(TabBar), findsOneWidget);
     await tester.tap(find.byTooltip('Open navigation menu'));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(tester.state<ScaffoldState>(find.byType(Scaffold)).isDrawerOpen,
-        isTrue);
+    expect(
+      tester.state<ScaffoldState>(find.byType(Scaffold)).isDrawerOpen,
+      isTrue,
+    );
 
     await tester.pumpWidget(const SizedBox.shrink());
   });

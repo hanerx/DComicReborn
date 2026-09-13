@@ -18,12 +18,19 @@ class ZaiManHuaSourceModel extends BaseComicSourceModel {
   final ZaiManHuaAccountModel _accountModel = ZaiManHuaAccountModel();
 
   @override
-  ComicSourceEntity get type => ComicSourceEntity("再漫画", "zaimanhua",
-      hasHomepage: true, hasAccountSupport: true, hasComment: true);
+  ComicSourceEntity get type => ComicSourceEntity(
+    "再漫画",
+    "zaimanhua",
+    hasHomepage: true,
+    hasAccountSupport: true,
+    hasComment: true,
+  );
 
   @override
   Future<BaseComicDetailModel?> getComicDetail(
-      String comicId, String title) async {
+    String comicId,
+    String title,
+  ) async {
     var response = await RequestHandlers.zaiManHuaMobileRequestHandler
         .getComicDetail(comicId);
     try {
@@ -39,11 +46,15 @@ class ZaiManHuaSourceModel extends BaseComicSourceModel {
   }
 
   @override
-  Future<List<ComicListItemEntity>> searchComicDetail(String keyword,
-      {int page = 0}) async {
+  Future<List<ComicListItemEntity>> searchComicDetail(
+    String keyword, {
+    int page = 0,
+  }) async {
     List<ComicListItemEntity> data = [];
-    var response = await RequestHandlers.zaiManHuaMobileRequestHandler
-        .search(keyword, page: page);
+    var response = await RequestHandlers.zaiManHuaMobileRequestHandler.search(
+      keyword,
+      page: page,
+    );
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         // errno 非零是业务失败（此时负载形状不同），必须作为加载错误抛出，
@@ -54,22 +65,26 @@ class ZaiManHuaSourceModel extends BaseComicSourceModel {
         }
         var searchList = response.data['data']['list'];
         for (var item in searchList) {
-          data.add(ComicListItemEntity(
-              item['title'], ImageEntity(ImageType.network, item['cover']), {
-            Icons.supervisor_account_rounded: item['authors'],
-            Icons.apps: item['types'],
-            Icons.history_edu: item['last_name']
-          }, (context) {
-            Provider.of<NavigatorProvider>(context, listen: false)
-                .getNavigator(context, NavigatorType.defaultNavigator)
-                ?.push(MaterialPageRoute(
-                    builder: (context) => ComicDetailPage(
-                          title: item['title'],
-                          comicId: item['id'].toString(),
-                          comicSourceModel: this,
-                        ),
-                    settings: const RouteSettings(name: 'ComicDetailPage')));
-          }, item['id'].toString()));
+          data.add(
+            ComicListItemEntity(
+              item['title'],
+              ImageEntity(ImageType.network, item['cover']),
+              {
+                Icons.supervisor_account_rounded: item['authors'],
+                Icons.apps: item['types'],
+                Icons.history_edu: item['last_name'],
+              },
+              (context) {
+                ComicDetailPage.open(
+                  context,
+                  title: item['title'],
+                  comicId: item['id'].toString(),
+                  comicSourceModel: this,
+                );
+              },
+              item['id'].toString(),
+            ),
+          );
         }
         return data;
       }
@@ -82,8 +97,9 @@ class ZaiManHuaSourceModel extends BaseComicSourceModel {
 
   @override
   Future<List<ListItemEntity>> getComicHistory(
-      ComicHistorySourceType sourceType,
-      {int page = 0}) async {
+    ComicHistorySourceType sourceType, {
+    int page = 0,
+  }) async {
     if (sourceType == ComicHistorySourceType.local) {
       return super.getComicHistory(sourceType, page: page);
     }
@@ -97,19 +113,24 @@ class ZaiManHuaSourceModel extends BaseComicSourceModel {
       final comicId = item['biz_id'].toString();
       final title = item['title'] as String;
       return ListItemEntity(
-          title, ImageEntity(ImageType.network, item['cover']), {
-        Icons.history: date_format.formatDate(
+        title,
+        ImageEntity(ImageType.network, item['cover']),
+        {
+          Icons.history: date_format.formatDate(
             DateTime.fromMillisecondsSinceEpoch(item['viewing_time'] * 1000),
-            [date_format.yyyy, '-', date_format.mm, '-', date_format.dd]),
-        Icons.history_edu: item['chapter_name'],
-      }, (context) {
-        Provider.of<NavigatorProvider>(context, listen: false)
-            .getNavigator(context, NavigatorType.defaultNavigator)
-            ?.push(MaterialPageRoute(
-                builder: (context) => ComicDetailPage(
-                    title: title, comicId: comicId, comicSourceModel: this),
-                settings: const RouteSettings(name: 'ComicDetailPage')));
-      });
+            [date_format.yyyy, '-', date_format.mm, '-', date_format.dd],
+          ),
+          Icons.history_edu: item['chapter_name'],
+        },
+        (context) {
+          ComicDetailPage.open(
+            context,
+            title: title,
+            comicId: comicId,
+            comicSourceModel: this,
+          );
+        },
+      );
     }).toList();
   }
 
@@ -186,67 +207,75 @@ class _ZaiManHuaSourceSettingsState extends State<_ZaiManHuaSourceSettings>
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-        listenable: widget.account,
-        builder: (context, _) {
-          final account = widget.account;
-          final strings = S.of(context);
-          return Column(
-            children: [
-              SwitchListTile(
-                secondary: const Icon(Icons.event_repeat),
-                title: Text(strings.ZaiManHuaAutoSignIn),
-                subtitle: Text(strings.ZaiManHuaAutoSignInHint),
-                value: account.autoSignInEnabled,
-                onChanged: account.isLoading || account.savingAutoSignIn
-                    ? null
-                    : (enabled) async {
-                        try {
-                          await account.setAutoSignInEnabled(enabled);
-                        } catch (_) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content:
-                                    Text(strings.ZaiManHuaSaveSettingFailed)));
-                          }
-                        }
-                      },
+    listenable: widget.account,
+    builder: (context, _) {
+      final account = widget.account;
+      final strings = S.of(context);
+      return Column(
+        children: [
+          SwitchListTile(
+            secondary: const Icon(Icons.event_repeat),
+            title: Text(strings.ZaiManHuaAutoSignIn),
+            subtitle: Text(strings.ZaiManHuaAutoSignInHint),
+            value: account.autoSignInEnabled,
+            onChanged: account.isLoading || account.savingAutoSignIn
+                ? null
+                : (enabled) async {
+                    try {
+                      await account.setAutoSignInEnabled(enabled);
+                    } catch (_) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(strings.ZaiManHuaSaveSettingFailed),
+                          ),
+                        );
+                      }
+                    }
+                  },
+          ),
+          ListTile(
+            leading: Icon(
+              account.signInStatus == ZaiManHuaSignInStatus.signedIn
+                  ? Icons.event_available
+                  : Icons.event_note,
+            ),
+            title: Text(strings.ZaiManHuaTodaySignIn),
+            subtitle: Text(
+              strings.ZaiManHuaSignInStatus(account.signInStatus.name),
+            ),
+            trailing: IconButton(
+              tooltip: strings.ZaiManHuaRefreshSignInStatus,
+              onPressed: account.isLoading || account.savingAutoSignIn
+                  ? null
+                  : account.refreshSignInStatus,
+              icon: const Icon(Icons.refresh),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.workspace_premium_outlined),
+            title: Text(strings.ZaiManHuaMembership),
+            subtitle: Text(
+              strings.ZaiManHuaMembershipStatus(
+                account.isLoading
+                    ? 'checking'
+                    : !account.isLogin
+                    ? 'notLoggedIn'
+                    : account.isMember?.toString() ?? 'unknown',
               ),
-              ListTile(
-                leading: Icon(
-                    account.signInStatus == ZaiManHuaSignInStatus.signedIn
-                        ? Icons.event_available
-                        : Icons.event_note),
-                title: Text(strings.ZaiManHuaTodaySignIn),
-                subtitle: Text(
-                    strings.ZaiManHuaSignInStatus(account.signInStatus.name)),
-                trailing: IconButton(
-                  tooltip: strings.ZaiManHuaRefreshSignInStatus,
-                  onPressed: account.isLoading || account.savingAutoSignIn
-                      ? null
-                      : account.refreshSignInStatus,
-                  icon: const Icon(Icons.refresh),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.workspace_premium_outlined),
-                title: Text(strings.ZaiManHuaMembership),
-                subtitle:
-                    Text(strings.ZaiManHuaMembershipStatus(account.isLoading
-                        ? 'checking'
-                        : !account.isLogin
-                            ? 'notLoggedIn'
-                            : account.isMember?.toString() ?? 'unknown')),
-              ),
-              ListTile(
-                leading: const Icon(Icons.card_giftcard),
-                title: Text(strings.ZaiManHuaVipDailyReward),
-                subtitle: Text(strings.ZaiManHuaVipRewardStatus(
-                    account.vipRewardStatus.name)),
-              ),
-            ],
-          );
-        },
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.card_giftcard),
+            title: Text(strings.ZaiManHuaVipDailyReward),
+            subtitle: Text(
+              strings.ZaiManHuaVipRewardStatus(account.vipRewardStatus.name),
+            ),
+          ),
+        ],
       );
+    },
+  );
 }
 
 class ZaiManHuaAccountModel extends BaseComicAccountModel {
@@ -279,8 +308,10 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
     try {
       final dao = (await DatabaseInstance.instance).modelConfigDao;
       final config = await dao.getOrCreateConfigByKey(
-          'autoSignInEnabled', parent!.type.sourceId,
-          value: true);
+        'autoSignInEnabled',
+        parent!.type.sourceId,
+        value: true,
+      );
       config.set(enabled);
       await dao.updateConfig(config);
       _autoSignInEnabled = enabled;
@@ -310,126 +341,129 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
     TextEditingController tokenController = TextEditingController();
     return Stack(
       children: [
-        Container(
-          color: Theme.of(context).colorScheme.primary,
-          height: 100,
-        ),
+        Container(color: Theme.of(context).colorScheme.primary, height: 100),
         Column(
           children: [
             Card(
-                elevation: 0,
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    children: [
-                      Center(
-                        child: Text(
-                          S.of(context).ZaiManHuaTitle,
-                          style: Theme.of(context).textTheme.headlineMedium,
-                        ),
+              elevation: 0,
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  children: [
+                    Center(
+                      child: Text(
+                        S.of(context).ZaiManHuaTitle,
+                        style: Theme.of(context).textTheme.headlineMedium,
                       ),
-                      Form(
-                          key: formKey,
-                          child: Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: TextFormField(
-                                  controller: usernameController,
-                                  decoration: InputDecoration(
-                                      isDense: true,
-                                      border: const OutlineInputBorder(
-                                          gapPadding: 1),
-                                      labelText:
-                                          S.of(context).CommonLoginUsername,
-                                      prefixIcon:
-                                          const Icon(Icons.account_circle),
-                                      hintText:
-                                          S.of(context).CommonLoginUsernameHint),
-                                ),
+                    ),
+                    Form(
+                      key: formKey,
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: TextFormField(
+                              controller: usernameController,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                border: const OutlineInputBorder(gapPadding: 1),
+                                labelText: S.of(context).CommonLoginUsername,
+                                prefixIcon: const Icon(Icons.account_circle),
+                                hintText: S.of(context).CommonLoginUsernameHint,
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: TextFormField(
-                                  controller: passwordController,
-                                  obscureText: true,
-                                  decoration: InputDecoration(
-                                      isDense: true,
-                                      border: const OutlineInputBorder(
-                                          gapPadding: 1),
-                                      labelText:
-                                          S.of(context).CommonLoginPassword,
-                                      prefixIcon: const Icon(Icons.lock),
-                                      hintText: S
-                                          .of(context)
-                                          .ZaiManHuaLoginPasswordHint),
-                                ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: TextFormField(
+                              controller: passwordController,
+                              obscureText: true,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                border: const OutlineInputBorder(gapPadding: 1),
+                                labelText: S.of(context).CommonLoginPassword,
+                                prefixIcon: const Icon(Icons.lock),
+                                hintText: S
+                                    .of(context)
+                                    .ZaiManHuaLoginPasswordHint,
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: TextFormField(
-                                  controller: tokenController,
-                                  obscureText: true,
-                                  decoration: InputDecoration(
-                                      isDense: true,
-                                      border: const OutlineInputBorder(
-                                          gapPadding: 1),
-                                      labelText: S.of(context).CopyMangaToken,
-                                      prefixIcon:
-                                          const Icon(Icons.token_outlined),
-                                      hintText:
-                                          S.of(context).CopyMangaTokenHint),
-                                ),
-                              )
-                            ],
-                          )),
-                    ],
-                  ),
-                )),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: TextFormField(
+                              controller: tokenController,
+                              obscureText: true,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                border: const OutlineInputBorder(gapPadding: 1),
+                                labelText: S.of(context).CopyMangaToken,
+                                prefixIcon: const Icon(Icons.token_outlined),
+                                hintText: S.of(context).CopyMangaTokenHint,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Row(
                 children: [
-                  const Expanded(
-                    child: SizedBox(),
-                  ),
+                  const Expanded(child: SizedBox()),
                   Expanded(
-                      flex: 2,
-                      child: FilledButton.icon(
-                        onPressed: () async {
-                          try {
-                            if (formKey.currentState!.validate()) {
-                              if (await login(usernameController.text,
-                                  passwordController.text)) {
-                                if (!context.mounted) {
-                                  return;
-                                }
-                                Provider.of<NavigatorProvider>(context,
-                                        listen: false)
-                                    .getNavigator(
-                                        context, NavigatorType.defaultNavigator)
-                                    ?.pop();
+                    flex: 2,
+                    child: FilledButton.icon(
+                      onPressed: () async {
+                        try {
+                          if (formKey.currentState!.validate()) {
+                            if (await login(
+                              usernameController.text,
+                              passwordController.text,
+                            )) {
+                              if (!context.mounted) {
+                                return;
                               }
+                              Provider.of<NavigatorProvider>(
+                                    context,
+                                    listen: false,
+                                  )
+                                  .getNavigator(
+                                    context,
+                                    NavigatorType.defaultNavigator,
+                                  )
+                                  ?.pop();
                             }
-                          } catch (e, s) {
-                            logger.e(e, error: e, stackTrace: s);
-                            if (!context.mounted) {
-                              return;
-                            }
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content:
-                                  Text(S.of(context).CommonLoginLoginFailed(e)),
-                            ));
                           }
-                        },
-                        icon: const Icon(Icons.arrow_forward_rounded),
-                        label: Text(S.of(context).CommonLoginLogin),
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(48, 48),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
+                        } catch (e, s) {
+                          logger.e(e, error: e, stackTrace: s);
+                          if (!context.mounted) {
+                            return;
+                          }
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                S.of(context).CommonLoginLoginFailed(e),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.arrow_forward_rounded),
+                      label: Text(S.of(context).CommonLoginLogin),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
                         ),
-                      ))
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -437,51 +471,58 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               child: Row(
                 children: [
-                  const Expanded(
-                    flex: 2,
-                    child: SizedBox(),
-                  ),
+                  const Expanded(flex: 2, child: SizedBox()),
                   Expanded(
-                      flex: 3,
-                      child: FilledButton.tonalIcon(
-                        onPressed: () async {
-                          try {
-                            if (formKey.currentState!.validate()) {
-                              if (await loginWithToken(tokenController.text)) {
-                                if (!context.mounted) {
-                                  return;
-                                }
-                                Provider.of<NavigatorProvider>(context,
-                                        listen: false)
-                                    .getNavigator(
-                                        context, NavigatorType.defaultNavigator)
-                                    ?.pop();
+                    flex: 3,
+                    child: FilledButton.tonalIcon(
+                      onPressed: () async {
+                        try {
+                          if (formKey.currentState!.validate()) {
+                            if (await loginWithToken(tokenController.text)) {
+                              if (!context.mounted) {
+                                return;
                               }
+                              Provider.of<NavigatorProvider>(
+                                    context,
+                                    listen: false,
+                                  )
+                                  .getNavigator(
+                                    context,
+                                    NavigatorType.defaultNavigator,
+                                  )
+                                  ?.pop();
                             }
-                          } catch (e, s) {
-                            logger.e(e, error: e, stackTrace: s);
-                            if (!context.mounted) {
-                              return;
-                            }
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content:
-                                  Text(S.of(context).CommonLoginLoginFailed(e)),
-                            ));
                           }
-                        },
-                        icon: const Icon(Icons.generating_tokens_outlined),
-                        label: Text(S.of(context).TokenLogin),
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(48, 48),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
+                        } catch (e, s) {
+                          logger.e(e, error: e, stackTrace: s);
+                          if (!context.mounted) {
+                            return;
+                          }
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                S.of(context).CommonLoginLoginFailed(e),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.generating_tokens_outlined),
+                      label: Text(S.of(context).TokenLogin),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
                         ),
-                      ))
+                      ),
+                    ),
+                  ),
                 ],
               ),
-            )
+            ),
           ],
-        )
+        ),
       ],
     );
   }
@@ -515,30 +556,30 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
         for (var rawData in subList) {
           if (rawData['contentType'] != 'comic') continue;
           final comicId = (rawData['id'] as String).substring(2);
-          data.add(GridItemEntityWithStatus(
+          data.add(
+            GridItemEntityWithStatus(
               rawData['title'],
               rawData['lastUpdateChapterName'],
-              ImageEntity(
-                ImageType.network,
-                rawData['coverUrl'],
-              ), (context) {
-            Provider.of<NavigatorProvider>(context, listen: false)
-                .getNavigator(context, NavigatorType.defaultNavigator)
-                ?.push(MaterialPageRoute(
-                    builder: (context) => ComicDetailPage(
-                          title: rawData['title'],
-                          comicId: comicId,
-                          comicSourceModel: parent,
-                        ),
-                    settings: const RouteSettings(name: 'ComicDetailPage')))
-                .then((value) async {
-              if (context.mounted) {
-                await Provider.of<ComicFavoritePageController>(context,
-                        listen: false)
-                    .refreshBadges(comicId);
-              }
-            });
-          }, DateTime.parse(rawData['lastUpdatedAt']), comicId));
+              ImageEntity(ImageType.network, rawData['coverUrl']),
+              (context) {
+                ComicDetailPage.open(
+                  context,
+                  title: rawData['title'],
+                  comicId: comicId,
+                  comicSourceModel: parent,
+                ).then((value) async {
+                  if (context.mounted) {
+                    await Provider.of<ComicFavoritePageController>(
+                      context,
+                      listen: false,
+                    ).refreshBadges(comicId);
+                  }
+                });
+              },
+              DateTime.parse(rawData['lastUpdatedAt']),
+              comicId,
+            ),
+          );
         }
       }
     } catch (e, s) {
@@ -549,8 +590,10 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
 
   @override
   Future<bool> login(String username, String password) async {
-    var response = await RequestHandlers.zaiManHuaAccountRequestHandler
-        .login(username, password);
+    var response = await RequestHandlers.zaiManHuaAccountRequestHandler.login(
+      username,
+      password,
+    );
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         if (response.data['errno'] == 0) {
@@ -671,15 +714,18 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
     try {
       final dao = (await DatabaseInstance.instance).modelConfigDao;
       final enabled = (await dao.getOrCreateConfigByKey(
-              'autoSignInEnabled', parent!.type.sourceId,
-              value: true))
-          .get<bool>();
-      final loggedIn =
-          (await dao.getOrCreateConfigByKey('isLogin', parent!.type.sourceId))
-              .get<bool>();
-      final token =
-          (await dao.getOrCreateConfigByKey('token', parent!.type.sourceId))
-              .get<String>();
+        'autoSignInEnabled',
+        parent!.type.sourceId,
+        value: true,
+      )).get<bool>();
+      final loggedIn = (await dao.getOrCreateConfigByKey(
+        'isLogin',
+        parent!.type.sourceId,
+      )).get<bool>();
+      final token = (await dao.getOrCreateConfigByKey(
+        'token',
+        parent!.type.sourceId,
+      )).get<String>();
       if (generation != _accountGeneration) return;
       _autoSignInEnabled = enabled;
       _token = token;
@@ -689,8 +735,8 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
         _vipRewardStatus = ZaiManHuaVipRewardStatus.notLoggedIn;
         return;
       }
-      final response =
-          await RequestHandlers.zaiManHuaAccountRequestHandler.getUserData();
+      final response = await RequestHandlers.zaiManHuaAccountRequestHandler
+          .getUserData();
       if (generation != _accountGeneration) return;
       if (response.statusCode != 200 && response.statusCode != 304) {
         _signInStatus = ZaiManHuaSignInStatus.queryFailed;
@@ -724,8 +770,11 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
             : ZaiManHuaSignInStatus.signInFailed;
       }
       if (_isMember == true) {
-        await _loadVipReward(token, generation,
-            claim: automaticallySignIn && _autoSignInEnabled);
+        await _loadVipReward(
+          token,
+          generation,
+          claim: automaticallySignIn && _autoSignInEnabled,
+        );
       } else {
         _vipRewardStatus = _isMember == false
             ? ZaiManHuaVipRewardStatus.notMember
@@ -744,8 +793,11 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
     }
   }
 
-  Future<void> _loadVipReward(String token, int generation,
-      {required bool claim}) async {
+  Future<void> _loadVipReward(
+    String token,
+    int generation, {
+    required bool claim,
+  }) async {
     try {
       final handler = RequestHandlers.zaiManHuaTaskRequestHandler;
       final response = await handler.getTasks(token);
@@ -790,8 +842,9 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
 
   Future<bool> _signIn(String token) async {
     try {
-      final response =
-          await RequestHandlers.zaiManHuaTaskRequestHandler.signIn(token);
+      final response = await RequestHandlers.zaiManHuaTaskRequestHandler.signIn(
+        token,
+      );
       final data = response.data;
       // Another client may have signed in since the profile was fetched.
       if (response.statusCode == 200 &&
@@ -822,39 +875,45 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
         .getMainPageRecommend();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
-        final recommendations =
-            response.data is String ? jsonDecode(response.data) : response.data;
+        final recommendations = response.data is String
+            ? jsonDecode(response.data)
+            : response.data;
         for (var rawData in recommendations) {
           if (blackList.contains(rawData['category_id'])) {
             continue;
           }
           List<GridItemEntity> children = [];
           for (var rawItem in rawData['data']) {
-            children.add(GridItemEntity(
+            children.add(
+              GridItemEntity(
                 rawItem['title'],
                 rawItem['sub_title'],
                 ImageEntity(ImageType.network, rawItem['cover']),
                 (context) {
-              if (rawItem['type'] == 1) {
-                Provider.of<NavigatorProvider>(context, listen: false)
-                    .getNavigator(context, NavigatorType.defaultNavigator)
-                    ?.push(MaterialPageRoute(
-                        builder: (context) => ComicDetailPage(
-                              title: rawItem['title'],
-                              comicId: rawItem['obj_id'].toString(),
-                              comicSourceModel: parent,
-                            ),
-                        settings:
-                            const RouteSettings(name: 'ComicDetailPage')));
-              }
-            }));
+                  if (rawItem['type'] == 1) {
+                    ComicDetailPage.open(
+                      context,
+                      title: rawItem['title'],
+                      comicId: rawItem['obj_id'].toString(),
+                      comicSourceModel: parent,
+                    );
+                  }
+                },
+              ),
+            );
           }
           // Category 48 is the hot topics section; other sections keep covers.
           final isHotTopics = rawData['category_id'] == 48;
-          data.add(HomepageCardEntity(
-              rawData['title'], null, (context) {}, children,
+          data.add(
+            HomepageCardEntity(
+              rawData['title'],
+              null,
+              (context) {},
+              children,
               coverAspectRatio: isHotTopics ? 3 / 2 : 2 / 3,
-              crossAxisCount: isHotTopics ? 2 : null));
+              crossAxisCount: isHotTopics ? 2 : null,
+            ),
+          );
         }
       }
     } catch (e, s) {
@@ -870,28 +929,30 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
         .getMainPageRecommend();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
-        final recommendations =
-            response.data is String ? jsonDecode(response.data) : response.data;
+        final recommendations = response.data is String
+            ? jsonDecode(response.data)
+            : response.data;
         if (recommendations.isEmpty) {
           return data;
         }
         var rawData = recommendations[0];
         for (var rawItem in rawData['data']) {
-          data.add(CarouselEntity(
+          data.add(
+            CarouselEntity(
               ImageEntity(ImageType.network, rawItem['cover']),
-              rawItem['title'], (context) {
-            if (rawItem['type'] == 1) {
-              Provider.of<NavigatorProvider>(context, listen: false)
-                  .getNavigator(context, NavigatorType.defaultNavigator)
-                  ?.push(MaterialPageRoute(
-                      builder: (context) => ComicDetailPage(
-                            title: rawItem['title'],
-                            comicId: rawItem['obj_id'].toString(),
-                            comicSourceModel: parent,
-                          ),
-                      settings: const RouteSettings(name: 'ComicDetailPage')));
-            }
-          }));
+              rawItem['title'],
+              (context) {
+                if (rawItem['type'] == 1) {
+                  ComicDetailPage.open(
+                    context,
+                    title: rawItem['title'],
+                    comicId: rawItem['obj_id'].toString(),
+                    comicSourceModel: parent,
+                  );
+                }
+              },
+            ),
+          );
         }
       }
     } catch (e, s) {
@@ -903,27 +964,37 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
   @override
   Future<List<GridItemEntity>> getCategoryList() async {
     List<GridItemEntity> data = [];
-    Response response =
-        await RequestHandlers.zaiManHuaMobileRequestHandler.getCategory();
+    Response response = await RequestHandlers.zaiManHuaMobileRequestHandler
+        .getCategory();
     try {
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         List result = [];
         result = response.data['data']['cateList'];
         for (var rawData in result) {
-          data.add(GridItemEntity(rawData['title'], null,
-              ImageEntity(ImageType.network, rawData['cover']), (context) {
-            Provider.of<NavigatorProvider>(context, listen: false)
-                .getNavigator(context, NavigatorType.defaultNavigator)
-                ?.push(MaterialPageRoute(
-                    builder: (context) => ComicCategoryDetailPage(
+          data.add(
+            GridItemEntity(
+              rawData['title'],
+              null,
+              ImageEntity(ImageType.network, rawData['cover']),
+              (context) {
+                Provider.of<NavigatorProvider>(context, listen: false)
+                    .getNavigator(context, NavigatorType.defaultNavigator)
+                    ?.push(
+                      MaterialPageRoute(
+                        builder: (context) => ComicCategoryDetailPage(
                           categoryId: rawData['tagId'].toString(),
                           categoryType: rawData['tagType'],
                           sourceModel: parent,
                           categoryTitle: rawData['title'],
                         ),
-                    settings:
-                        const RouteSettings(name: 'ComicCategoryDetailPage')));
-          }));
+                        settings: const RouteSettings(
+                          name: 'ComicCategoryDetailPage',
+                        ),
+                      ),
+                    );
+              },
+            ),
+          );
         }
       }
     } catch (e, s) {
@@ -940,25 +1011,30 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
           .getRankList(page: page);
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (var rawItem in response.data['data']) {
-          data.add(ListItemEntity(rawItem['title'],
-              ImageEntity(ImageType.network, rawItem['cover']), {
-            Icons.supervisor_account_rounded: rawItem['authors'] ?? '未知',
-            Icons.apps: rawItem['types'],
-            Icons.history_edu: date_format.formatDate(
-                DateTime.fromMicrosecondsSinceEpoch(
-                    rawItem['last_updatetime'] * 1000000),
-                [date_format.yyyy, '-', date_format.mm, '-', date_format.dd])
-          }, (context) {
-            Provider.of<NavigatorProvider>(context, listen: false)
-                .getNavigator(context, NavigatorType.defaultNavigator)
-                ?.push(MaterialPageRoute(
-                    builder: (context) => ComicDetailPage(
-                          title: rawItem['title'],
-                          comicId: rawItem['comic_id'].toString(),
-                          comicSourceModel: parent,
-                        ),
-                    settings: const RouteSettings(name: 'ComicDetailPage')));
-          }));
+          data.add(
+            ListItemEntity(
+              rawItem['title'],
+              ImageEntity(ImageType.network, rawItem['cover']),
+              {
+                Icons.supervisor_account_rounded: rawItem['authors'] ?? '未知',
+                Icons.apps: rawItem['types'],
+                Icons.history_edu: date_format.formatDate(
+                  DateTime.fromMicrosecondsSinceEpoch(
+                    rawItem['last_updatetime'] * 1000000,
+                  ),
+                  [date_format.yyyy, '-', date_format.mm, '-', date_format.dd],
+                ),
+              },
+              (context) {
+                ComicDetailPage.open(
+                  context,
+                  title: rawItem['title'],
+                  comicId: rawItem['comic_id'].toString(),
+                  comicSourceModel: parent,
+                );
+              },
+            ),
+          );
         }
       }
     } catch (e, s) {
@@ -976,25 +1052,30 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
           .getLatestList(page: page);
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (var rawItem in response.data['data']) {
-          data.add(ListItemEntity(rawItem['title'],
-              ImageEntity(ImageType.network, rawItem['cover']), {
-            Icons.supervisor_account_rounded: rawItem['authors'],
-            Icons.apps: rawItem['types'],
-            Icons.history_edu: date_format.formatDate(
-                DateTime.fromMicrosecondsSinceEpoch(
-                    rawItem['last_updatetime'] * 1000000),
-                [date_format.yyyy, '-', date_format.mm, '-', date_format.dd])
-          }, (context) {
-            Provider.of<NavigatorProvider>(context, listen: false)
-                .getNavigator(context, NavigatorType.defaultNavigator)
-                ?.push(MaterialPageRoute(
-                    builder: (context) => ComicDetailPage(
-                          title: rawItem['title'],
-                          comicId: rawItem['comic_id'].toString(),
-                          comicSourceModel: parent,
-                        ),
-                    settings: const RouteSettings(name: 'ComicDetailPage')));
-          }));
+          data.add(
+            ListItemEntity(
+              rawItem['title'],
+              ImageEntity(ImageType.network, rawItem['cover']),
+              {
+                Icons.supervisor_account_rounded: rawItem['authors'],
+                Icons.apps: rawItem['types'],
+                Icons.history_edu: date_format.formatDate(
+                  DateTime.fromMicrosecondsSinceEpoch(
+                    rawItem['last_updatetime'] * 1000000,
+                  ),
+                  [date_format.yyyy, '-', date_format.mm, '-', date_format.dd],
+                ),
+              },
+              (context) {
+                ComicDetailPage.open(
+                  context,
+                  title: rawItem['title'],
+                  comicId: rawItem['comic_id'].toString(),
+                  comicSourceModel: parent,
+                );
+              },
+            ),
+          );
         }
       }
     } catch (e, s) {
@@ -1008,40 +1089,47 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
   List<FilterEntity> get categoryFilter => [TimeOrRankFilterEntity()];
 
   @override
-  Future<List<ListItemEntity>> getCategoryDetailList(
-      {required String categoryId,
-      required Map<String, dynamic> categoryFilter,
-      int page = 0,
-      int categoryType = 0}) async {
+  Future<List<ListItemEntity>> getCategoryDetailList({
+    required String categoryId,
+    required Map<String, dynamic> categoryFilter,
+    int page = 0,
+    int categoryType = 0,
+  }) async {
     List<ListItemEntity> data = [];
     try {
       var response = await RequestHandlers.zaiManHuaMobileRequestHandler
-          .getCategoryDetail(int.parse(categoryId),
-              page: page,
-              categoryType: categoryType,
-              type:
-                  TimeOrRankEnum.values.indexOf(categoryFilter['TimeOrRank']));
+          .getCategoryDetail(
+            int.parse(categoryId),
+            page: page,
+            categoryType: categoryType,
+            type: TimeOrRankEnum.values.indexOf(categoryFilter['TimeOrRank']),
+          );
       if ((response.statusCode == 200 || response.statusCode == 304)) {
         for (var rawItem in response.data['data']['comicList']) {
-          data.add(ListItemEntity(rawItem['name'],
-              ImageEntity(ImageType.network, rawItem['cover']), {
-            Icons.supervisor_account_rounded: rawItem['authors'],
-            Icons.apps: rawItem['types'],
-            Icons.history_edu: date_format.formatDate(
-                DateTime.fromMicrosecondsSinceEpoch(
-                    rawItem['last_updatetime'] * 1000000),
-                [date_format.yyyy, '-', date_format.mm, '-', date_format.dd])
-          }, (context) {
-            Provider.of<NavigatorProvider>(context, listen: false)
-                .getNavigator(context, NavigatorType.defaultNavigator)
-                ?.push(MaterialPageRoute(
-                    builder: (context) => ComicDetailPage(
-                          title: rawItem['name'],
-                          comicId: rawItem['id'].toString(),
-                          comicSourceModel: parent,
-                        ),
-                    settings: const RouteSettings(name: 'ComicDetailPage')));
-          }));
+          data.add(
+            ListItemEntity(
+              rawItem['name'],
+              ImageEntity(ImageType.network, rawItem['cover']),
+              {
+                Icons.supervisor_account_rounded: rawItem['authors'],
+                Icons.apps: rawItem['types'],
+                Icons.history_edu: date_format.formatDate(
+                  DateTime.fromMicrosecondsSinceEpoch(
+                    rawItem['last_updatetime'] * 1000000,
+                  ),
+                  [date_format.yyyy, '-', date_format.mm, '-', date_format.dd],
+                ),
+              },
+              (context) {
+                ComicDetailPage.open(
+                  context,
+                  title: rawItem['name'],
+                  comicId: rawItem['id'].toString(),
+                  comicSourceModel: parent,
+                );
+              },
+            ),
+          );
         }
       }
     } catch (e, s) {
@@ -1061,13 +1149,22 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
   ZaiManHuaComicDetailModel(this.rawData, this.sourceModel);
 
   @override
-  Future<bool> addComicHistory(String chapterId, String chapterName,
-      {int page = 1}) async {
-    final saved =
-        await super.addComicHistory(chapterId, chapterName, page: page);
+  Future<bool> addComicHistory(
+    String chapterId,
+    String chapterName, {
+    int page = 1,
+  }) async {
+    final saved = await super.addComicHistory(
+      chapterId,
+      chapterName,
+      page: page,
+    );
     try {
-      await RequestHandlers.zaiManHuaMobileRequestHandler
-          .addHistory(comicId, chapterId, page: page);
+      await RequestHandlers.zaiManHuaMobileRequestHandler.addHistory(
+        comicId,
+        chapterId,
+        page: page,
+      );
     } catch (_) {
       // Request exceptions can contain the bearer token.
       logger.w('再漫画阅读进度上传失败，不影响本地阅读');
@@ -1097,36 +1194,46 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
 
   @override
   List<CategoryEntity> get authors => rawData['data']['authors']
-      .map<CategoryEntity>((e) =>
-          CategoryEntity(e['tag_name'], e['tag_id'].toString(), (context) {
-            Provider.of<NavigatorProvider>(context, listen: false)
-                .getNavigator(context, NavigatorType.defaultNavigator)
-                ?.push(MaterialPageRoute(
-                    builder: (context) => ComicCategoryDetailPage(
-                          categoryId: e['tag_id'].toString(),
-                          sourceModel: parent,
-                          categoryTitle: e['tag_name'],
-                        ),
-                    settings:
-                        const RouteSettings(name: 'ComicCategoryDetailPage')));
-          }))
+      .map<CategoryEntity>(
+        (e) => CategoryEntity(e['tag_name'], e['tag_id'].toString(), (context) {
+          Provider.of<NavigatorProvider>(context, listen: false)
+              .getNavigator(context, NavigatorType.defaultNavigator)
+              ?.push(
+                MaterialPageRoute(
+                  builder: (context) => ComicCategoryDetailPage(
+                    categoryId: e['tag_id'].toString(),
+                    sourceModel: parent,
+                    categoryTitle: e['tag_name'],
+                  ),
+                  settings: const RouteSettings(
+                    name: 'ComicCategoryDetailPage',
+                  ),
+                ),
+              );
+        }),
+      )
       .toList();
 
   @override
   List<CategoryEntity> get categories => rawData['data']['types']
-      .map<CategoryEntity>((e) =>
-          CategoryEntity(e['tag_name'], e['tag_id'].toString(), (context) {
-            Provider.of<NavigatorProvider>(context, listen: false)
-                .getNavigator(context, NavigatorType.defaultNavigator)
-                ?.push(MaterialPageRoute(
-                    builder: (context) => ComicCategoryDetailPage(
-                          categoryId: e['tag_id'].toString(),
-                          sourceModel: parent,
-                          categoryTitle: e['tag_name'],
-                        ),
-                    settings:
-                        const RouteSettings(name: 'ComicCategoryDetailPage')));
-          }))
+      .map<CategoryEntity>(
+        (e) => CategoryEntity(e['tag_name'], e['tag_id'].toString(), (context) {
+          Provider.of<NavigatorProvider>(context, listen: false)
+              .getNavigator(context, NavigatorType.defaultNavigator)
+              ?.push(
+                MaterialPageRoute(
+                  builder: (context) => ComicCategoryDetailPage(
+                    categoryId: e['tag_id'].toString(),
+                    sourceModel: parent,
+                    categoryTitle: e['tag_name'],
+                  ),
+                  settings: const RouteSettings(
+                    name: 'ComicCategoryDetailPage',
+                  ),
+                ),
+              );
+        }),
+      )
       .toList();
 
   @override
@@ -1134,12 +1241,15 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
     Map<String, List<BaseComicChapterEntityModel>> result = {};
     for (var item in rawData['data']['chapters']) {
       result[item['title']] = item['data']
-          .map<BaseComicChapterEntityModel>((e) =>
-              DefaultComicChapterEntityModel(
-                  e['chapter_title'],
-                  e['chapter_id'].toString(),
-                  DateTime.fromMillisecondsSinceEpoch(
-                      e['updatetime'] != null ? e['updatetime'] * 1000 : 0)))
+          .map<BaseComicChapterEntityModel>(
+            (e) => DefaultComicChapterEntityModel(
+              e['chapter_title'],
+              e['chapter_id'].toString(),
+              DateTime.fromMillisecondsSinceEpoch(
+                e['updatetime'] != null ? e['updatetime'] * 1000 : 0,
+              ),
+            ),
+          )
           .toList()
           .toList();
     }
@@ -1185,16 +1295,18 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
           for (var commentKey in commentKeyList) {
             var item = response.data['data']['commentList'][commentKey];
             var entity = ComicCommentEntity(
-                ImageEntity(
-                    item['photo'].toString().isNotEmpty
-                        ? ImageType.network
-                        : ImageType.unknown,
-                    item['photo']),
-                item['content'],
-                item['id'].toString(),
-                item['nickname'],
-                int.parse(item['like_amount'].toString()),
-                []);
+              ImageEntity(
+                item['photo'].toString().isNotEmpty
+                    ? ImageType.network
+                    : ImageType.unknown,
+                item['photo'],
+              ),
+              item['content'],
+              item['id'].toString(),
+              item['nickname'],
+              int.parse(item['like_amount'].toString()),
+              [],
+            );
             if (parent == null) {
               parent = entity;
             } else {
@@ -1213,7 +1325,8 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
 
   @override
   DateTime get lastUpdate => DateTime.fromMillisecondsSinceEpoch(
-      rawData['data']['last_updatetime'] * 1000);
+    rawData['data']['last_updatetime'] * 1000,
+  );
 
   @override
   BaseComicSourceModel get parent => sourceModel;
@@ -1247,7 +1360,8 @@ class ZaiManHuaComicChapterDetailModel extends BaseComicChapterDetailModel {
           rawData.sort((a, b) => int.parse(b[1].toString()).compareTo(a[1]));
           for (var item in rawData) {
             data.add(
-                ChapterCommentEntity(item[6].toString(), item[7], item[1]));
+              ChapterCommentEntity(item[6].toString(), item[7], item[1]),
+            );
           }
         }
       }

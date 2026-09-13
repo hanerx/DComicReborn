@@ -39,13 +39,32 @@ class VersionProvider extends BaseProvider {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     _currentVersion = packageInfo.version;
     final database = await DatabaseInstance.instance;
-    _channelEntity = (await database.configDao
-        .getOrCreateConfigByKey('UpdateChannel', value: UpdateChannel.develop));
-    _lastTimeCheckVersion = await database.configDao.getOrCreateConfigByKey('UpdateChannel', value: '');
-    if(await checkUpdate()){
+    final channelEntity = await database.configDao.getOrCreateConfigByKey(
+      'UpdateChannel',
+      value: UpdateChannel.develop,
+    );
+    _lastTimeCheckVersion = await database.configDao.getOrCreateConfigByKey(
+      'LastTimeCheckVersion',
+      value: '',
+    );
+    // Older builds stored the last notified version under UpdateChannel too.
+    final channelIndex = int.tryParse(channelEntity.value ?? '');
+    if (channelIndex == null ||
+        channelIndex < 0 ||
+        channelIndex >= UpdateChannel.values.length) {
+      if (_lastTimeCheckVersion!.value == '') {
+        _lastTimeCheckVersion!.set(channelEntity.value ?? '');
+        await database.configDao.updateConfig(_lastTimeCheckVersion!);
+      }
+      // The original channel was overwritten and cannot be recovered.
+      channelEntity.set(UpdateChannel.release);
+      await database.configDao.updateConfig(channelEntity);
+    }
+    _channelEntity = channelEntity;
+    if (await checkUpdate()) {
       ReleaseInfo? releaseInfo = await getLatestUpdateInfo();
-      if(releaseInfo != null && _lastTimeCheckVersion != null) {
-        if(releaseInfo.version != _lastTimeCheckVersion!.get<String>()) {
+      if (releaseInfo != null && _lastTimeCheckVersion != null) {
+        if (releaseInfo.version != _lastTimeCheckVersion!.get<String>()) {
           _needShowUpdateDialog = true;
           _lastTimeCheckVersion?.set(releaseInfo.version);
           await database.configDao.updateConfig(_lastTimeCheckVersion!);
@@ -63,9 +82,12 @@ class VersionProvider extends BaseProvider {
       switch (channel) {
         case UpdateChannel.release:
           // 只选择最近的release（非pre-release）
-          var response = await RequestHandlers.githubRequestHandler.getReleases();
+          var response = await RequestHandlers.githubRequestHandler
+              .getReleases();
           if (response.statusCode == 200 || response.statusCode == 304) {
-            var releases = response.data.where((r) => r['prerelease'] == false).toList();
+            var releases = response.data
+                .where((r) => r['prerelease'] == false)
+                .toList();
             if (releases.isNotEmpty) {
               latestVersion = releases.first['tag_name'];
             }
@@ -73,16 +95,39 @@ class VersionProvider extends BaseProvider {
           break;
         case UpdateChannel.develop:
           // release和pre-release都可选，优先选择版本号高的
-          var response = await RequestHandlers.githubRequestHandler.getReleases();
+          var response = await RequestHandlers.githubRequestHandler
+              .getReleases();
           if (response.statusCode == 200 || response.statusCode == 304) {
             var releases = response.data;
             if (releases.isNotEmpty) {
-              var release = releases.firstWhere((r) => r['prerelease'] == false, orElse: () => null);
-              var preRelease = releases.firstWhere((r) => r['prerelease'] == true, orElse: () => null);
-              Version? releaseVersion = release != null ? Version.parse(release['tag_name'].toString().replaceAll(RegExp(r'[^0-9\\.]'), '')) : null;
-              Version? preReleaseVersion = preRelease != null ? Version.parse(preRelease['tag_name'].toString().replaceAll(RegExp(r'[^0-9\\.]'), '')) : null;
+              var release = releases.firstWhere(
+                (r) => r['prerelease'] == false,
+                orElse: () => null,
+              );
+              var preRelease = releases.firstWhere(
+                (r) => r['prerelease'] == true,
+                orElse: () => null,
+              );
+              Version? releaseVersion = release != null
+                  ? Version.parse(
+                      release['tag_name'].toString().replaceAll(
+                        RegExp(r'[^0-9\\.]'),
+                        '',
+                      ),
+                    )
+                  : null;
+              Version? preReleaseVersion = preRelease != null
+                  ? Version.parse(
+                      preRelease['tag_name'].toString().replaceAll(
+                        RegExp(r'[^0-9\\.]'),
+                        '',
+                      ),
+                    )
+                  : null;
               if (releaseVersion != null && preReleaseVersion != null) {
-                latestVersion = (releaseVersion > preReleaseVersion ? release : preRelease)['tag_name'];
+                latestVersion = (releaseVersion > preReleaseVersion
+                    ? release
+                    : preRelease)['tag_name'];
               } else {
                 latestVersion = (release ?? preRelease)?['tag_name'] ?? '';
               }
@@ -112,9 +157,12 @@ class VersionProvider extends BaseProvider {
       switch (channel) {
         case UpdateChannel.release:
           // 只选择最近的release（非pre-release）
-          var response = await RequestHandlers.githubRequestHandler.getReleases();
+          var response = await RequestHandlers.githubRequestHandler
+              .getReleases();
           if (response.statusCode == 200 || response.statusCode == 304) {
-            var releases = response.data.where((r) => r['prerelease'] == false).toList();
+            var releases = response.data
+                .where((r) => r['prerelease'] == false)
+                .toList();
             if (releases.isNotEmpty) {
               data = releases.first;
             }
@@ -122,17 +170,40 @@ class VersionProvider extends BaseProvider {
           break;
         case UpdateChannel.develop:
           // 不过滤pre-release，release和pre-release都可选，优先选择版本号高的
-          var response = await RequestHandlers.githubRequestHandler.getReleases();
+          var response = await RequestHandlers.githubRequestHandler
+              .getReleases();
           if (response.statusCode == 200 || response.statusCode == 304) {
             var releases = response.data;
             if (releases.isNotEmpty) {
               // 找到最高版本的release和pre-release
-              var release = releases.firstWhere((r) => r['prerelease'] == false, orElse: () => null);
-              var preRelease = releases.firstWhere((r) => r['prerelease'] == true, orElse: () => null);
-              Version? releaseVersion = release != null ? Version.parse(release['tag_name'].toString().replaceAll(RegExp(r'[^0-9\.]'), '')) : null;
-              Version? preReleaseVersion = preRelease != null ? Version.parse(preRelease['tag_name'].toString().replaceAll(RegExp(r'[^0-9\.]'), '')) : null;
+              var release = releases.firstWhere(
+                (r) => r['prerelease'] == false,
+                orElse: () => null,
+              );
+              var preRelease = releases.firstWhere(
+                (r) => r['prerelease'] == true,
+                orElse: () => null,
+              );
+              Version? releaseVersion = release != null
+                  ? Version.parse(
+                      release['tag_name'].toString().replaceAll(
+                        RegExp(r'[^0-9\.]'),
+                        '',
+                      ),
+                    )
+                  : null;
+              Version? preReleaseVersion = preRelease != null
+                  ? Version.parse(
+                      preRelease['tag_name'].toString().replaceAll(
+                        RegExp(r'[^0-9\.]'),
+                        '',
+                      ),
+                    )
+                  : null;
               if (releaseVersion != null && preReleaseVersion != null) {
-                data = releaseVersion > preReleaseVersion ? release : preRelease;
+                data = releaseVersion > preReleaseVersion
+                    ? release
+                    : preRelease;
               } else {
                 data = release ?? preRelease;
               }
@@ -154,13 +225,15 @@ class VersionProvider extends BaseProvider {
     if (data['assets'] != null && data['assets'].isNotEmpty) {
       if (Platform.isAndroid) {
         var apk = data['assets'].firstWhere(
-            (a) => a['name'] != null && a['name'].toString().endsWith('.apk'),
-            orElse: () => null);
+          (a) => a['name'] != null && a['name'].toString().endsWith('.apk'),
+          orElse: () => null,
+        );
         updateUrl = apk != null ? apk['browser_download_url'] : '';
       } else if (Platform.isIOS) {
         var ipa = data['assets'].firstWhere(
-            (a) => a['name'] != null && a['name'].toString().endsWith('.ipa'),
-            orElse: () => null);
+          (a) => a['name'] != null && a['name'].toString().endsWith('.ipa'),
+          orElse: () => null,
+        );
         updateUrl = ipa != null ? ipa['browser_download_url'] : '';
       }
     }
@@ -174,7 +247,8 @@ class VersionProvider extends BaseProvider {
 
   String get currentVersion => _currentVersion;
 
-  String get latestVersion => _latestVersion.isEmpty?currentVersion:_latestVersion;
+  String get latestVersion =>
+      _latestVersion.isEmpty ? currentVersion : _latestVersion;
 
   UpdateChannel get channel {
     if (_channelEntity == null) {
@@ -186,8 +260,9 @@ class VersionProvider extends BaseProvider {
   set channel(UpdateChannel value) {
     if (_channelEntity != null) {
       _channelEntity?.set(value);
-      DatabaseInstance.instance
-          .then((value) => value.configDao.updateConfig(_channelEntity!));
+      DatabaseInstance.instance.then(
+        (value) => value.configDao.updateConfig(_channelEntity!),
+      );
     }
     notifyListeners();
   }
@@ -206,87 +281,122 @@ class VersionProvider extends BaseProvider {
     if (releaseInfo != null) {
       if (context.mounted) {
         showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title:
-              Text(S.of(context).ReleaseInfoTitle(releaseInfo.version)),
-              content: Text(releaseInfo.desc),
-              actions: [
-                TextButton(
-                    onPressed: () async {
-                      if (await url_string_launcher
-                          .canLaunchUrlString(releaseInfo.releaseUrl)) {
-                        if (context.mounted) {
-                          url_string_launcher
-                              .launchUrlString(releaseInfo.releaseUrl);
-                        }
-                      }
-                    },
-                    child: Text(S.of(context).AboutPageGithub)),
-                TextButton(
-                    onPressed: () async {
-                      Navigator.of(context).pop();
-                      if (releaseInfo.updateUrl.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(S.of(context).ReleaseInfoNoApkOrIpa)));
-                        return;
-                      }
-                      // 初始化下载器
-                      final dir = Platform.isAndroid
-                          ? await getExternalStorageDirectory()
-                          : await getApplicationDocumentsDirectory();
-                      if (dir == null) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(S.of(context).ReleaseInfoDownloadFailed)));
-                        }
-                        return;
-                      }
-                      final filePath = '${dir.path}/app${Platform.isAndroid ? '.apk' : '.ipa'}';
-                      if(await File(filePath).exists()) {
-                        File(filePath).deleteSync();
-                      }
-                      final taskId = await FlutterDownloader.enqueue(
-                        url: releaseInfo.updateUrl,
-                        savedDir: dir.path,
-                        showNotification: true,
-                        openFileFromNotification: true,
-                        fileName: 'app${Platform.isAndroid ? '.apk' : '.ipa'}',
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(S.of(context).ReleaseInfoTitle(releaseInfo.version)),
+            content: Text(releaseInfo.desc),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  if (await url_string_launcher.canLaunchUrlString(
+                    releaseInfo.releaseUrl,
+                  )) {
+                    if (context.mounted) {
+                      url_string_launcher.launchUrlString(
+                        releaseInfo.releaseUrl,
                       );
-                      if (taskId == null) {
-                        if(context.mounted){
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(S.of(context).ReleaseInfoDownloadFailed)));
+                    }
+                  }
+                },
+                child: Text(S.of(context).AboutPageGithub),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  if (releaseInfo.updateUrl.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(S.of(context).ReleaseInfoNoApkOrIpa),
+                      ),
+                    );
+                    return;
+                  }
+                  // 初始化下载器
+                  final dir = Platform.isAndroid
+                      ? await getExternalStorageDirectory()
+                      : await getApplicationDocumentsDirectory();
+                  if (dir == null) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            S.of(context).ReleaseInfoDownloadFailed,
+                          ),
+                        ),
+                      );
+                    }
+                    return;
+                  }
+                  final filePath =
+                      '${dir.path}/app${Platform.isAndroid ? '.apk' : '.ipa'}';
+                  if (await File(filePath).exists()) {
+                    File(filePath).deleteSync();
+                  }
+                  final taskId = await FlutterDownloader.enqueue(
+                    url: releaseInfo.updateUrl,
+                    savedDir: dir.path,
+                    showNotification: true,
+                    openFileFromNotification: true,
+                    fileName: 'app${Platform.isAndroid ? '.apk' : '.ipa'}',
+                  );
+                  if (taskId == null) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            S.of(context).ReleaseInfoDownloadFailed,
+                          ),
+                        ),
+                      );
+                    }
+                  } else {
+                    if (context.mounted) {
+                      Provider.of<DownloadProvider>(
+                        context,
+                        listen: false,
+                      ).registerDownloadCallback(taskId, (
+                        id,
+                        status,
+                        progress,
+                      ) async {
+                        if (status == DownloadTaskStatus.complete) {
+                          await FlutterDownloader.open(taskId: id);
+                        } else if (status == DownloadTaskStatus.failed) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  S.of(context).ReleaseInfoDownloadFailed,
+                                ),
+                              ),
+                            );
+                          }
                         }
-                      }else{
-                        if (context.mounted){
-                          Provider.of<DownloadProvider>(context, listen: false)
-                              .registerDownloadCallback(taskId,
-                                  (id, status, progress) async {
-                            if (status == DownloadTaskStatus.complete){
-                              await FlutterDownloader.open(taskId: id);
-                            }else if (status == DownloadTaskStatus.failed) {
-                              if (context.mounted){
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(S.of(context).ReleaseInfoDownloadFailed)));
-                              }
-                            }
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(S.of(context).ReleaseInfoDownloadStarted)));
-                        }
-                      }
-                    },
-                    child: Text(S.of(context).ReleaseInfoDownload))
-              ],
-            ));
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            S.of(context).ReleaseInfoDownloadStarted,
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: Text(S.of(context).ReleaseInfoDownload),
+              ),
+            ],
+          ),
+        );
       }
     } else {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(S.of(context).SettingPageFailToGetReleaseInfo)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).SettingPageFailToGetReleaseInfo),
+          ),
+        );
       }
     }
   }
 }
-

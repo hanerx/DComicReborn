@@ -1,58 +1,85 @@
+import 'dart:async';
+
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/base_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 
-enum NavigatorType { defaultNavigator, home, right, large }
+enum NavigatorType { defaultNavigator, root }
+
+enum ComicBrowserLayout { singlePane, splitPane }
 
 class NavigatorProvider extends BaseProvider {
-  final GlobalKey<NavigatorState> _homeNavigator = GlobalKey<NavigatorState>();
-  final GlobalKey<NavigatorState> _rightNavigator = GlobalKey<NavigatorState>();
-  final GlobalKey<NavigatorState> _largeNavigator = GlobalKey<NavigatorState>();
+  NavigatorProvider(BuildContext context);
 
-  final BuildContext _context;
+  final browseNavigator = GlobalKey<NavigatorState>();
+  final detailNavigator = GlobalKey<NavigatorState>();
+  Object? _detailIdentity;
+  Widget Function(BuildContext, bool)? _detailBuilder;
+  Completer<void>? _detailClosed;
 
-  NavigatorProvider(this._context);
+  Object? get detailIdentity => _detailIdentity;
+  Widget Function(BuildContext, bool)? get detailBuilder => _detailBuilder;
+  bool get hasDetail => _detailBuilder != null;
 
-  NavigatorState? getNavigator(
-      BuildContext context, NavigatorType navigatorType) {
-    switch (navigatorType) {
-      case NavigatorType.defaultNavigator:
-        return Navigator.of(context);
-      case NavigatorType.home:
-        return _homeNavigator.currentState;
-      case NavigatorType.right:
-        return _rightNavigator.currentState;
-      case NavigatorType.large:
-        return _largeNavigator.currentState;
-    }
+  Future<void> showDetail({
+    required Object identity,
+    required Widget Function(BuildContext, bool) builder,
+  }) {
+    if (_detailIdentity == identity) return _detailClosed!.future;
+    _detailClosed?.complete();
+    _detailClosed = Completer<void>();
+    _detailIdentity = identity;
+    _detailBuilder = builder;
+    notifyListeners();
+    return _detailClosed!.future;
   }
 
-  GlobalKey<NavigatorState> get homeNavigator => _homeNavigator;
+  void closeDetail() {
+    if (!hasDetail) return;
+    _detailIdentity = null;
+    _detailBuilder = null;
+    _detailClosed?.complete();
+    _detailClosed = null;
+    notifyListeners();
+  }
 
-  GlobalKey<NavigatorState> get rightNavigator => _rightNavigator;
+  @override
+  void dispose() {
+    _detailClosed?.complete();
+    super.dispose();
+  }
 
-  GlobalKey<NavigatorState> get largeNavigator => _largeNavigator;
+  NavigatorState? getNavigator(
+    BuildContext context,
+    NavigatorType navigatorType,
+  ) {
+    if (navigatorType == NavigatorType.root) {
+      return Navigator.of(context, rootNavigator: true);
+    }
+    final navigator = Navigator.of(context);
+    // Author/category links in a detail pane belong to the browsing stack.
+    if (identical(navigator, detailNavigator.currentState)) {
+      if (context.read<ComicBrowserLayout>() == ComicBrowserLayout.singlePane) {
+        closeDetail();
+      }
+      return browseNavigator.currentState;
+    }
+    return navigator;
+  }
 }
 
 class AppBarProvider extends BaseProvider {
-  List<AppBar?> _appBarList = [
-    AppBar(
-      title: const Text("Loading..."),
-    )
-  ];
-  List<String> stack=["Default"];
+  List<AppBar?> _appBarList = [AppBar(title: const Text("Loading..."))];
+  List<String> stack = ["Default"];
   final BuildContext _context;
 
   AppBarProvider(this._context) {
-    _appBarList = <AppBar?>[
-      AppBar(
-        title: Text(S.of(_context).AppName),
-      )
-    ];
+    _appBarList = <AppBar?>[AppBar(title: Text(S.of(_context).AppName))];
   }
 
   AppBar? addAppBar(BuildContext context, AppBar? appBar, String stackName) {
-    if(!stack.contains(stackName)){
+    if (!stack.contains(stackName)) {
       _appBarList.add(appBar);
       stack.add(stackName);
       logger.i("New Stack AppBar $stackName");

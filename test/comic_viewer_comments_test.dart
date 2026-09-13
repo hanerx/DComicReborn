@@ -39,14 +39,16 @@ class _Chapter extends Fake implements BaseComicChapterEntityModel {
 }
 
 class _ChapterDetail extends Fake implements BaseComicChapterDetailModel {
-  _ChapterDetail(this.comments);
+  _ChapterDetail(this.comments, {this.pageCount = 1});
+  final int pageCount;
   final List<ChapterCommentEntity> comments;
   @override
   String get title => 'Chapter';
   @override
-  List<ImageEntity> get pages => [
-        ImageEntity(ImageType.asset, 'assets/sources/copymanga.png'),
-      ];
+  List<ImageEntity> get pages => List.generate(
+    pageCount,
+    (_) => ImageEntity(ImageType.asset, 'assets/sources/copymanga.png'),
+  );
   @override
   Future<List<ChapterCommentEntity>> getChapterComments() async => comments;
   @override
@@ -61,45 +63,103 @@ class _Detail extends Fake implements BaseComicDetailModel {
   Future<BaseComicChapterDetailModel> getChapter(String chapterId) async =>
       chapterId == 'next' ? _ChapterDetail(nextComments!) : chapter;
   @override
-  Future<bool> addComicHistory(String chapterId, String title,
-          {int page = 1}) async =>
-      true;
+  Future<bool> addComicHistory(
+    String chapterId,
+    String title, {
+    int page = 1,
+  }) async => true;
 }
 
-Future<void> _openReader(WidgetTester tester, ReadDirectionType direction,
-    List<ChapterCommentEntity> comments,
-    {List<ChapterCommentEntity>? nextComments, ThemeData? theme}) async {
-  tester.view.physicalSize = const Size(400, 800);
+Future<void> _openReader(
+  WidgetTester tester,
+  ReadDirectionType direction,
+  List<ChapterCommentEntity> comments, {
+  List<ChapterCommentEntity>? nextComments,
+  ThemeData? theme,
+  int pageCount = 1,
+  Size size = const Size(400, 800),
+}) async {
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-  await tester.pumpWidget(ChangeNotifierProvider<ConfigProvider>(
-    create: (_) => _Config(direction),
-    child: MaterialApp(
-      theme: theme,
-      locale: const Locale('zh'),
-      supportedLocales: S.delegate.supportedLocales,
-      localizationsDelegates: const [
-        S.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      home: ComicViewerPage(
-        detailModel: _Detail(_ChapterDetail(comments), nextComments),
-        chapterId: 'chapter',
-        chapters: [_Chapter(), if (nextComments != null) _Chapter('next')],
+  await tester.pumpWidget(
+    ChangeNotifierProvider<ConfigProvider>(
+      create: (_) => _Config(direction),
+      child: MaterialApp(
+        theme: theme,
+        locale: const Locale('zh'),
+        supportedLocales: S.delegate.supportedLocales,
+        localizationsDelegates: const [
+          S.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: ComicViewerPage(
+          detailModel: _Detail(
+            _ChapterDetail(comments, pageCount: pageCount),
+            nextComments,
+          ),
+          chapterId: 'chapter',
+          chapters: [_Chapter(), if (nextComments != null) _Chapter('next')],
+        ),
       ),
     ),
-  ));
+  );
   await tester.pumpAndSettle();
 }
 
 void main() {
-  testWidgets('open reader settings refresh their entire theme in place',
-      (tester) async {
-    await _openReader(tester, ReadDirectionType.left, [],
-        theme: ThemeModel.light);
+  testWidgets(
+    'continuous reader keeps its current page when the viewport rotates',
+    (tester) async {
+      await _openReader(
+        tester,
+        ReadDirectionType.vertical,
+        [],
+        pageCount: 10,
+        size: const Size(1147, 480),
+      );
+      await tester.runAsync(
+        () => precacheImage(
+          const AssetImage('assets/sources/copymanga.png'),
+          tester.element(find.byType(ComicViewerPage)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final gesture = await tester.startGesture(const Offset(570, 400));
+      await gesture.moveBy(
+        const Offset(0, -1450),
+        timeStamp: const Duration(seconds: 1),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await gesture.up(timeStamp: const Duration(milliseconds: 1400));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(570, 240));
+      await tester.pumpAndSettle();
+      final pageLabel = find.textContaining(RegExp(r'^\d+/10$'));
+      final before = tester.widget<Text>(pageLabel).data;
+      expect(before, isNot('1/10'));
+      tester.view.physicalSize = const Size(480, 1147);
+      await tester.pumpAndSettle();
+      expect(tester.widget<Text>(pageLabel).data, before);
+      tester.view.physicalSize = const Size(1147, 480);
+      await tester.pumpAndSettle();
+      expect(tester.widget<Text>(pageLabel).data, before);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets('open reader settings refresh their entire theme in place', (
+    tester,
+  ) async {
+    await _openReader(
+      tester,
+      ReadDirectionType.left,
+      [],
+      theme: ThemeModel.light,
+    );
     await tester.dragFrom(const Offset(200, 400), const Offset(-350, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.menu));
@@ -108,9 +168,11 @@ void main() {
     await tester.pumpAndSettle();
     final settings = find.byType(ViewerSettingList);
     final scrollPosition = tester
-        .state<ScrollableState>(find
-            .descendant(of: settings, matching: find.byType(Scrollable))
-            .first)
+        .state<ScrollableState>(
+          find
+              .descendant(of: settings, matching: find.byType(Scrollable))
+              .first,
+        )
         .position;
     scrollPosition.jumpTo(scrollPosition.maxScrollExtent);
     await tester.pumpAndSettle();
@@ -127,14 +189,18 @@ void main() {
       expect(settings, findsOneWidget);
       final theme = Theme.of(tester.element(settings));
       expect(theme.brightness, brightness);
-      final expectedBackground = background ??
+      final expectedBackground =
+          background ??
           Theme.of(tester.element(find.byType(ComicViewerPage)))
               .colorScheme
               .surfaceContainerLow;
       final materials = tester.widgetList<Material>(
-          find.descendant(of: sheet, matching: find.byType(Material)));
-      expect(materials.any((material) => material.color == expectedBackground),
-          isTrue);
+        find.descendant(of: sheet, matching: find.byType(Material)),
+      );
+      expect(
+        materials.any((material) => material.color == expectedBackground),
+        isTrue,
+      );
       expect(scrollPosition.pixels, closeTo(savedOffset, 0.1));
       expect(tester.takeException(), isNull);
     }
@@ -142,10 +208,15 @@ void main() {
   });
 
   for (final direction in ReadDirectionType.values) {
-    testWidgets('${direction.name}: comments use reader page tap regions',
-        (tester) async {
-      await _openReader(tester, direction, [],
-          nextComments: [ChapterCommentEntity('next', '下一章的吐槽', 1)]);
+    testWidgets('${direction.name}: comments use reader page tap regions', (
+      tester,
+    ) async {
+      await _openReader(
+        tester,
+        direction,
+        [],
+        nextComments: [ChapterCommentEntity('next', '下一章的吐槽', 1)],
+      );
       final forward = switch (direction) {
         ReadDirectionType.left => const Offset(380, 400),
         ReadDirectionType.right => const Offset(20, 400),
@@ -175,7 +246,9 @@ void main() {
       if (direction == ReadDirectionType.vertical) {
         // A short image can leave the next page's heading visible below it.
         expect(
-            tester.getTopLeft(find.text('本章吐槽')).dy, greaterThan(commentsTop));
+          tester.getTopLeft(find.text('本章吐槽')).dy,
+          greaterThan(commentsTop),
+        );
       } else {
         expect(find.byIcon(Icons.menu).hitTestable(), findsNothing);
       }
@@ -187,7 +260,9 @@ void main() {
       // The forward edge at chapter end loads the next chapter's first image.
       if (direction == ReadDirectionType.vertical) {
         expect(
-            tester.getTopLeft(find.text('本章吐槽')).dy, greaterThan(commentsTop));
+          tester.getTopLeft(find.text('本章吐槽')).dy,
+          greaterThan(commentsTop),
+        );
       } else {
         expect(find.byIcon(Icons.menu).hitTestable(), findsNothing);
       }
@@ -199,48 +274,53 @@ void main() {
     });
 
     testWidgets(
-        '${direction.name}: last image leads to bounded comments and drawer',
-        (tester) async {
-      await _openReader(
+      '${direction.name}: last image leads to bounded comments and drawer',
+      (tester) async {
+        await _openReader(
           tester,
           direction,
           List.generate(
-              40,
-              (index) => ChapterCommentEntity(
-                  '$index', '吐槽 $index：这一章很好看。', 40 - index)),
-          nextComments: [ChapterCommentEntity('next', '下一章的吐槽', 1)]);
-      final offset = switch (direction) {
-        ReadDirectionType.left => const Offset(-350, 0),
-        ReadDirectionType.right => const Offset(350, 0),
-        ReadDirectionType.vertical => const Offset(0, -500),
-      };
-      await tester.dragFrom(const Offset(200, 400), offset);
-      await tester.pumpAndSettle();
-      expect(find.text('显示更多').hitTestable(), findsOneWidget);
-      await tester.tap(find.text('显示更多'));
-      await tester.pumpAndSettle();
-      expect(tester.state<ScaffoldState>(find.byType(Scaffold)).isEndDrawerOpen,
-          isTrue);
-      expect(find.text('吐槽 0：这一章很好看。').hitTestable(), findsOneWidget);
-      tester.state<ScaffoldState>(find.byType(Scaffold)).closeEndDrawer();
-      await tester.pumpAndSettle();
-      expect(find.byType(BackButton).hitTestable(), findsNothing);
-      await tester.tapAt(const Offset(200, 400));
-      await tester.pumpAndSettle();
-      expect(find.byType(BackButton).hitTestable(), findsOneWidget);
-      await tester.tapAt(const Offset(200, 400));
-      await tester.pumpAndSettle();
-      expect(find.byType(BackButton).hitTestable(), findsNothing);
-      await tester.dragFrom(const Offset(200, 400), offset);
-      await tester.pumpAndSettle();
-      // Loading the next chapter returns to its first image.
-      await tester.dragFrom(const Offset(200, 400), offset);
-      await tester.pumpAndSettle();
-      expect(find.text('下一章的吐槽').hitTestable(), findsOneWidget);
-      expect(find.text('显示更多'), findsNothing);
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
+            40,
+            (index) =>
+                ChapterCommentEntity('$index', '吐槽 $index：这一章很好看。', 40 - index),
+          ),
+          nextComments: [ChapterCommentEntity('next', '下一章的吐槽', 1)],
+        );
+        final offset = switch (direction) {
+          ReadDirectionType.left => const Offset(-350, 0),
+          ReadDirectionType.right => const Offset(350, 0),
+          ReadDirectionType.vertical => const Offset(0, -500),
+        };
+        await tester.dragFrom(const Offset(200, 400), offset);
+        await tester.pumpAndSettle();
+        expect(find.text('显示更多').hitTestable(), findsOneWidget);
+        await tester.tap(find.text('显示更多'));
+        await tester.pumpAndSettle();
+        expect(
+          tester.state<ScaffoldState>(find.byType(Scaffold)).isEndDrawerOpen,
+          isTrue,
+        );
+        expect(find.text('吐槽 0：这一章很好看。').hitTestable(), findsOneWidget);
+        tester.state<ScaffoldState>(find.byType(Scaffold)).closeEndDrawer();
+        await tester.pumpAndSettle();
+        expect(find.byType(BackButton).hitTestable(), findsNothing);
+        await tester.tapAt(const Offset(200, 400));
+        await tester.pumpAndSettle();
+        expect(find.byType(BackButton).hitTestable(), findsOneWidget);
+        await tester.tapAt(const Offset(200, 400));
+        await tester.pumpAndSettle();
+        expect(find.byType(BackButton).hitTestable(), findsNothing);
+        await tester.dragFrom(const Offset(200, 400), offset);
+        await tester.pumpAndSettle();
+        // Loading the next chapter returns to its first image.
+        await tester.dragFrom(const Offset(200, 400), offset);
+        await tester.pumpAndSettle();
+        expect(find.text('下一章的吐槽').hitTestable(), findsOneWidget);
+        expect(find.text('显示更多'), findsNothing);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
   }
 
   testWidgets('comments never zoom on double tap or pinch', (tester) async {
@@ -255,10 +335,14 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 350));
     expect(tester.getRect(heading), original);
 
-    final leftFinger =
-        await tester.startGesture(const Offset(180, 400), pointer: 1);
-    final rightFinger =
-        await tester.startGesture(const Offset(220, 400), pointer: 2);
+    final leftFinger = await tester.startGesture(
+      const Offset(180, 400),
+      pointer: 1,
+    );
+    final rightFinger = await tester.startGesture(
+      const Offset(220, 400),
+      pointer: 2,
+    );
     await leftFinger.moveTo(const Offset(100, 400));
     await rightFinger.moveTo(const Offset(300, 400));
     await tester.pump();
@@ -270,16 +354,18 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('comments follow toolbar motion without jumping on reversal',
-      (tester) async {
+  testWidgets('comments follow toolbar motion without jumping on reversal', (
+    tester,
+  ) async {
     await _openReader(tester, ReadDirectionType.left, []);
     await tester.dragFrom(const Offset(200, 400), const Offset(-350, 0));
     await tester.pumpAndSettle();
     final heading = find.text('本章吐槽');
     final initialTop = tester.getTopLeft(heading).dy;
 
-    final initialToolbarBottom =
-        tester.getBottomLeft(find.byType(BackButton)).dy;
+    final initialToolbarBottom = tester
+        .getBottomLeft(find.byType(BackButton))
+        .dy;
     await tester.tap(find.byIcon(Icons.menu));
     await tester.pump();
     expect(tester.getTopLeft(heading).dy, closeTo(initialTop, 0.1));
@@ -288,8 +374,10 @@ void main() {
     expect(middleTop, greaterThan(initialTop));
     expect(middleTop, lessThan(initialTop + 70));
     final toolbarBottom = tester.getBottomLeft(find.byType(BackButton)).dy;
-    expect(middleTop - initialTop,
-        closeTo(toolbarBottom - initialToolbarBottom, 0.1));
+    expect(
+      middleTop - initialTop,
+      closeTo(toolbarBottom - initialToolbarBottom, 0.1),
+    );
     await tester.tapAt(const Offset(200, 300));
     await tester.pump();
     expect(tester.getTopLeft(heading).dy, closeTo(middleTop, 0.1));
@@ -302,10 +390,12 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('one long comment is clipped, and resizing updates overflow',
-      (tester) async {
-    await _openReader(tester, ReadDirectionType.left,
-        [ChapterCommentEntity('long', '这是一条很长的吐槽。' * 300, 1)]);
+  testWidgets('one long comment is clipped, and resizing updates overflow', (
+    tester,
+  ) async {
+    await _openReader(tester, ReadDirectionType.left, [
+      ChapterCommentEntity('long', '这是一条很长的吐槽。' * 300, 1),
+    ]);
     await tester.dragFrom(const Offset(200, 400), const Offset(-350, 0));
     await tester.pumpAndSettle();
     expect(find.text('显示更多').hitTestable(), findsOneWidget);
@@ -318,13 +408,17 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('show more selects comments after the directory was used',
-      (tester) async {
+  testWidgets('show more selects comments after the directory was used', (
+    tester,
+  ) async {
     await _openReader(
-        tester,
-        ReadDirectionType.left,
-        List.generate(
-            40, (index) => ChapterCommentEntity('$index', '吐槽 $index', 1)));
+      tester,
+      ReadDirectionType.left,
+      List.generate(
+        40,
+        (index) => ChapterCommentEntity('$index', '吐槽 $index', 1),
+      ),
+    );
     await tester.dragFrom(const Offset(200, 400), const Offset(-350, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.menu));

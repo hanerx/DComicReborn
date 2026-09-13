@@ -1,5 +1,6 @@
 import 'package:dcomic/providers/page_controllers/comic_search_page_controller.dart';
 import 'package:dcomic/providers/source_provider.dart';
+import 'package:dcomic/utils/layout_utils.dart';
 import 'package:dcomic/view/components/card_list_item.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
@@ -16,86 +17,99 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-        create: (_) => ComicSearchPageController(
-            Provider.of<ComicSourceProvider>(context).orderedSources),
-        builder: (context, child) => DefaultTabController(
-            length:
-                Provider.of<ComicSourceProvider>(context).orderedSources.length,
-            child: Scaffold(
-              appBar: AppBar(
-                title: TextField(
-                  decoration: InputDecoration(
-                    hintText:
-                        MaterialLocalizations.of(context).searchFieldLabel,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                  ),
-                  textInputAction: TextInputAction.search,
-                  onChanged: (text) {
-                    Provider.of<ComicSearchPageController>(context,
-                            listen: false)
-                        .pendingKeyword = text;
-                  },
-                  onSubmitted: (text) async {
-                    Provider.of<ComicSearchPageController>(context,
-                            listen: false)
-                        .pendingKeyword = text;
-                    FocusScope.of(context).unfocus();
-                    await Provider.of<ComicSearchPageController>(context,
-                            listen: false)
-                        .search();
-                  },
-                ),
-                actions: [
-                  IconButton(
-                      onPressed: () async {
-                        FocusScope.of(context).unfocus();
-                        await Provider.of<ComicSearchPageController>(context,
-                                listen: false)
-                            .search();
-                      },
-                      icon: const Icon(Icons.search))
-                ],
-                bottom: TabBar(
-                  isScrollable: true,
-                  tabs: [
-                    for (var item in Provider.of<ComicSourceProvider>(context)
-                        .orderedSources)
-                      Tab(
-                        text: item.type.sourceName,
-                      )
-                  ],
+      create: (_) => ComicSearchPageController(
+        Provider.of<ComicSourceProvider>(context).orderedSources,
+      ),
+      builder: (context, child) => DefaultTabController(
+        length: Provider.of<ComicSourceProvider>(context).orderedSources.length,
+        child: Scaffold(
+          appBar: AppBar(
+            title: TextField(
+              decoration: InputDecoration(
+                hintText: MaterialLocalizations.of(context).searchFieldLabel,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
                 ),
               ),
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              body: TabBarView(children: [
-                for (var item
-                    in Provider.of<ComicSourceProvider>(context).orderedSources)
-                  EasyRefresh(
-                      onRefresh: () async {
-                        await Provider.of<ComicSearchPageController>(context,
-                                listen: false)
-                            .refresh(item);
-                      },
-                      onLoad: () async {
-                        await Provider.of<ComicSearchPageController>(context,
-                                listen: false)
-                            .load(item);
-                      },
-                      refreshOnStart: true,
+              textInputAction: TextInputAction.search,
+              onChanged: (text) {
+                Provider.of<ComicSearchPageController>(
+                  context,
+                  listen: false,
+                ).pendingKeyword = text;
+              },
+              onSubmitted: (text) async {
+                Provider.of<ComicSearchPageController>(
+                  context,
+                  listen: false,
+                ).pendingKeyword = text;
+                FocusScope.of(context).unfocus();
+                await Provider.of<ComicSearchPageController>(
+                  context,
+                  listen: false,
+                ).search();
+              },
+            ),
+            actions: [
+              IconButton(
+                onPressed: () async {
+                  FocusScope.of(context).unfocus();
+                  await Provider.of<ComicSearchPageController>(
+                    context,
+                    listen: false,
+                  ).search();
+                },
+                icon: const Icon(Icons.search),
+              ),
+            ],
+            bottom: TabBar(
+              isScrollable: true,
+              tabs: [
+                for (var item in Provider.of<ComicSourceProvider>(
+                  context,
+                ).orderedSources)
+                  Tab(text: item.type.sourceName),
+              ],
+            ),
+          ),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          body: TabBarView(
+            children: [
+              for (var item in Provider.of<ComicSourceProvider>(
+                context,
+              ).orderedSources)
+                EasyRefresh(
+                  onRefresh: () async {
+                    await Provider.of<ComicSearchPageController>(
+                      context,
+                      listen: false,
+                    ).refresh(item);
+                  },
+                  onLoad: () async {
+                    await Provider.of<ComicSearchPageController>(
+                      context,
+                      listen: false,
+                    ).load(item);
+                  },
+                  refreshOnStart: true,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: AppLayout.contentMaxWidth,
+                      ),
                       child: ListView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.only(top: 4, bottom: 12),
                         itemCount:
                             Provider.of<ComicSearchPageController>(context)
+                                .data[item]!
+                                .data
+                                .length +
+                            (Provider.of<ComicSearchPageController>(context)
                                     .data[item]!
-                                    .data
-                                    .length +
-                                (Provider.of<ComicSearchPageController>(context)
-                                        .data[item]!
-                                        .hasError
-                                    ? 1
-                                    : 0),
+                                    .hasError
+                                ? 1
+                                : 0),
                         itemBuilder: (context, index) {
                           final controller =
                               Provider.of<ComicSearchPageController>(context);
@@ -103,13 +117,15 @@ class _SearchPageState extends State<SearchPage> {
                           if (index == state.data.length) {
                             final isZh =
                                 Localizations.localeOf(context).languageCode ==
-                                    'zh';
+                                'zh';
                             return ListTile(
-                              leading: Icon(Icons.cloud_off_rounded,
-                                  color: Theme.of(context).colorScheme.error),
-                              title: Text(isZh
-                                  ? '搜索失败，请重试'
-                                  : 'Search failed. Try again.'),
+                              leading: Icon(
+                                Icons.cloud_off_rounded,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                              title: Text(
+                                isZh ? '搜索失败，请重试' : 'Search failed. Try again.',
+                              ),
                               trailing: IconButton(
                                 tooltip: isZh ? '重试' : 'Retry',
                                 icon: const Icon(Icons.refresh_rounded),
@@ -127,8 +143,14 @@ class _SearchPageState extends State<SearchPage> {
                             onTap: entity.onTap,
                           );
                         },
-                      ))
-              ]),
-            )));
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
