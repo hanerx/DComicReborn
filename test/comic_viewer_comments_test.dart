@@ -1,15 +1,34 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/utils/theme_utils.dart';
+import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:dcomic/view/components/viewer_setting_list.dart';
 import 'package:dcomic/view/comic_viewer/comic_viewer_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+class _CachePaths extends PathProviderPlatform {
+  _CachePaths(this.path);
+  final String path;
+  @override
+  Future<String> getTemporaryPath() async => path;
+  @override
+  Future<String> getApplicationSupportPath() async => path;
+  @override
+  Future<String> getApplicationDocumentsPath() async => path;
+}
 
 class _Config extends ConfigProvider {
   _Config(this.direction);
@@ -39,7 +58,8 @@ class _Chapter extends Fake implements BaseComicChapterEntityModel {
 }
 
 class _ChapterDetail extends Fake implements BaseComicChapterDetailModel {
-  _ChapterDetail(this.comments, {this.pageCount = 1});
+  _ChapterDetail(this.comments, {this.pageCount = 1, this.pageImage});
+  final ImageEntity? pageImage;
   final int pageCount;
   final List<ChapterCommentEntity> comments;
   @override
@@ -47,7 +67,9 @@ class _ChapterDetail extends Fake implements BaseComicChapterDetailModel {
   @override
   List<ImageEntity> get pages => List.generate(
     pageCount,
-    (_) => ImageEntity(ImageType.asset, 'assets/sources/copymanga.png'),
+    (_) =>
+        pageImage ??
+        ImageEntity(ImageType.asset, 'assets/sources/copymanga.png'),
   );
   @override
   Future<List<ChapterCommentEntity>> getChapterComments() async => comments;
@@ -56,7 +78,9 @@ class _ChapterDetail extends Fake implements BaseComicChapterDetailModel {
 }
 
 class _Detail extends Fake implements BaseComicDetailModel {
-  _Detail(this.chapter, this.nextComments);
+  _Detail(this.chapter, this.nextComments, {this.isLongComic = false});
+  @override
+  final bool isLongComic;
   final _ChapterDetail chapter;
   final List<ChapterCommentEntity>? nextComments;
   @override
@@ -77,6 +101,9 @@ Future<void> _openReader(
   List<ChapterCommentEntity>? nextComments,
   ThemeData? theme,
   int pageCount = 1,
+  bool isLongComic = false,
+  ImageEntity? pageImage,
+  bool waitForImages = true,
   Size size = const Size(400, 800),
 }) async {
   tester.view.physicalSize = size;
@@ -96,21 +123,264 @@ Future<void> _openReader(
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        home: ComicViewerPage(
-          detailModel: _Detail(
-            _ChapterDetail(comments, pageCount: pageCount),
-            nextComments,
+        home: RepaintBoundary(
+          key: const ValueKey('reader-capture'),
+          child: ComicViewerPage(
+            detailModel: _Detail(
+              _ChapterDetail(
+                comments,
+                pageCount: pageCount,
+                pageImage: pageImage,
+              ),
+              nextComments,
+              isLongComic: isLongComic,
+            ),
+            chapterId: 'chapter',
+            chapters: [_Chapter(), if (nextComments != null) _Chapter('next')],
           ),
-          chapterId: 'chapter',
-          chapters: [_Chapter(), if (nextComments != null) _Chapter('next')],
         ),
       ),
+    ),
+  );
+  if (!waitForImages) {
+    for (
+      var frame = 0;
+      frame < 20 && find.byType(DComicImage).evaluate().isEmpty;
+      frame++
+    ) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.pump(const Duration(milliseconds: 100));
+    return;
+  }
+  await tester.runAsync(
+    () => precacheImage(
+      pageImage == null
+          ? const AssetImage('assets/sources/copymanga.png')
+          : FileImage(File(pageImage.imageUrl)) as ImageProvider,
+      tester.element(find.byType(ComicViewerPage)),
     ),
   );
   await tester.pumpAndSettle();
 }
 
 void main() {
+  testWidgets('cold vertical pages reserve space only until images arrive', (
+    tester,
+  ) async {
+    final directory = Directory.systemTemp.createTempSync('reader_loading_');
+    final oldPaths = PathProviderPlatform.instance;
+    final oldHttp = HttpOverrides.current;
+    final oldDatabaseFactory = databaseFactoryOrNull;
+    PathProviderPlatform.instance = _CachePaths(directory.path);
+    HttpOverrides.global = null;
+    sqfliteFfiInit();
+    databaseFactoryOrNull = databaseFactoryFfi;
+    final releaseImage = Completer<void>();
+    late HttpServer server;
+    late String url;
+    await tester.runAsync(() async {
+      final recorder = ui.PictureRecorder();
+      Canvas(recorder).drawColor(const Color(0xFFFF0000), BlendMode.src);
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(100, 100);
+      final png = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      final bytes = png.buffer.asUint8List();
+      image.dispose();
+      picture.dispose();
+      server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      url = 'http://127.0.0.1:${server.port}/page.png';
+      server.listen((request) async {
+        await releaseImage.future;
+        request.response.persistentConnection = false;
+        request.response.headers.contentType = ContentType('image', 'png');
+        request.response.add(bytes);
+        await request.response.close();
+      });
+    });
+    var cacheDisposed = false;
+    addTearDown(() async {
+      if (!releaseImage.isCompleted) releaseImage.complete();
+      await server.close(force: true);
+      if (!cacheDisposed) await DefaultCacheManager().dispose();
+      HttpOverrides.global = oldHttp;
+      PathProviderPlatform.instance = oldPaths;
+      databaseFactoryOrNull = oldDatabaseFactory;
+      directory.deleteSync(recursive: true);
+    });
+    await tester.runAsync(() => DefaultCacheManager().getFileFromCache(url));
+    await _openReader(
+      tester,
+      ReadDirectionType.vertical,
+      [],
+      pageCount: 40,
+      pageImage: ImageEntity(ImageType.network, url),
+      waitForImages: false,
+    );
+    final viewport = tester.getRect(find.byType(ComicViewerPage));
+    final visibleSpinners = find
+        .byType(CircularProgressIndicator)
+        .evaluate()
+        .where((element) {
+          final box = element.renderObject as RenderBox;
+          return (box.localToGlobal(Offset.zero) & box.size).overlaps(viewport);
+        })
+        .length;
+    expect(
+      visibleSpinners,
+      inInclusiveRange(1, 2),
+      reason: 'Pending pages must not collapse into a stack of spinners.',
+    );
+    expect(
+      find.text('本章吐槽'),
+      findsNothing,
+      reason: 'Unread pending pages must still occupy the reading list.',
+    );
+    releaseImage.complete();
+    final decodedPages = find.descendant(
+      of: find.byType(DComicImage),
+      matching: find.byWidgetPredicate(
+        (widget) => widget is RawImage && widget.image != null,
+      ),
+    );
+    for (
+      var attempt = 0;
+      attempt < 200 && decodedPages.evaluate().isEmpty;
+      attempt++
+    ) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 25)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(decodedPages, findsWidgets);
+    await tester.pumpAndSettle();
+    final firstPage = find.byType(DComicImage).first;
+    expect(
+      tester.getSize(firstPage).height,
+      400,
+      reason: 'A loaded square page must shed its taller loading placeholder.',
+    );
+    final boundary = tester.renderObject<RenderRepaintBoundary>(
+      find.byKey(const ValueKey('reader-capture')),
+    );
+    final screenshot = (await tester.runAsync(() => boundary.toImage()))!;
+    final pixels = (await tester.runAsync(
+      () => screenshot.toByteData(format: ui.ImageByteFormat.rawRgba),
+    ))!;
+    for (final y in [399, 400]) {
+      expect(pixels.buffer.asUint8List((y * screenshot.width + 200) * 4, 4), [
+        255,
+        0,
+        0,
+        255,
+      ]);
+    }
+    screenshot.dispose();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.runAsync(() => DefaultCacheManager().dispose());
+    cacheDisposed = true;
+  });
+
+  testWidgets('upscaled vertical pages paint continuously across their seam', (
+    tester,
+  ) async {
+    final directory = Directory.systemTemp.createTempSync('reader_seam_');
+    addTearDown(() => directory.deleteSync(recursive: true));
+    final file = File('${directory.path}/page.png');
+    await tester.runAsync(() async {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      canvas.drawColor(const Color(0xFFFF0000), BlendMode.src);
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(100, 100);
+      final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      await file.writeAsBytes(bytes.buffer.asUint8List());
+      image.dispose();
+      picture.dispose();
+    });
+    await _openReader(
+      tester,
+      ReadDirectionType.vertical,
+      [],
+      pageCount: 2,
+      pageImage: ImageEntity(ImageType.local, file.path),
+    );
+    await tester.pumpAndSettle();
+    final boundary = tester.renderObject<RenderRepaintBoundary>(
+      find.byKey(const ValueKey('reader-capture')),
+    );
+    final screenshot = await tester.runAsync(() => boundary.toImage());
+    final pixels = (await tester.runAsync(
+      () => screenshot!.toByteData(format: ui.ImageByteFormat.rawRgba),
+    ))!;
+    // Two 100px-wide pages become 400px squares. Neither edge may reveal
+    // the black reader background where the pages meet at y=400.
+    for (final y in [399, 400]) {
+      final offset = (y * screenshot!.width + 200) * 4;
+      expect(pixels.buffer.asUint8List(offset, 4), [
+        255,
+        0,
+        0,
+        255,
+      ], reason: 'The painted page must reach the seam at y=$y.');
+    }
+    screenshot!.dispose();
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets(
+    'strip metadata enables vertical scrolling without changing preferences',
+    (tester) async {
+      await _openReader(
+        tester,
+        ReadDirectionType.right,
+        [],
+        isLongComic: true,
+        pageCount: 10,
+      );
+      await tester.dragFrom(const Offset(200, 650), const Offset(0, -900));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(200, 400));
+      await tester.pumpAndSettle();
+      final label = find.textContaining(RegExp(r'^\d+/10$'));
+      expect(tester.widget<Text>(label).data, isNot('1/10'));
+      expect(
+        tester
+            .element(find.byType(ComicViewerPage))
+            .read<ConfigProvider>()
+            .readDirection,
+        ReadDirectionType.right,
+      );
+      await tester.tap(find.byIcon(Icons.settings));
+      await tester.pumpAndSettle();
+      final directions = find.byType(SegmentedButton<ReadDirectionType>);
+      expect(
+        tester.widget<SegmentedButton<ReadDirectionType>>(directions).selected,
+        {ReadDirectionType.vertical},
+      );
+      await tester.tap(
+        find.descendant(
+          of: directions,
+          matching: find.byIcon(Icons.align_horizontal_left),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<SegmentedButton<ReadDirectionType>>(directions).selected,
+        {ReadDirectionType.left},
+      );
+      expect(
+        tester
+            .element(find.byType(ComicViewerPage))
+            .read<ConfigProvider>()
+            .readDirection,
+        ReadDirectionType.right,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   testWidgets(
     'continuous reader keeps its current page when the viewport rotates',
     (tester) async {
@@ -121,20 +391,11 @@ void main() {
         pageCount: 10,
         size: const Size(1147, 480),
       );
-      await tester.runAsync(
-        () => precacheImage(
-          const AssetImage('assets/sources/copymanga.png'),
-          tester.element(find.byType(ComicViewerPage)),
-        ),
-      );
-      await tester.pumpAndSettle();
-      final gesture = await tester.startGesture(const Offset(570, 400));
-      await gesture.moveBy(
+      await tester.timedDragFrom(
+        const Offset(570, 400),
         const Offset(0, -1450),
-        timeStamp: const Duration(seconds: 1),
+        const Duration(seconds: 1),
       );
-      await tester.pump(const Duration(milliseconds: 300));
-      await gesture.up(timeStamp: const Duration(milliseconds: 1400));
       await tester.pumpAndSettle();
       await tester.tapAt(const Offset(570, 240));
       await tester.pumpAndSettle();

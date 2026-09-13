@@ -1,4 +1,5 @@
 import 'package:dcomic/generated/l10n.dart';
+import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/version_provider.dart';
 import 'package:dcomic/utils/layout_utils.dart';
 import 'package:dcomic/view/components/dcomic_mark.dart';
@@ -17,6 +18,44 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutPageState extends State<AboutPage> {
+  int _versionTapCount = 0;
+  bool _unlocking = false;
+
+  Future<void> _onVersionTap() async {
+    final config = context.read<ConfigProvider>();
+    if (_unlocking || config.advancedSettingsUnlocked) return;
+    _versionTapCount++;
+    if (_versionTapCount < 7) return;
+    _unlocking = true;
+    try {
+      await config.setAdvancedSettingsUnlocked(true);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            Localizations.localeOf(context).languageCode == 'zh'
+                ? '调试设置与实验性功能已解锁，可在设置中查看。'
+                : 'Debug and experimental settings unlocked. Find them in Settings.',
+          ),
+        ),
+      );
+    } catch (_) {
+      _versionTapCount = 6;
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            Localizations.localeOf(context).languageCode == 'zh'
+                ? '解锁失败，请点击版本号重试。'
+                : 'Could not unlock. Tap the version to try again.',
+          ),
+        ),
+      );
+    } finally {
+      _unlocking = false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -43,10 +82,15 @@ class _AboutPageState extends State<AboutPage> {
                           ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      Provider.of<VersionProvider>(context).currentVersion,
-                      style: Theme.of(context).textTheme.bodyMedium
-                          ?.copyWith(color: colorScheme.onSurfaceVariant),
+                    TextButton(
+                      onPressed: _onVersionTap,
+                      style: TextButton.styleFrom(
+                        foregroundColor: colorScheme.onSurfaceVariant,
+                        textStyle: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      child: Text(
+                        Provider.of<VersionProvider>(context).currentVersion,
+                      ),
                     ),
                   ],
                 ),

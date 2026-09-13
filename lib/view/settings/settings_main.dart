@@ -1,9 +1,11 @@
 import 'package:dcomic/generated/l10n.dart';
+import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/utils/layout_utils.dart';
 import 'package:dcomic/view/settings/about_page.dart';
 import 'package:dcomic/view/settings/account_manage_page.dart';
 import 'package:dcomic/view/settings/debug_page.dart';
+import 'package:dcomic/view/settings/experimental_features_page.dart';
 import 'package:dcomic/view/settings/source_manage_page.dart';
 import 'package:dcomic/view/settings/viewer_setting_page.dart';
 import 'package:flutter/material.dart';
@@ -60,14 +62,30 @@ class _MainSettingPageState extends State<MainSettingPage> {
                 builder: (context) => const AccountManagePage(),
               ),
               _sectionHeader(context, '高级与关于', 'Advanced & About'),
-              _settingTile(
-                context,
-                icon: Icons.code,
-                title: S.of(context).DebugSettings,
-                subtitle: S.of(context).DebugSettingsDescription,
-                routeName: 'DebugPage',
-                builder: (context) => const DebugPage(),
-              ),
+              if (context.select<ConfigProvider, bool>(
+                (config) => config.advancedSettingsUnlocked,
+              )) ...[
+                _settingTile(
+                  context,
+                  icon: Icons.science_outlined,
+                  title: _locale(context, '实验性功能', 'Experimental Features'),
+                  subtitle: _locale(
+                    context,
+                    '试用可能不稳定的功能，默认关闭',
+                    'Try potentially unstable features, off by default',
+                  ),
+                  routeName: 'ExperimentalFeaturesPage',
+                  builder: (context) => const ExperimentalFeaturesPage(),
+                ),
+                _settingTile(
+                  context,
+                  icon: Icons.code,
+                  title: S.of(context).DebugSettings,
+                  subtitle: S.of(context).DebugSettingsDescription,
+                  routeName: 'DebugPage',
+                  builder: (context) => const DebugPage(),
+                ),
+              ],
               _settingTile(
                 context,
                 icon: Icons.info_outline,

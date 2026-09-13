@@ -290,6 +290,13 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
   CopyMangaComicDetailModel(this.rawData, this.parent, this.groupsRawData);
 
   @override
+  bool get isLongComic =>
+      (rawData['theme'] as List?)?.any(
+        (theme) => theme['path_word'] == 'changtiao',
+      ) ??
+      false;
+
+  @override
   Future<void> doInit() async {
     await super.doInit();
     _isSubscribe = await parent.accountModel!.getIfSubscribed(comicId);
@@ -760,7 +767,7 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
                     await Provider.of<ComicFavoritePageController>(
                       context,
                       listen: false,
-                    ).refreshBadges(rawData['path_word'].toString());
+                    ).refreshBadges();
                   }
                 });
               },

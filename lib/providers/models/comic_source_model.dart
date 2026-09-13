@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:badges/badges.dart';
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/generated/l10n.dart';
+import 'package:dcomic/providers/comic_reading_progress.dart';
 import 'package:dcomic/providers/models/base_model.dart';
+import 'package:dcomic/providers/subscribe_badge_state.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
 import 'package:flutter/material.dart';
@@ -161,6 +163,7 @@ abstract class BaseComicSourceModel extends BaseModel {
           type.sourceId,
           matchedComicId,
         );
+    SubscribeBadgeState.changes.notifyListeners();
     return entity.resultComicId.isEmpty ? null : entity.resultComicId;
   }
 
@@ -180,6 +183,7 @@ abstract class BaseComicSourceModel extends BaseModel {
     await databaseInstance.comicMappingDao.updateComicMapping(
       comicMappingEntity,
     );
+    SubscribeBadgeState.changes.notifyListeners();
   }
 
   Widget getSourceSettingWidget(BuildContext context) {
@@ -222,6 +226,9 @@ abstract class BaseComicDetailModel extends BaseModel {
 
   List<CategoryEntity> get categories;
 
+  /// True only when the source explicitly marks this comic as a strip.
+  bool get isLongComic => false;
+
   BaseComicSourceModel get parent;
 
   Future<BaseComicChapterDetailModel?> getChapter(String chapterId);
@@ -254,6 +261,14 @@ abstract class BaseComicDetailModel extends BaseModel {
       var comicHistoryEntity = (await databaseInstance.comicHistoryDao
           .getComicHistoryByComicId(comicId, parent.type.sourceId));
       _latestChapterId = comicHistoryEntity?.lastChapterId;
+      _latestChapterId = await ComicReadingProgress.resolve(
+        sourceId: parent.type.sourceId,
+        comicId: comicId,
+        local: comicHistoryEntity,
+        chapters: () => chapters.values
+            .expand((group) => group)
+            .map((chapter) => (chapter.chapterId, chapter.title)),
+      );
     } catch (e, s) {
       logger.e('$e', error: e, stackTrace: s);
     }
@@ -401,15 +416,12 @@ abstract class BaseComicAccountModel extends BaseModel {
 
   /// Reconcile only the local read state; never fetch or reorder subscriptions.
   Future<bool> refreshSubscribeBadges(Iterable<GridItemEntity> items) async {
-    final database = await DatabaseInstance.instance;
+    final times = await SubscribeBadgeState.viewingTimes(parent!.type.sourceId);
     var changed = false;
     for (final item in items) {
       if (item is! GridItemEntityWithStatus) continue;
-      final state = await database.comicSubscribeStateDao
-          .getComicSubscribeStateByComicId(item.comicId, parent!.type.sourceId);
-      final isNew =
-          state?.timestamp == null ||
-          state!.timestamp!.isBefore(item.lastUpdateTimestamp);
+      final viewed = times[item.comicId];
+      final isNew = viewed == null || viewed.isBefore(item.lastUpdateTimestamp);
       final hadBadge =
           item.badges?.containsKey(_newComicBadgePosition) ?? false;
       if (isNew == hadBadge) continue;
@@ -432,6 +444,7 @@ abstract class BaseComicAccountModel extends BaseModel {
     await databaseInstance.comicSubscribeStateDao.updateComicSubscribeState(
       comicSubscribeState,
     );
+    SubscribeBadgeState.changes.notifyListeners();
   }
 }
 

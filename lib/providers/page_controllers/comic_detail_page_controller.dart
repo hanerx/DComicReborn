@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:date_format/date_format.dart';
 import 'package:dcomic/providers/base_provider.dart';
+import 'package:dcomic/providers/comic_reading_progress.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/source_provider.dart';
 import 'package:dcomic/utils/image_utils.dart';
@@ -53,24 +56,58 @@ class ComicDetailPageController extends BaseProvider {
 
   ComicDetailPageController(this.comicSourceModel) {
     sourceModel = comicSourceModel;
+    ComicReadingProgress.changes.addListener(_onReadingProgressChanged);
+  }
+
+  Future<void> _historyRefresh = Future.value();
+  int _progressSettingsRevision = 0;
+
+  void _onReadingProgressChanged() {
+    _progressSettingsRevision++;
+    _historyRefresh = _historyRefresh
+        .then((_) async {
+          final model = detailModel;
+          if (_disposed || model == null) return;
+          final previous = model.latestChapterId;
+          await model.loadComicHistory();
+          if (!_disposed &&
+              detailModel == model &&
+              previous != model.latestChapterId) {
+            notifyListeners();
+          }
+        })
+        .catchError((Object error, StackTrace stack) {
+          logger.e(
+            'Failed to refresh reading progress',
+            error: error,
+            stackTrace: stack,
+          );
+        });
+    unawaited(_historyRefresh);
   }
 
   @override
   void dispose() {
     _disposed = true;
     _requestGeneration++;
+    ComicReadingProgress.changes.removeListener(_onReadingProgressChanged);
     super.dispose();
   }
 
   Future<void> refresh(
-      BuildContext context, String comicId, String title) async {
+    BuildContext context,
+    String comicId,
+    String title,
+  ) async {
     if (_disposed) {
       return;
     }
     // 处理sourceModel问题
     if (comicSourceModel == null) {
-      comicSourceModel =
-          Provider.of<ComicSourceProvider>(context, listen: false).activeModel;
+      comicSourceModel = Provider.of<ComicSourceProvider>(
+        context,
+        listen: false,
+      ).activeModel;
     } else {
       Provider.of<ComicSourceProvider>(context, listen: false).activeModel =
           comicSourceModel!;
@@ -179,7 +216,10 @@ class ComicDetailPageController extends BaseProvider {
     _setLoading();
     try {
       await source.bindComicIdFromSourceModel(
-          _originComicId ?? comicId, targetComicId, origin);
+        _originComicId ?? comicId,
+        targetComicId,
+        origin,
+      );
     } catch (e, s) {
       logger.e('$e', error: e, stackTrace: s);
       if (!_isStale(generation)) {
@@ -206,7 +246,10 @@ class ComicDetailPageController extends BaseProvider {
     _setLoading();
     try {
       await source.bindComicIdFromSourceModel(
-          _originComicId ?? comicId, '', origin);
+        _originComicId ?? comicId,
+        '',
+        origin,
+      );
     } catch (e, s) {
       logger.e('$e', error: e, stackTrace: s);
       if (!_isStale(generation)) {
@@ -235,7 +278,10 @@ class ComicDetailPageController extends BaseProvider {
     _setLoading();
     try {
       var resolvedComicId = await source.resolveComicId(
-          _originComicId ?? '', _originTitle ?? '', origin);
+        _originComicId ?? '',
+        _originTitle ?? '',
+        origin,
+      );
       if (_isStale(generation)) {
         return;
       }
@@ -244,8 +290,11 @@ class ComicDetailPageController extends BaseProvider {
         _publishError(StateError('绑定为空'));
         return;
       }
-      var model =
-          await source.getComicDetail(resolvedComicId, _originTitle ?? '');
+      var progressRevision = _progressSettingsRevision;
+      var model = await source.getComicDetail(
+        resolvedComicId,
+        _originTitle ?? '',
+      );
       if (_isStale(generation)) {
         return;
       }
@@ -267,6 +316,11 @@ class ComicDetailPageController extends BaseProvider {
       }
       if (_isStale(generation)) {
         return;
+      }
+      while (progressRevision != _progressSettingsRevision) {
+        progressRevision = _progressSettingsRevision;
+        await model.loadComicHistory();
+        if (_isStale(generation)) return;
       }
       detailModel = model;
       _detail = payload;

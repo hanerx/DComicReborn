@@ -113,8 +113,17 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     });
   }
 
+  ReadDirectionType _readDirection(BuildContext context, {bool listen = true}) {
+    final config = Provider.of<ConfigProvider>(context, listen: listen);
+    final controller = Provider.of<ComicViewerPageController>(
+      context,
+      listen: listen,
+    );
+    return controller.effectiveReadDirection(config.readDirection);
+  }
+
   Future<void> _turnPage(BuildContext context, {required bool forward}) async {
-    final direction = context.read<ConfigProvider>().readDirection;
+    final direction = _readDirection(context, listen: false);
     final controller = context.read<ComicViewerPageController>();
     if (direction == ReadDirectionType.vertical) {
       final target = controller.currentPage + (forward ? 1 : -1);
@@ -156,27 +165,22 @@ class _ComicViewerPageState extends State<ComicViewerPage>
 
   void _handleCommentsTap(BuildContext context, TapUpDetails details) {
     final config = context.read<ConfigProvider>();
+    final direction = _readDirection(context, listen: false);
     // Use viewport coordinates even when a vertical comments page is only
     // partially visible. Buttons inside the page win their own tap gestures.
     final viewport =
         _readerViewportKey.currentContext!.findRenderObject() as RenderBox;
     final position = viewport.globalToLocal(details.globalPosition);
-    final vertical = config.readDirection == ReadDirectionType.vertical;
+    final vertical = direction == ReadDirectionType.vertical;
     final extent = vertical ? viewport.size.height : viewport.size.width;
     final offset = vertical ? position.dy : position.dx;
     final edgeSize = vertical
         ? config.verticalClickAreaSize
         : config.horizontalClickAreaSize;
     if (offset >= extent - edgeSize) {
-      _turnPage(
-        context,
-        forward: config.readDirection != ReadDirectionType.right,
-      );
+      _turnPage(context, forward: direction != ReadDirectionType.right);
     } else if (offset < edgeSize) {
-      _turnPage(
-        context,
-        forward: config.readDirection == ReadDirectionType.right,
-      );
+      _turnPage(context, forward: direction == ReadDirectionType.right);
     } else {
       final controller = context.read<ComicViewerPageController>();
       controller.showToolBar = !controller.showToolBar;
@@ -272,8 +276,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                   key: _readerViewportKey,
                   children: [
                     _buildViewer(context),
-                    if (!(context.watch<ConfigProvider>().readDirection ==
-                            ReadDirectionType.vertical
+                    if (!(_readDirection(context) == ReadDirectionType.vertical
                         ? _verticalCommentsVisible
                         : _pageCount > 0 &&
                               context
@@ -297,8 +300,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
   }
 
   Widget _buildViewer(BuildContext context) {
-    if (Provider.of<ConfigProvider>(context).readDirection ==
-        ReadDirectionType.vertical) {
+    if (_readDirection(context) == ReadDirectionType.vertical) {
       return _buildVerticalViewer(context);
     }
     return _buildHorizontalViewer(context);
@@ -313,9 +315,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
         ).currentPage = index;
       },
       pageController: _pageController,
-      reverse:
-          Provider.of<ConfigProvider>(context).readDirection ==
-          ReadDirectionType.right,
+      reverse: _readDirection(context) == ReadDirectionType.right,
       itemCount: _pageCount,
       builder: (context, index) {
         if (index == _pageCount - 1) {
@@ -381,6 +381,8 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                     width: min(constraints.maxWidth, AppLayout.readerMaxWidth),
                     child: DComicImage(
                       _viewerController.chapterDetailModel!.pages[index],
+                      fit: BoxFit.fitWidth,
+                      placeholderHeight: constraints.maxHeight,
                     ),
                   ),
                 ),
@@ -402,10 +404,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
         min: 0,
         max: max(_pageCount - 1, 0).toDouble(),
         onChanged: (double value) {
-          if (Provider.of<ConfigProvider>(
-                context,
-                listen: false,
-              ).readDirection ==
+          if (_readDirection(context, listen: false) ==
               ReadDirectionType.vertical) {
             _itemScrollController.jumpTo(index: value.toInt());
           } else {
@@ -422,8 +421,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
   }
 
   Widget _buildPrePageButton(BuildContext context) {
-    if (Provider.of<ConfigProvider>(context).readDirection ==
-        ReadDirectionType.vertical) {
+    if (_readDirection(context) == ReadDirectionType.vertical) {
       return Positioned(
         left: 0,
         right: 0,
@@ -455,8 +453,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
         onTap: () => _turnPage(
           context,
           forward:
-              context.read<ConfigProvider>().readDirection ==
-              ReadDirectionType.right,
+              _readDirection(context, listen: false) == ReadDirectionType.right,
         ),
         child: SizedBox(
           width: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
@@ -475,8 +472,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
   }
 
   Widget _buildNextPageButton(BuildContext context) {
-    if (Provider.of<ConfigProvider>(context).readDirection ==
-        ReadDirectionType.vertical) {
+    if (_readDirection(context) == ReadDirectionType.vertical) {
       return Positioned(
         right: 0,
         left: 0,
@@ -508,8 +504,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
         onTap: () => _turnPage(
           context,
           forward:
-              context.read<ConfigProvider>().readDirection !=
-              ReadDirectionType.right,
+              _readDirection(context, listen: false) != ReadDirectionType.right,
         ),
         child: SizedBox(
           width: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
@@ -652,7 +647,10 @@ class _ComicViewerPageState extends State<ComicViewerPage>
             ),
           );
         },
-        child: const ViewerSettingList(),
+        child: ChangeNotifierProvider<ComicViewerPageController>.value(
+          value: _viewerController,
+          child: const ViewerSettingList(),
+        ),
       ),
     );
   }

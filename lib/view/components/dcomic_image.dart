@@ -15,14 +15,20 @@ class DComicImage extends StatelessWidget {
   final double errorLogoSize;
   final double? width;
 
-  const DComicImage(this.imageEntity,
-      {super.key,
-      this.errorMessageOverflow,
-      this.fit,
-      this.customErrorMessageColor,
-      this.showErrorMessage = true,
-      this.errorLogoSize = 60,
-      this.width});
+  /// Reserves vertical reading space only while a network page is unavailable.
+  final double? placeholderHeight;
+
+  const DComicImage(
+    this.imageEntity, {
+    super.key,
+    this.errorMessageOverflow,
+    this.fit,
+    this.customErrorMessageColor,
+    this.showErrorMessage = true,
+    this.errorLogoSize = 60,
+    this.width,
+    this.placeholderHeight,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +49,13 @@ class DComicImage extends StatelessWidget {
           errorWidget: (context, url, error) => _buildLoadErrorWidget(context),
           cacheManager: DefaultCacheManager(),
           width: width,
+          // A fading placeholder would keep short pages artificially tall.
+          fadeOutDuration: placeholderHeight == null
+              ? const Duration(milliseconds: 1000)
+              : Duration.zero,
+          fadeInDuration: placeholderHeight == null
+              ? const Duration(milliseconds: 500)
+              : Duration.zero,
         );
       case ImageType.local:
         return Image.file(
@@ -64,24 +77,31 @@ class DComicImage extends StatelessWidget {
   }
 
   Widget _buildPlaceholder(BuildContext context) {
-    return ColoredBox(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: const Center(
-        child: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2.5),
+    return SizedBox(
+      height: placeholderHeight,
+      child: ColoredBox(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        child: const Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2.5),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildLoadErrorWidget(BuildContext context) {
-    return _buildErrorWidget(
+    return SizedBox(
+      height: placeholderHeight,
+      child: _buildErrorWidget(
         context,
         Localizations.localeOf(context).languageCode == 'zh'
             ? '图片加载失败'
-            : 'Image load failed');
+            : 'Image load failed',
+      ),
+    );
   }
 
   Widget _buildErrorWidget(BuildContext context, String errorMessage) {
@@ -93,8 +113,11 @@ class DComicImage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.broken_image_outlined,
-                size: errorLogoSize, color: color),
+            Icon(
+              Icons.broken_image_outlined,
+              size: errorLogoSize,
+              color: color,
+            ),
             ..._showErrorMessage(context, errorMessage, color),
           ],
         ),
@@ -103,7 +126,10 @@ class DComicImage extends StatelessWidget {
   }
 
   List<Widget> _showErrorMessage(
-      BuildContext context, String errorMessage, Color color) {
+    BuildContext context,
+    String errorMessage,
+    Color color,
+  ) {
     if (!showErrorMessage) {
       return const [];
     }
@@ -113,9 +139,10 @@ class DComicImage extends StatelessWidget {
         errorMessage,
         textAlign: TextAlign.center,
         style: TextStyle(
-            color: color,
-            fontSize: 12,
-            overflow: errorMessageOverflow ?? TextOverflow.clip),
+          color: color,
+          fontSize: 12,
+          overflow: errorMessageOverflow ?? TextOverflow.clip,
+        ),
       ),
     ];
   }

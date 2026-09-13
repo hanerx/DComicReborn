@@ -572,7 +572,7 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
                     await Provider.of<ComicFavoritePageController>(
                       context,
                       listen: false,
-                    ).refreshBadges(comicId);
+                    ).refreshBadges();
                   }
                 });
               },
@@ -1147,6 +1147,9 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
   bool _isSubscribe = false;
 
   ZaiManHuaComicDetailModel(this.rawData, this.sourceModel);
+
+  @override
+  bool get isLongComic => rawData['data']['islong'] == 1;
 
   @override
   Future<bool> addComicHistory(

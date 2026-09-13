@@ -599,7 +599,7 @@ void main() {
     final second = controller.data.last;
     expect(second.badges, isNotEmpty);
     await source.accountModel!.addSubscribeState('badge2');
-    await controller.refreshBadges('badge2');
+    await controller.refreshBadges();
     expect(controller.data, [first, second]);
     expect(first.badges, isNotEmpty);
     expect(second.badges, isEmpty);

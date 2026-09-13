@@ -1,6 +1,8 @@
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/entity/config.dart';
+import 'package:dcomic/providers/comic_reading_progress.dart';
 import 'package:dcomic/providers/base_provider.dart';
+import 'package:dcomic/providers/subscribe_badge_state.dart';
 import 'package:dcomic/utils/theme_utils.dart';
 import 'package:flutter/material.dart';
 
@@ -15,25 +17,54 @@ class ConfigProvider extends BaseProvider {
   ConfigEntity? _themeColor;
   ConfigEntity? _useMaterial3Design;
   ConfigEntity? _readerTheme;
+  ConfigEntity? _aggregateSubscribeBadges;
+  ConfigEntity? _aggregateReadingProgress;
+  ConfigEntity? _advancedSettingsUnlocked;
 
   @override
   Future<void> init() async {
     final database = await DatabaseInstance.instance;
-    _themeMode = (await database.configDao
-        .getOrCreateConfigByKey('ThemeMode', value: ThemeMode.system));
+    _themeMode = (await database.configDao.getOrCreateConfigByKey(
+      'ThemeMode',
+      value: ThemeMode.system,
+    ));
     _readDirection = (await database.configDao.getOrCreateConfigByKey(
-        'ReadDirection',
-        value: ReadDirectionType.left));
-    _horizontalClickAreaSize = await database.configDao
-        .getOrCreateConfigByKey('HorizontalClickAreaSize', value: 80);
-    _verticalClickAreaSize = await database.configDao
-        .getOrCreateConfigByKey('VerticalClickAreaSize', value: 150);
-    _themeColor = await database.configDao
-        .getOrCreateConfigByKey('ThemeColor', value: 'Blue');
-    _useMaterial3Design = await database.configDao
-        .getOrCreateConfigByKey('UseMaterial3Design', value: true);
-    _readerTheme = await database.configDao
-        .getOrCreateConfigByKey('ReaderTheme', value: ReaderTheme.app.name);
+      'ReadDirection',
+      value: ReadDirectionType.left,
+    ));
+    _horizontalClickAreaSize = await database.configDao.getOrCreateConfigByKey(
+      'HorizontalClickAreaSize',
+      value: 80,
+    );
+    _verticalClickAreaSize = await database.configDao.getOrCreateConfigByKey(
+      'VerticalClickAreaSize',
+      value: 150,
+    );
+    _themeColor = await database.configDao.getOrCreateConfigByKey(
+      'ThemeColor',
+      value: 'Blue',
+    );
+    _useMaterial3Design = await database.configDao.getOrCreateConfigByKey(
+      'UseMaterial3Design',
+      value: true,
+    );
+    _readerTheme = await database.configDao.getOrCreateConfigByKey(
+      'ReaderTheme',
+      value: ReaderTheme.app.name,
+    );
+    _aggregateSubscribeBadges = await database.configDao.getOrCreateConfigByKey(
+      SubscribeBadgeState.configKey,
+      value: false,
+    );
+    _aggregateReadingProgress = await database.configDao.getOrCreateConfigByKey(
+      ComicReadingProgress.configKey,
+      value: false,
+    );
+    // Keep the persisted key so previously unlocked installations stay unlocked.
+    _advancedSettingsUnlocked = await database.configDao.getOrCreateConfigByKey(
+      'ExperimentalFeaturesUnlocked',
+      value: false,
+    );
     notifyListeners();
   }
 
@@ -47,8 +78,9 @@ class ConfigProvider extends BaseProvider {
   set themeMode(ThemeMode? value) {
     if (_themeMode != null && value != null) {
       _themeMode?.set(value);
-      DatabaseInstance.instance
-          .then((value) => value.configDao.updateConfig(_themeMode!));
+      DatabaseInstance.instance.then(
+        (value) => value.configDao.updateConfig(_themeMode!),
+      );
     }
     notifyListeners();
   }
@@ -63,8 +95,9 @@ class ConfigProvider extends BaseProvider {
   set readDirection(ReadDirectionType value) {
     if (_readDirection != null) {
       _readDirection?.set(value);
-      DatabaseInstance.instance
-          .then((value) => value.configDao.updateConfig(_readDirection!));
+      DatabaseInstance.instance.then(
+        (value) => value.configDao.updateConfig(_readDirection!),
+      );
     }
     notifyListeners();
   }
@@ -80,8 +113,9 @@ class ConfigProvider extends BaseProvider {
   set readerTheme(ReaderTheme value) {
     if (_readerTheme != null) {
       _readerTheme!.set(value.name);
-      DatabaseInstance.instance
-          .then((database) => database.configDao.updateConfig(_readerTheme!));
+      DatabaseInstance.instance.then(
+        (database) => database.configDao.updateConfig(_readerTheme!),
+      );
     }
     notifyListeners();
   }
@@ -104,7 +138,8 @@ class ConfigProvider extends BaseProvider {
     if (_horizontalClickAreaSize != null) {
       _horizontalClickAreaSize?.set(value);
       DatabaseInstance.instance.then(
-          (value) => value.configDao.updateConfig(_horizontalClickAreaSize!));
+        (value) => value.configDao.updateConfig(_horizontalClickAreaSize!),
+      );
     }
     notifyListeners();
   }
@@ -120,7 +155,8 @@ class ConfigProvider extends BaseProvider {
     if (_verticalClickAreaSize != null) {
       _verticalClickAreaSize?.set(value);
       DatabaseInstance.instance.then(
-          (value) => value.configDao.updateConfig(_verticalClickAreaSize!));
+        (value) => value.configDao.updateConfig(_verticalClickAreaSize!),
+      );
     }
     notifyListeners();
   }
@@ -135,8 +171,9 @@ class ConfigProvider extends BaseProvider {
   set themeColor(ThemeModel value) {
     if (_themeColor != null) {
       _themeColor?.set(value.name);
-      DatabaseInstance.instance
-          .then((value) => value.configDao.updateConfig(_themeColor!));
+      DatabaseInstance.instance.then(
+        (value) => value.configDao.updateConfig(_themeColor!),
+      );
     }
     notifyListeners();
   }
@@ -151,9 +188,58 @@ class ConfigProvider extends BaseProvider {
   set useMaterial3Design(bool value) {
     if (_useMaterial3Design != null) {
       _useMaterial3Design?.set(value);
-      DatabaseInstance.instance
-          .then((value) => value.configDao.updateConfig(_useMaterial3Design!));
+      DatabaseInstance.instance.then(
+        (value) => value.configDao.updateConfig(_useMaterial3Design!),
+      );
     }
+    notifyListeners();
+  }
+
+  bool get aggregateSubscribeBadges =>
+      _aggregateSubscribeBadges?.get<bool>() == true;
+
+  Future<void> setAggregateSubscribeBadges(bool value) async {
+    final database = await DatabaseInstance.instance;
+    final setting = await database.configDao.getOrCreateConfigByKey(
+      SubscribeBadgeState.configKey,
+      value: false,
+    );
+    setting.set(value);
+    await database.configDao.updateConfig(setting);
+    _aggregateSubscribeBadges = setting;
+    notifyListeners();
+    SubscribeBadgeState.changes.notifyListeners();
+  }
+
+  bool get aggregateReadingProgress =>
+      _aggregateReadingProgress?.get<bool>() == true;
+
+  Future<void> setAggregateReadingProgress(bool value) async {
+    final database = await DatabaseInstance.instance;
+    final setting = await database.configDao.getOrCreateConfigByKey(
+      ComicReadingProgress.configKey,
+      value: false,
+    );
+    setting.set(value);
+    await database.configDao.updateConfig(setting);
+    _aggregateReadingProgress = setting;
+    notifyListeners();
+    ComicReadingProgress.changes.notifyListeners();
+  }
+
+  bool get advancedSettingsUnlocked =>
+      _advancedSettingsUnlocked?.get<bool>() == true;
+
+  Future<void> setAdvancedSettingsUnlocked(bool value) async {
+    if (advancedSettingsUnlocked == value) return;
+    final database = await DatabaseInstance.instance;
+    final setting = await database.configDao.getOrCreateConfigByKey(
+      'ExperimentalFeaturesUnlocked',
+      value: false,
+    );
+    setting.set(value);
+    await database.configDao.updateConfig(setting);
+    _advancedSettingsUnlocked = setting;
     notifyListeners();
   }
 }

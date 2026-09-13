@@ -929,7 +929,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
             itemBuilder: (context, index) {
               var chapter = data[index];
               bool isCurrent = chapter.chapterId == controller.latestChapterId;
-              // latestChapterId 来自本地阅读历史，即“读到此处”的那一话
+              // 本源可继续阅读的章节：本地历史或可靠匹配的跨源历史。
               Widget label = Text(
                 chapter.title,
                 maxLines: 1,
@@ -1079,7 +1079,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
     if (controller.chapters.isEmpty) {
       return;
     }
-    // 优先回到本地历史记录的最后一话，否则从第一组最新一话开始
+    // 优先回到历史对应的本源章节（含实验性跨源匹配），否则使用默认章节。
     var resultChapters = controller.chapters.values.first;
     var resultChapter = resultChapters.reversed.toList().first;
     for (var data in controller.chapters.values) {

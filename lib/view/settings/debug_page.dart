@@ -1,5 +1,6 @@
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/generated/l10n.dart';
+import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/page_controllers/debug_database_page_controller.dart';
 import 'package:dcomic/requests/base_request.dart';
@@ -22,6 +23,32 @@ class DebugPage extends StatefulWidget {
 }
 
 class _DebugPageState extends State<DebugPage> {
+  bool _hiding = false;
+
+  String _locale(String zh, String en) =>
+      Localizations.localeOf(context).languageCode == 'zh' ? zh : en;
+
+  Future<void> _hideAdvancedSettings() async {
+    if (_hiding) return;
+    setState(() => _hiding = true);
+    try {
+      await context.read<ConfigProvider>().setAdvancedSettingsUnlocked(false);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _locale('保存失败，请重试。', 'Could not save. Please try again.'),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _hiding = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,6 +142,23 @@ class _DebugPageState extends State<DebugPage> {
                         ),
                       );
                 },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.visibility_off_outlined),
+                title: Text(
+                  _locale(
+                    '重新隐藏调试与实验性功能',
+                    'Hide Debug and Experimental Settings',
+                  ),
+                ),
+                subtitle: Text(
+                  _locale(
+                    '只隐藏两个设置入口，不修改功能开关。可在关于页再次点击顶部版本号 7 次解锁。',
+                    'Hide both entries without changing feature choices. Tap the top version number in About 7 times to unlock again.',
+                  ),
+                ),
+                onTap: _hiding ? null : _hideAdvancedSettings,
               ),
             ],
           ),
