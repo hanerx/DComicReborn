@@ -63,54 +63,57 @@ class _FavoritePageState extends State<FavoritePage> {
                           ).load();
                         },
                         refreshOnStart: true,
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            var controller =
-                                Provider.of<ComicFavoritePageController>(
-                                  context,
-                                );
-                            var data = controller.data;
-                            var installedSourceIds = context
-                                .read<ComicSourceProvider>()
-                                .sources
-                                .map((source) => source.type.sourceId)
-                                .toSet();
-                            return GridView(
-                              padding: const EdgeInsets.fromLTRB(
-                                16,
-                                16,
-                                16,
-                                16,
-                              ),
-                              gridDelegate: GridCardItem.coverGridDelegate(
-                                context,
-                                gridWidth: constraints.maxWidth - 32,
-                                crossAxisCount: 3,
-                                hasSubtitle: data.any(
-                                  (entity) =>
-                                      (entity.subtitle ?? '').isNotEmpty,
+                        child: ListenableBuilder(
+                          listenable: item,
+                          builder: (context, _) => LayoutBuilder(
+                            builder: (context, constraints) {
+                              var controller =
+                                  Provider.of<ComicFavoritePageController>(
+                                    context,
+                                  );
+                              var data = controller.data;
+                              var installedSourceIds = context
+                                  .read<ComicSourceProvider>()
+                                  .sources
+                                  .map((source) => source.type.sourceId)
+                                  .toSet();
+                              return GridView(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  16,
+                                  16,
+                                  16,
                                 ),
-                              ),
-                              children: [
-                                for (var item in data)
-                                  GridCardItem(
-                                    image: item.cover,
-                                    title: item.title,
-                                    subtitle: item.subtitle,
-                                    onTap: () {
-                                      if (item.onTap != null) {
-                                        item.onTap!(context);
-                                      }
-                                    },
-                                    badgeMaps: item.badges,
-                                    sourceIds: controller
-                                        .sourceIdsFor(item)
-                                        .where(installedSourceIds.contains)
-                                        .toList(growable: false),
+                                gridDelegate: GridCardItem.coverGridDelegate(
+                                  context,
+                                  gridWidth: constraints.maxWidth - 32,
+                                  crossAxisCount: 3,
+                                  hasSubtitle: data.any(
+                                    (entity) =>
+                                        (entity.subtitle ?? '').isNotEmpty,
                                   ),
-                              ],
-                            );
-                          },
+                                ),
+                                children: [
+                                  for (var item in data)
+                                    GridCardItem(
+                                      image: item.cover,
+                                      title: item.title,
+                                      subtitle: item.subtitle,
+                                      onTap: () {
+                                        if (item.onTap != null) {
+                                          item.onTap!(context);
+                                        }
+                                      },
+                                      badgeMaps: item.badges,
+                                      sourceIds: controller
+                                          .sourceIdsFor(item)
+                                          .where(installedSourceIds.contains)
+                                          .toList(growable: false),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ),
                     )

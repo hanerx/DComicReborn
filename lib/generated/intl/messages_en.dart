@@ -137,6 +137,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "CopyMangaChapterCommentDomain": MessageLookupByLibrary.simpleMessage(
       "CopyManga comments API",
     ),
+    "CopyMangaChineseDisplay": MessageLookupByLibrary.simpleMessage(
+      "Chinese text",
+    ),
+    "CopyMangaChineseSimplified": MessageLookupByLibrary.simpleMessage(
+      "Simplified Chinese",
+    ),
+    "CopyMangaChineseTraditional": MessageLookupByLibrary.simpleMessage(
+      "Traditional Chinese",
+    ),
     "CopyMangaLoginPasswordHint": MessageLookupByLibrary.simpleMessage(
       "Password for the selected API site\'s account",
     ),

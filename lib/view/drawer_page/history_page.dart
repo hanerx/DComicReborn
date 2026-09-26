@@ -85,51 +85,57 @@ class _HistoryPageState extends State<HistoryPage> {
               for (var item in Provider.of<ComicSourceProvider>(
                 context,
               ).orderedSources)
-                Builder(
-                  builder: (context) {
-                    final controller = context
-                        .watch<ComicHistoryPageController>();
-                    final records =
-                        controller.data[item]?.data[controller.sourceType] ??
-                        const <ListItemEntity>[];
-                    return EasyRefresh(
-                      onRefresh: () => _loadHistory(
-                        context,
-                        () => Provider.of<ComicHistoryPageController>(
+                ListenableBuilder(
+                  listenable: item,
+                  builder: (context, _) => Builder(
+                    builder: (context) {
+                      final controller = context
+                          .watch<ComicHistoryPageController>();
+                      final records =
+                          controller.data[item]?.data[controller.sourceType] ??
+                          const <ListItemEntity>[];
+                      return EasyRefresh(
+                        onRefresh: () => _loadHistory(
                           context,
-                          listen: false,
-                        ).refresh(item),
-                      ),
-                      onLoad: () => _loadHistory(
-                        context,
-                        () => Provider.of<ComicHistoryPageController>(
+                          () => Provider.of<ComicHistoryPageController>(
+                            context,
+                            listen: false,
+                          ).refresh(item),
+                        ),
+                        onLoad: () => _loadHistory(
                           context,
-                          listen: false,
-                        ).load(item),
-                      ),
-                      refreshOnStart: true,
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            maxWidth: AppLayout.contentMaxWidth,
-                          ),
-                          child: ListView.builder(
-                            padding: const EdgeInsets.only(top: 4, bottom: 12),
-                            itemCount: records.length,
-                            itemBuilder: (context, index) {
-                              final entity = records[index];
-                              return CardListItem(
-                                cover: entity.cover,
-                                title: entity.title,
-                                details: entity.details,
-                                onTap: entity.onTap,
-                              );
-                            },
+                          () => Provider.of<ComicHistoryPageController>(
+                            context,
+                            listen: false,
+                          ).load(item),
+                        ),
+                        refreshOnStart: true,
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: AppLayout.contentMaxWidth,
+                            ),
+                            child: ListView.builder(
+                              padding: const EdgeInsets.only(
+                                top: 4,
+                                bottom: 12,
+                              ),
+                              itemCount: records.length,
+                              itemBuilder: (context, index) {
+                                final entity = records[index];
+                                return CardListItem(
+                                  cover: entity.cover,
+                                  title: entity.title,
+                                  details: entity.details,
+                                  onTap: entity.onTap,
+                                );
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
             ],
           ),

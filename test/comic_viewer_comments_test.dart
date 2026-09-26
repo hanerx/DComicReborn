@@ -54,6 +54,8 @@ class _Chapter extends Fake implements BaseComicChapterEntityModel {
   @override
   String get title => 'Chapter';
   @override
+  String get rawTitle => title;
+  @override
   DateTime get uploadTime => DateTime(2026);
 }
 
@@ -77,12 +79,31 @@ class _ChapterDetail extends Fake implements BaseComicChapterDetailModel {
   Future<List<FileInfo>> downloadPages() async => [];
 }
 
+class _Source extends BaseComicSourceModel {
+  @override
+  Future<void> init() async {}
+
+  @override
+  Future<BaseComicDetailModel?> getComicDetail(
+    String comicId,
+    String title,
+  ) async => null;
+
+  @override
+  Future<List<ComicListItemEntity>> searchComicDetail(
+    String keyword, {
+    int page = 0,
+  }) async => [];
+}
+
 class _Detail extends Fake implements BaseComicDetailModel {
   _Detail(this.chapter, this.nextComments, {this.isLongComic = false});
   @override
   final bool isLongComic;
   final _ChapterDetail chapter;
   final List<ChapterCommentEntity>? nextComments;
+  @override
+  final BaseComicSourceModel parent = _Source();
   @override
   Future<BaseComicChapterDetailModel> getChapter(String chapterId) async =>
       chapterId == 'next' ? _ChapterDetail(nextComments!) : chapter;

@@ -229,67 +229,71 @@ class _ComicViewerPageState extends State<ComicViewerPage>
           widget.chapters,
           widget.chapterId,
         ),
-        builder: (context, child) => Scaffold(
-          key: _scaffoldKey,
-          endDrawer: _buildDrawer(context),
-          body: Container(
-            color: Colors.black,
-            child: EasyRefresh(
-              controller: _easyRefreshController,
-              header: BezierHeader(
-                triggerOffset: 50,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                showBalls: true,
-                spinWidget: SpinKitDualRing(
-                  size: 32,
-                  color: Theme.of(context).colorScheme.onPrimary,
+        builder: (context, child) => ListenableBuilder(
+          listenable: widget.detailModel.parent,
+          builder: (context, _) => Scaffold(
+            key: _scaffoldKey,
+            endDrawer: _buildDrawer(context),
+            body: Container(
+              color: Colors.black,
+              child: EasyRefresh(
+                controller: _easyRefreshController,
+                header: BezierHeader(
+                  triggerOffset: 50,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  showBalls: true,
+                  spinWidget: SpinKitDualRing(
+                    size: 32,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
                 ),
-              ),
-              footer: BezierFooter(
-                triggerOffset: 50,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                showBalls: true,
-                spinWidget: SpinKitDualRing(
-                  size: 32,
-                  color: Theme.of(context).colorScheme.onPrimary,
+                footer: BezierFooter(
+                  triggerOffset: 50,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  showBalls: true,
+                  spinWidget: SpinKitDualRing(
+                    size: 32,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
                 ),
-              ),
-              refreshOnStart: true,
-              onRefresh: () async {
-                await Provider.of<ComicViewerPageController>(
-                  context,
-                  listen: false,
-                ).refresh();
-                _resetPage();
-              },
-              onLoad: () async {
-                await Provider.of<ComicViewerPageController>(
-                  context,
-                  listen: false,
-                ).load();
-                _resetPage();
-              },
-              child: SafeArea(
-                child: Stack(
-                  key: _readerViewportKey,
-                  children: [
-                    _buildViewer(context),
-                    if (!(_readDirection(context) == ReadDirectionType.vertical
-                        ? _verticalCommentsVisible
-                        : _pageCount > 0 &&
-                              context
-                                      .watch<ComicViewerPageController>()
-                                      .currentPage ==
-                                  _pageCount - 1)) ...[
-                      _buildPrePageButton(context),
-                      _buildShowButton(context),
-                      _buildNextPageButton(context),
+                refreshOnStart: true,
+                onRefresh: () async {
+                  await Provider.of<ComicViewerPageController>(
+                    context,
+                    listen: false,
+                  ).refresh();
+                  _resetPage();
+                },
+                onLoad: () async {
+                  await Provider.of<ComicViewerPageController>(
+                    context,
+                    listen: false,
+                  ).load();
+                  _resetPage();
+                },
+                child: SafeArea(
+                  child: Stack(
+                    key: _readerViewportKey,
+                    children: [
+                      _buildViewer(context),
+                      if (!(_readDirection(context) ==
+                              ReadDirectionType.vertical
+                          ? _verticalCommentsVisible
+                          : _pageCount > 0 &&
+                                context
+                                        .watch<ComicViewerPageController>()
+                                        .currentPage ==
+                                    _pageCount - 1)) ...[
+                        _buildPrePageButton(context),
+                        _buildShowButton(context),
+                        _buildNextPageButton(context),
+                      ],
+                      _buildAppBar(context),
+                      _buildToolBar(context),
                     ],
-                    _buildAppBar(context),
-                    _buildToolBar(context),
-                  ],
+                  ),
                 ),
               ),
             ),

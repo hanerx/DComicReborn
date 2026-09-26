@@ -1075,6 +1075,36 @@ class S {
       args: [],
     );
   }
+  /// `Chinese text`
+  String get CopyMangaChineseDisplay {
+    return Intl.message(
+      'Chinese text',
+      name: 'CopyMangaChineseDisplay',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Traditional Chinese`
+  String get CopyMangaChineseTraditional {
+    return Intl.message(
+      'Traditional Chinese',
+      name: 'CopyMangaChineseTraditional',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Simplified Chinese`
+  String get CopyMangaChineseSimplified {
+    return Intl.message(
+      'Simplified Chinese',
+      name: 'CopyMangaChineseSimplified',
+      desc: '',
+      args: [],
+    );
+  }
+
 
   /// `Select HotManga above to read its images with CopyManga chapter comments. Accounts are separate. Changes apply immediately; local favorites and reading history are retained.`
   String get CopyMangaRoutingHint {

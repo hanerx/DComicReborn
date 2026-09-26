@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:carousel_slider_plus/carousel_slider_plus.dart';
 import 'package:dcomic/providers/page_controllers/comic_homepage_controller.dart';
+import 'package:dcomic/providers/source_provider.dart';
 import 'package:dcomic/utils/layout_utils.dart';
 import 'package:dcomic/view/components/carousel_item.dart';
 import 'package:dcomic/view/components/grid_card.dart';
@@ -23,25 +24,31 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => ComicHomepageController(),
-      builder: (context, child) => EasyRefresh(
-        onRefresh: () async {
-          try {
-            await Provider.of<ComicHomepageController>(
-              context,
-              listen: false,
-            ).refresh(context);
-            return IndicatorResult.success;
-          } catch (_) {
-            return IndicatorResult.fail;
-          }
-        },
-        refreshOnStart: true,
-        child: ColoredBox(
-          color: Theme.of(context).colorScheme.surface,
-          child: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.only(top: 12, bottom: 24),
-            children: _buildListView(context),
+      builder: (context, child) => ListenableBuilder(
+        listenable: Provider.of<ComicSourceProvider>(
+          context,
+          listen: false,
+        ).activeHomeModel,
+        builder: (context, _) => EasyRefresh(
+          onRefresh: () async {
+            try {
+              await Provider.of<ComicHomepageController>(
+                context,
+                listen: false,
+              ).refresh(context);
+              return IndicatorResult.success;
+            } catch (_) {
+              return IndicatorResult.fail;
+            }
+          },
+          refreshOnStart: true,
+          child: ColoredBox(
+            color: Theme.of(context).colorScheme.surface,
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.only(top: 12, bottom: 24),
+              children: _buildListView(context),
+            ),
           ),
         ),
       ),

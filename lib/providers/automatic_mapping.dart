@@ -109,7 +109,7 @@ class AutomaticMappingQueue extends ChangeNotifier {
     for (final item in items) {
       if (item is! GridItemEntityWithStatus) continue;
       final comicId = item.comicId;
-      final title = item.title;
+      final title = item.rawTitle;
       if (comicId.isEmpty || title == null || title.isEmpty) continue;
       for (final target in sources) {
         if (target.type.sourceId == origin.type.sourceId) continue;
@@ -237,7 +237,7 @@ class AutomaticMappingQueue extends ChangeNotifier {
     String? matched;
     for (final result in results) {
       if (result.comicId.isEmpty) continue;
-      if (ChineseHelper.convertToSimplifiedChinese(result.title) != wanted) {
+      if (ChineseHelper.convertToSimplifiedChinese(result.rawTitle) != wanted) {
         continue;
       }
       if (matched != null) {

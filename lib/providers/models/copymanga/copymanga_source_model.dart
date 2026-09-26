@@ -14,12 +14,19 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:pinyin/pinyin.dart';
+
+enum CopyMangaDisplayLanguage { traditional, simplified }
 
 class CopyMangaComicSourceModel extends BaseComicSourceModel {
   final CopyMangaAccountModel _accountModel = CopyMangaAccountModel();
   CopyMangaApiDomain _apiDomain = CopyMangaApiDomain.defaultDomain;
   CopyMangaApiDomain _chapterCommentDomain = CopyMangaApiDomain.defaultDomain;
   bool _changingDomain = false;
+  CopyMangaDisplayLanguage _displayLanguage =
+      CopyMangaDisplayLanguage.traditional;
+  bool _changingDisplayLanguage = false;
+  final Map<String, String> _displayTextCache = {};
 
   @override
   ComicSourceEntity get type => ComicSourceEntity(
@@ -29,6 +36,41 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
     hasHomepage: true,
     hasComment: true,
   );
+  CopyMangaDisplayLanguage get displayLanguage => _displayLanguage;
+
+  @override
+  String formatDisplayText(String text) {
+    if (text.isEmpty) return text;
+    return _displayTextCache.putIfAbsent(text, () {
+      return switch (_displayLanguage) {
+        CopyMangaDisplayLanguage.traditional =>
+          ChineseHelper.convertToTraditionalChinese(text),
+        CopyMangaDisplayLanguage.simplified =>
+          ChineseHelper.convertToSimplifiedChinese(text),
+      };
+    });
+  }
+
+  Future<void> setDisplayLanguage(CopyMangaDisplayLanguage language) async {
+    if (language == _displayLanguage || _changingDisplayLanguage) return;
+    _changingDisplayLanguage = true;
+    notifyListeners();
+    try {
+      final dao = (await DatabaseInstance.instance).modelConfigDao;
+      final config = await dao.getOrCreateConfigByKey(
+        'chineseDisplayLanguage',
+        type.sourceId,
+        value: CopyMangaDisplayLanguage.traditional.name,
+      );
+      config.set(language.name);
+      await dao.updateConfig(config);
+      _displayLanguage = language;
+      _displayTextCache.clear();
+    } finally {
+      _changingDisplayLanguage = false;
+      notifyListeners();
+    }
+  }
 
   @override
   Future<BaseComicDetailModel?> getComicDetail(
@@ -108,6 +150,9 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
                   comicSourceModel: this,
                 );
               },
+              titleFormatter: formatDisplayText,
+              detailFormatter: formatDisplayText,
+              formattedDetailKeys: const [Icons.history, Icons.history_edu],
             ),
           );
         }
@@ -151,6 +196,7 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
               );
             },
             item['path_word'],
+            titleFormatter: formatDisplayText,
           ),
         );
       }
@@ -164,6 +210,16 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
     _accountModel.parent ??= this;
     _apiDomain = await RequestHandlers.copyMangaRequestHandler.apiDomain;
     final dao = (await DatabaseInstance.instance).modelConfigDao;
+    final languageConfig = await dao.getConfigByKeyAndModel(
+      'chineseDisplayLanguage',
+      type.sourceId,
+    );
+    _displayLanguage =
+        languageConfig?.get<String>() ==
+            CopyMangaDisplayLanguage.simplified.name
+        ? CopyMangaDisplayLanguage.simplified
+        : CopyMangaDisplayLanguage.traditional;
+    _displayTextCache.clear();
     final config = await dao.getConfigByKeyAndModel(
       'chapterCommentApiDomain',
       type.sourceId,
@@ -274,6 +330,78 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
     );
   }
 
+  Future<CopyMangaDisplayLanguage?> _selectDisplayLanguage(
+    BuildContext context,
+  ) {
+    return showModalBottomSheet<CopyMangaDisplayLanguage>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      constraints: BoxConstraints(
+        maxWidth: AppLayout.formMaxWidth,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+      ),
+      builder: (sheetContext) {
+        final strings = S.of(sheetContext);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: Text(
+                strings.CopyMangaChineseDisplay,
+                style: Theme.of(sheetContext).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  12,
+                  0,
+                  12,
+                  16 + MediaQuery.paddingOf(sheetContext).bottom,
+                ),
+                child: SettingsGroup(
+                  children: [
+                    for (final language in CopyMangaDisplayLanguage.values)
+                      Semantics(
+                        selected: language == _displayLanguage,
+                        child: SettingsTile(
+                          leading: const Icon(Icons.translate_rounded),
+                          title: Text(
+                            language == CopyMangaDisplayLanguage.traditional
+                                ? strings.CopyMangaChineseTraditional
+                                : strings.CopyMangaChineseSimplified,
+                          ),
+                          trailing: language == _displayLanguage
+                              ? Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Theme.of(sheetContext)
+                                      .colorScheme.primary,
+                                )
+                              : const SizedBox(width: 24),
+                          onTap: () =>
+                              Navigator.of(sheetContext).pop(language),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildSourceSettings(BuildContext context) {
     final strings = S.of(context);
     Widget selector(
@@ -338,6 +466,37 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          SettingsGroup(
+            children: [
+              SettingsTile(
+                leading: const Icon(Icons.translate_rounded),
+                title: Text(strings.CopyMangaChineseDisplay),
+                subtitle: Text(
+                  _displayLanguage == CopyMangaDisplayLanguage.traditional
+                      ? strings.CopyMangaChineseTraditional
+                      : strings.CopyMangaChineseSimplified,
+                ),
+                enabled: !_changingDisplayLanguage,
+                onTap: _changingDisplayLanguage
+                    ? null
+                    : () async {
+                        final language = await _selectDisplayLanguage(context);
+                        if (language == null || !context.mounted) return;
+                        try {
+                          await setDisplayLanguage(language);
+                        } catch (e, s) {
+                          logger.e('$e', error: e, stackTrace: s);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('$e')),
+                            );
+                          }
+                        }
+                      },
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
           SettingsGroup(
             children: [
               selector(
@@ -442,6 +601,7 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
               e['name'],
               e['uuid'],
               DateTime.parse(e['datetime_created']),
+              titleFormatter: parent.formatDisplayText,
             ),
           )
           .toList()
@@ -458,7 +618,7 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
   ImageEntity get cover => ImageEntity(ImageType.network, rawData['cover']);
 
   @override
-  String get description => rawData['brief'];
+  String get description => parent.formatDisplayText(rawData['brief']);
 
   @override
   Future<BaseComicChapterDetailModel?> getChapter(String chapterId) async {
@@ -470,7 +630,7 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
       if ((response.statusCode == 200 || response.statusCode == 304) &&
           response.data['code'] == 200) {
         var rawData = response.data['results']['chapter'];
-        return CopyMangaComicChapterDetailModel(rawData);
+        return CopyMangaComicChapterDetailModel(rawData, parent);
       }
     } catch (e, s) {
       logger.e('$e', error: e, stackTrace: s);
@@ -516,7 +676,10 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
   String get status => rawData['status']['display'];
 
   @override
-  String get title => rawData['name'];
+  String get rawTitle => rawData['name'];
+
+  @override
+  String get title => parent.formatDisplayText(rawTitle);
 
   @override
   bool get subscribe => _isSubscribe;
@@ -535,8 +698,9 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
 
 class CopyMangaComicChapterDetailModel extends BaseComicChapterDetailModel {
   final Map rawData;
+  final CopyMangaComicSourceModel? parent;
 
-  CopyMangaComicChapterDetailModel(this.rawData);
+  CopyMangaComicChapterDetailModel(this.rawData, [this.parent]);
 
   @override
   String get chapterId => rawData['uuid'];
@@ -593,7 +757,10 @@ class CopyMangaComicChapterDetailModel extends BaseComicChapterDetailModel {
   }
 
   @override
-  String get title => rawData['name'];
+  String get title {
+    final rawTitle = rawData['name'] as String;
+    return parent?.formatDisplayText(rawTitle) ?? rawTitle;
+  }
 }
 
 class CopyMangaAccountModel extends BaseComicAccountModel {
@@ -813,6 +980,8 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
               },
               DateTime.parse(rawData['datetime_updated']),
               rawData['path_word'].toString(),
+              titleFormatter: parent?.formatDisplayText,
+              subtitleFormatter: parent?.formatDisplayText,
             ),
           );
         }
@@ -1120,6 +1289,7 @@ class CopyMangaComicHomepageModel extends BaseComicHomepageModel {
                   comicSourceModel: parent,
                 );
               },
+              titleFormatter: parent.formatDisplayText,
             ),
           );
         }
@@ -1304,6 +1474,7 @@ class CopyMangaComicHomepageModel extends BaseComicHomepageModel {
               comicSourceModel: parent,
             );
           },
+          titleFormatter: parent.formatDisplayText,
         ),
       );
     }
@@ -1325,6 +1496,7 @@ class CopyMangaComicHomepageModel extends BaseComicHomepageModel {
               ImageEntity(ImageType.network, item['cover']),
               item['brief'],
               (context) {},
+              titleFormatter: parent.formatDisplayText,
             ),
           );
         }
@@ -1366,6 +1538,9 @@ class CopyMangaComicHomepageModel extends BaseComicHomepageModel {
                   comicSourceModel: parent,
                 );
               },
+              titleFormatter: parent.formatDisplayText,
+              detailFormatter: parent.formatDisplayText,
+              formattedDetailKeys: const [Icons.book_outlined],
             ),
           );
         }
@@ -1407,6 +1582,7 @@ class CopyMangaComicHomepageModel extends BaseComicHomepageModel {
                   comicSourceModel: parent,
                 );
               },
+              titleFormatter: parent.formatDisplayText,
             ),
           );
         }

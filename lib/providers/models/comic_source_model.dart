@@ -38,12 +38,19 @@ class ComicSourceEntity {
 
 enum ComicHistorySourceType { network, local }
 
+typedef ComicDisplayTextFormatter = String Function(String text);
+
 abstract class BaseComicSourceModel extends BaseModel {
   BaseComicHomepageModel? get homepage => null;
 
   BaseComicAccountModel? get accountModel => null;
 
   ComicSourceEntity get type => ComicSourceEntity("初始漫画源", "BaseComicSource");
+
+  /// Formats source-owned text at the display boundary.
+  ///
+  /// Domain models and persisted values must retain the source response.
+  String formatDisplayText(String text) => text;
 
   Future<BaseComicDetailModel?> getComicDetail(String comicId, String title);
 
@@ -85,6 +92,9 @@ abstract class BaseComicSourceModel extends BaseModel {
                   comicSourceModel: this,
                 );
               },
+              titleFormatter: formatDisplayText,
+              detailFormatter: formatDisplayText,
+              formattedDetailKeys: const [Icons.history_edu],
             ),
           );
         }
@@ -129,7 +139,9 @@ abstract class BaseComicSourceModel extends BaseModel {
       final targetTitle = ChineseHelper.convertToSimplifiedChinese(title);
       for (final item in searchResults) {
         if (item.comicId.isEmpty) continue;
-        final sourceTitle = ChineseHelper.convertToSimplifiedChinese(item.title);
+        final sourceTitle = ChineseHelper.convertToSimplifiedChinese(
+          item.rawTitle,
+        );
         if (sourceTitle == targetTitle) {
           matchedComicId = item.comicId;
           break;
@@ -193,6 +205,9 @@ abstract class BaseComicDetailModel extends BaseModel {
 
   String get title;
 
+  /// The source title used for persistence and identity matching.
+  String get rawTitle => title;
+
   DateTime get lastUpdate;
 
   Map<String, List<BaseComicChapterEntityModel>> get chapters;
@@ -252,7 +267,7 @@ abstract class BaseComicDetailModel extends BaseModel {
         local: comicHistoryEntity,
         chapters: () => chapters.values
             .expand((group) => group)
-            .map((chapter) => (chapter.chapterId, chapter.title)),
+            .map((chapter) => (chapter.chapterId, chapter.rawTitle)),
       );
     } catch (e, s) {
       logger.e('$e', error: e, stackTrace: s);
@@ -279,7 +294,7 @@ abstract class BaseComicDetailModel extends BaseModel {
           .getOrCreateConfigByComicId(comicId, parent.type.sourceId));
       comicHistoryEntity.cover = cover.imageUrl;
       comicHistoryEntity.coverType = cover.imageType;
-      comicHistoryEntity.title = title;
+      comicHistoryEntity.title = rawTitle;
       comicHistoryEntity.lastChapterId = chapterId;
       comicHistoryEntity.lastChapterTitle = chapterName;
       comicHistoryEntity.timestamp = DateTime.now();
@@ -301,6 +316,9 @@ abstract class BaseComicDetailModel extends BaseModel {
 abstract class BaseComicChapterEntityModel extends BaseModel {
   String get title;
 
+  /// The source chapter title used for persistence and matching.
+  String get rawTitle => title;
+
   String get chapterId;
 
   DateTime get uploadTime;
@@ -310,18 +328,23 @@ class DefaultComicChapterEntityModel extends BaseComicChapterEntityModel {
   final String _title;
   final String _chapterId;
   final DateTime _uploadTime;
+  final ComicDisplayTextFormatter? _titleFormatter;
 
   DefaultComicChapterEntityModel(
     this._title,
     this._chapterId,
-    this._uploadTime,
-  );
+    this._uploadTime, {
+    ComicDisplayTextFormatter? titleFormatter,
+  }) : _titleFormatter = titleFormatter;
 
   @override
   String get chapterId => _chapterId;
 
   @override
-  String get title => _title;
+  String get rawTitle => _title;
+
+  @override
+  String get title => _titleFormatter?.call(_title) ?? _title;
 
   @override
   DateTime get uploadTime => _uploadTime;
@@ -539,10 +562,19 @@ class ComicCommentEntity {
 
 class CarouselEntity {
   final ImageEntity cover;
-  final String title;
+  final String _title;
   final void Function(BuildContext context)? onTap;
+  final ComicDisplayTextFormatter? _titleFormatter;
 
-  CarouselEntity(this.cover, this.title, this.onTap);
+  CarouselEntity(
+    this.cover,
+    String title,
+    this.onTap, {
+    ComicDisplayTextFormatter? titleFormatter,
+  }) : _title = title,
+       _titleFormatter = titleFormatter;
+
+  String get title => _titleFormatter?.call(_title) ?? _title;
 }
 
 class HomepageCardEntity {
@@ -564,19 +596,35 @@ class HomepageCardEntity {
 }
 
 class GridItemEntity {
-  final String? title;
-  final String? subtitle;
+  final String? _title;
+  final String? _subtitle;
   final ImageEntity cover;
   final void Function(BuildContext context)? onTap;
+  final ComicDisplayTextFormatter? _titleFormatter;
+  final ComicDisplayTextFormatter? _subtitleFormatter;
   Map<BadgePosition, String Function(BuildContext context)>? badges;
 
   GridItemEntity(
-    this.title,
-    this.subtitle,
+    String? title,
+    String? subtitle,
     this.cover,
     this.onTap, {
     this.badges,
-  });
+    ComicDisplayTextFormatter? titleFormatter,
+    ComicDisplayTextFormatter? subtitleFormatter,
+  }) : _title = title,
+       _subtitle = subtitle,
+       _titleFormatter = titleFormatter,
+       _subtitleFormatter = subtitleFormatter;
+
+  String? get rawTitle => _title;
+
+  String? get title =>
+      _title == null ? null : _titleFormatter?.call(_title) ?? _title;
+
+  String? get subtitle => _subtitle == null
+      ? null
+      : _subtitleFormatter?.call(_subtitle) ?? _subtitle;
 }
 
 class GridItemEntityWithStatus extends GridItemEntity {
@@ -589,17 +637,50 @@ class GridItemEntityWithStatus extends GridItemEntity {
     super.cover,
     super.onTap,
     this.lastUpdateTimestamp,
-    this.comicId,
-  );
+    this.comicId, {
+    super.badges,
+    super.titleFormatter,
+    super.subtitleFormatter,
+  });
 }
 
 class ListItemEntity {
-  final String title;
+  final String _title;
   final ImageEntity cover;
-  final Map<IconData, String> details;
+  final Map<IconData, String> _details;
   final void Function(BuildContext context)? onTap;
+  final ComicDisplayTextFormatter? _titleFormatter;
+  final ComicDisplayTextFormatter? _detailFormatter;
+  final List<IconData> _formattedDetailKeys;
 
-  ListItemEntity(this.title, this.cover, this.details, this.onTap);
+  ListItemEntity(
+    String title,
+    this.cover,
+    Map<IconData, String> details,
+    this.onTap, {
+    ComicDisplayTextFormatter? titleFormatter,
+    ComicDisplayTextFormatter? detailFormatter,
+    List<IconData> formattedDetailKeys = const [],
+  }) : _title = title,
+       _details = details,
+       _titleFormatter = titleFormatter,
+       _detailFormatter = detailFormatter,
+       _formattedDetailKeys = formattedDetailKeys;
+
+  String get rawTitle => _title;
+
+  String get title => _titleFormatter?.call(_title) ?? _title;
+
+  Map<IconData, String> get details {
+    final formatter = _detailFormatter;
+    if (formatter == null || _formattedDetailKeys.isEmpty) return _details;
+    return _details.map(
+      (key, value) => MapEntry(
+        key,
+        _formattedDetailKeys.contains(key) ? formatter(value) : value,
+      ),
+    );
+  }
 }
 
 class ComicListItemEntity extends ListItemEntity {
@@ -610,6 +691,9 @@ class ComicListItemEntity extends ListItemEntity {
     super.cover,
     super.details,
     super.onTap,
-    this.comicId,
-  );
+    this.comicId, {
+    super.titleFormatter,
+    super.detailFormatter,
+    super.formattedDetailKeys,
+  });
 }

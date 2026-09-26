@@ -117,6 +117,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "CopyMangaChapterCommentDomain": MessageLookupByLibrary.simpleMessage(
       "拷贝评论与吐槽 API 线路",
     ),
+    "CopyMangaChineseDisplay": MessageLookupByLibrary.simpleMessage("中文显示"),
+    "CopyMangaChineseSimplified": MessageLookupByLibrary.simpleMessage("简体中文"),
+    "CopyMangaChineseTraditional": MessageLookupByLibrary.simpleMessage("繁体中文"),
     "CopyMangaLoginPasswordHint": MessageLookupByLibrary.simpleMessage(
       "当前 API 线路对应站点的账号密码",
     ),

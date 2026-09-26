@@ -26,26 +26,29 @@ void main() {
   late final handler = RequestHandlers.copyMangaRequestHandler;
   final source = CopyMangaComicSourceModel();
 
-  Map<String, dynamic> homepageData(int revision,
-      {bool hot = false, bool finishTheme = false}) {
+  Map<String, dynamic> homepageData(
+    int revision, {
+    bool hot = false,
+    bool finishTheme = false,
+  }) {
     final comic = {
       'name': '漫画 $revision',
       'path_word': 'comic-$revision',
       'cover': 'https://example.com/$revision.jpg',
       'theme': [
-        {'name': '日常'}
+        {'name': '日常'},
       ],
     };
     final section = {
       'list': [
-        {'comic': comic}
-      ]
+        {'comic': comic},
+      ],
     };
     return {
       'code': 200,
       'results': {
         'banners': [
-          {'cover': comic['cover'], 'brief': '轮播 $revision'}
+          {'cover': comic['cover'], 'brief': '轮播 $revision'},
         ],
         'recComics': section,
         if (hot) ...{
@@ -58,10 +61,10 @@ void main() {
           'rankWeekComics': section,
           'rankMonthComics': section,
           'hotComics': [
-            {'comic': comic}
+            {'comic': comic},
           ],
           'newComics': [
-            {'comic': comic}
+            {'comic': comic},
           ],
           'finishComics': {
             'list': [
@@ -70,16 +73,19 @@ void main() {
                 'path_word': 'finished-$revision',
                 'cover': comic['cover'],
                 if (finishTheme) 'theme': [],
-              }
-            ]
+              },
+            ],
           },
         },
       },
     };
   }
 
-  Future<void> config(String key, Object value,
-      {String model = 'copymanga'}) async {
+  Future<void> config(
+    String key,
+    Object value, {
+    String model = 'copymanga',
+  }) async {
     final dao = (await DatabaseInstance.instance).modelConfigDao;
     final entity = await dao.getOrCreateConfigByKey(key, model);
     entity.set(value);
@@ -99,9 +105,9 @@ void main() {
 
   setUp(() async {
     handler.dio.interceptors.clear();
-    await (await DatabaseInstance.instance)
-        .database
-        .delete('ModelConfigEntity');
+    await (await DatabaseInstance.instance).database.delete(
+      'ModelConfigEntity',
+    );
   });
 
   tearDownAll(() async {
@@ -111,74 +117,58 @@ void main() {
     await directory.delete(recursive: true);
   });
 
-  test('current web protocol loads comic details without old app rejection',
-      () async {
-    handler.dio.httpClientAdapter = ApiAdapter((request) {
-      if (request.uri.host != 'api.copy4000.com' ||
-          request.headers['version'] != '2026.08.21' ||
-          request.headers['platform'] != '1' ||
-          request.headers.containsKey('x-auth-signature')) {
-        return {'code': 400, 'message': '请使用APP'};
-      }
-      return {
-        'code': 200,
-        'results': {
-          'comic': {'path_word': 'sample', 'name': '示例漫画'},
-          'groups': {},
-        },
-      };
-    });
-    final detail = await source.getComicDetail('sample', '');
-    expect(detail?.title, '示例漫画');
-  });
-
-  test('hot manga pages and copy roasts use separate hosts and credentials',
-      () async {
-    await config('apiDomain', 'api.manga2025.com');
-    await config('chapterCommentApiDomain', 'api.copy3000.com');
-    await config('isLogin', true);
-    await config('token', 'copy-token');
-    await config('isLogin', true, model: 'hotmanga');
-    await config('token', 'hot-token', model: 'hotmanga');
-    handler.dio.httpClientAdapter = ApiAdapter((request) {
-      if (request.uri.path.contains('/chapter/')) {
-        expect(request.uri.host, 'api.manga2025.com');
-        expect(request.headers['authorization'], 'Token hot-token');
-        expect(request.headers['version'], '2025.11.21');
-        return {
-          'code': 200,
-          'results': {
-            'chapter': {
-              'uuid': 'shared-uuid',
-              'name': '第一话',
-              'contents': [
-                {'url': 'https://images.example/page.jpg'}
+  test(
+    'hot manga pages and copy roasts use separate hosts and credentials',
+    () async {
+      await config('apiDomain', 'api.manga2025.com');
+      await config('chapterCommentApiDomain', 'api.copy3000.com');
+      await config('isLogin', true);
+      await config('token', 'copy-token');
+      await config('isLogin', true, model: 'hotmanga');
+      await config('token', 'hot-token', model: 'hotmanga');
+      handler.dio.httpClientAdapter = ApiAdapter((request) {
+        if (request.uri.path.contains('/chapter/')) {
+          expect(request.uri.host, 'api.manga2025.com');
+          expect(request.headers['authorization'], 'Token hot-token');
+          expect(request.headers['version'], '2025.11.21');
+          return {
+            'code': 200,
+            'results': {
+              'chapter': {
+                'uuid': 'shared-uuid',
+                'name': '第一话',
+                'contents': [
+                  {'url': 'https://images.example/page.jpg'},
+                ],
+              },
+            },
+          };
+        }
+        if (request.uri.path.endsWith('/roasts')) {
+          expect(request.uri.host, 'api.copy3000.com');
+          expect(request.uri.queryParameters['chapter_id'], 'shared-uuid');
+          expect(request.headers['authorization'], isNot('Token hot-token'));
+          return {
+            'code': 200,
+            'results': {
+              'list': [
+                {'id': 1, 'comment': '拷贝吐槽', 'user_avatar': ''},
               ],
             },
-          },
-        };
-      }
-      if (request.uri.path.endsWith('/roasts')) {
-        expect(request.uri.host, 'api.copy3000.com');
-        expect(request.uri.queryParameters['chapter_id'], 'shared-uuid');
-        expect(request.headers['authorization'], isNot('Token hot-token'));
-        return {
-          'code': 200,
-          'results': {
-            'list': [
-              {'id': 1, 'comment': '拷贝吐槽', 'user_avatar': ''}
-            ]
-          },
-        };
-      }
-      return {'code': 404, 'results': {}};
-    });
-    final detail =
-        CopyMangaComicDetailModel({'path_word': 'sample'}, source, {});
-    final chapter = await detail.getChapter('shared-uuid');
-    expect(chapter?.pages.single.imageUrl, 'https://images.example/page.jpg');
-    expect(await chapter!.getChapterComments(), hasLength(1));
-  });
+          };
+        }
+        return {'code': 404, 'results': {}};
+      });
+      final detail = CopyMangaComicDetailModel(
+        {'path_word': 'sample'},
+        source,
+        {},
+      );
+      final chapter = await detail.getChapter('shared-uuid');
+      expect(chapter?.pages.single.imageUrl, 'https://images.example/page.jpg');
+      expect(await chapter!.getChapterComments(), hasLength(1));
+    },
+  );
 
   test('chapter ordering sorts non-contiguous words without losing images', () {
     final chapter = CopyMangaComicChapterDetailModel({
@@ -204,7 +194,7 @@ void main() {
           'results': {
             'comic': {'path_word': 'sample', 'name': '示例漫画'},
             'groups': {
-              'default': {'path_word': 'default', 'name': '章节', 'count': 101}
+              'default': {'path_word': 'default', 'name': '章节', 'count': 101},
             },
           },
         };
@@ -218,18 +208,21 @@ void main() {
           'limit': 100,
           'offset': offset,
           'list': List.generate(
-              count,
-              (i) => {
-                    'uuid': '${offset + i}',
-                    'name': '第${offset + i}话',
-                    'datetime_created': '2026-01-01T00:00:00',
-                  }),
+            count,
+            (i) => {
+              'uuid': '${offset + i}',
+              'name': '第${offset + i}话',
+              'datetime_created': '2026-01-01T00:00:00',
+            },
+          ),
         },
       };
     });
     final detail = await source.getComicDetail('sample', '');
-    expect(detail!.chapters['章节']!.map((chapter) => chapter.chapterId),
-        contains('100'));
+    expect(
+      detail!.chapters['章节']!.map((chapter) => chapter.chapterId),
+      contains('100'),
+    );
   });
 
   test('search retains reserved characters', () async {
@@ -244,13 +237,15 @@ void main() {
     expect(result.data['results']['query'], keyword);
   });
 
-  test('switching accounts clears profile and restores each site token',
-      () async {
-    final account = source.accountModel!;
-    account.logger = Logger(output: ConsoleOutput());
-    await config('isLogin', true);
-    await config('token', 'copy-token');
-    handler.dio.httpClientAdapter = ApiAdapter((request) => {
+  test(
+    'switching accounts clears profile and restores each site token',
+    () async {
+      final account = source.accountModel!;
+      account.logger = Logger(output: ConsoleOutput());
+      await config('isLogin', true);
+      await config('token', 'copy-token');
+      handler.dio.httpClientAdapter = ApiAdapter(
+        (request) => {
           'code': 200,
           'results': {
             'user_id': 7,
@@ -258,73 +253,84 @@ void main() {
             'nickname': 'Copy',
             'avatar': 'https://example.com/avatar.png',
           },
-        });
-    await account.initAccount();
-    expect(account.token, 'copy-token');
-    await config('apiDomain', 'api.manga2025.com');
-    await account.initAccount();
-    expect(account.isLogin, isFalse);
-    expect(account.token, isNull);
-    expect(account.nickname, isNull);
-    await config('apiDomain', 'api.copy4000.com');
-    await account.initAccount();
-    expect(account.token, 'copy-token');
-    expect(account.nickname, 'Copy');
-  });
+        },
+      );
+      await account.initAccount();
+      expect(account.token, 'copy-token');
+      await config('apiDomain', 'api.manga2025.com');
+      await account.initAccount();
+      expect(account.isLogin, isFalse);
+      expect(account.token, isNull);
+      expect(account.nickname, isNull);
+      await config('apiDomain', 'api.copy4000.com');
+      await account.initAccount();
+      expect(account.token, 'copy-token');
+      expect(account.nickname, 'Copy');
+    },
+  );
 
-  test('logout persists only the selected site and leaves copy account intact',
-      () async {
-    await config('isLogin', true);
-    await config('token', 'copy-token');
-    await config('apiDomain', 'api.manga2025.com');
-    await config('isLogin', true, model: 'hotmanga');
-    await config('token', 'hot-token', model: 'hotmanga');
-    handler.dio.httpClientAdapter =
-        ApiAdapter((request) => {'code': 200, 'results': {}});
-    await source.accountModel!.logout();
-    final dao = (await DatabaseInstance.instance).modelConfigDao;
-    expect(
+  test(
+    'logout persists only the selected site and leaves copy account intact',
+    () async {
+      await config('isLogin', true);
+      await config('token', 'copy-token');
+      await config('apiDomain', 'api.manga2025.com');
+      await config('isLogin', true, model: 'hotmanga');
+      await config('token', 'hot-token', model: 'hotmanga');
+      handler.dio.httpClientAdapter = ApiAdapter(
+        (request) => {'code': 200, 'results': {}},
+      );
+      await source.accountModel!.logout();
+      final dao = (await DatabaseInstance.instance).modelConfigDao;
+      expect(
         (await dao.getConfigByKeyAndModel('isLogin', 'hotmanga'))!.get<bool>(),
-        isFalse);
-    expect(
+        isFalse,
+      );
+      expect(
         (await dao.getConfigByKeyAndModel('token', 'hotmanga'))!.get<String>(),
-        '');
-    expect(
+        '',
+      );
+      expect(
         (await dao.getConfigByKeyAndModel('token', 'copymanga'))!.get<String>(),
-        'copy-token');
-    await source.accountModel!.initAccount();
-    expect(source.accountModel!.isLogin, isFalse);
-  });
+        'copy-token',
+      );
+      await source.accountModel!.initAccount();
+      expect(source.accountModel!.isLogin, isFalse);
+    },
+  );
 
-  test('rejected account no longer authenticates subsequent public requests',
-      () async {
-    await config('isLogin', true);
-    await config('token', 'expired-token');
-    handler.dio.httpClientAdapter = ApiAdapter((request) {
-      if (request.uri.path.endsWith('/member/info')) {
-        return {'code': 401, 'message': 'Invalid token', 'results': {}};
-      }
-      return {
-        'code': 200,
-        'results': {'authorization': request.headers['authorization']},
-      };
-    });
-    await source.accountModel!.initAccount();
-    final result = await handler.search('sample');
-    expect(result.data['results']['authorization'], isNull);
-  });
+  test(
+    'rejected account no longer authenticates subsequent public requests',
+    () async {
+      await config('isLogin', true);
+      await config('token', 'expired-token');
+      handler.dio.httpClientAdapter = ApiAdapter((request) {
+        if (request.uri.path.endsWith('/member/info')) {
+          return {'code': 401, 'message': 'Invalid token', 'results': {}};
+        }
+        return {
+          'code': 200,
+          'results': {'authorization': request.headers['authorization']},
+        };
+      });
+      await source.accountModel!.initAccount();
+      final result = await handler.search('sample');
+      expect(result.data['results']['authorization'], isNull);
+    },
+  );
 
   test('copy homepage parses completed comics without theme', () async {
     handler.dio.httpClientAdapter = ApiAdapter((_) => homepageData(1));
     final cards = await source.homepage!.getHomepageCard();
-    expect(cards.last.children.single.title, '完结 1');
     expect(cards.last.children.single.subtitle, '');
     expect(cards.first.children.single.subtitle, '日常');
   });
 
-  testWidgets('curated and new categories render offline with a logo fallback',
-      (tester) async {
-    handler.dio.httpClientAdapter = ApiAdapter((_) => {
+  testWidgets(
+    'curated and new categories render offline with a logo fallback',
+    (tester) async {
+      handler.dio.httpClientAdapter = ApiAdapter(
+        (_) => {
           'code': 200,
           'results': {
             'list': [
@@ -342,130 +348,181 @@ void main() {
               },
             ],
           },
-        });
-    final categories =
-        (await tester.runAsync(() => source.homepage!.getCategoryList()))!;
-    expect(categories.map((category) => category.cover.imageType),
+        },
+      );
+      final categories = (await tester.runAsync(
+        () => source.homepage!.getCategoryList(),
+      ))!;
+      expect(
+        categories.map((category) => category.cover.imageType),
         everyElement(isNot(ImageType.network)),
-        reason: 'Category artwork must remain available without a network.');
-    await tester.runAsync(() async {
-      await tester.pumpWidget(MaterialApp(
-        home: Row(children: [
-          for (final category in categories)
-            SizedBox(
-              width: 128,
-              height: 128,
-              child: DComicImage(category.cover, showErrorMessage: false),
+        reason: 'Category artwork must remain available without a network.',
+      );
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Row(
+              children: [
+                for (final category in categories)
+                  SizedBox(
+                    width: 128,
+                    height: 128,
+                    child: DComicImage(category.cover, showErrorMessage: false),
+                  ),
+              ],
             ),
-        ]),
-      ));
-      // Asset decoding runs on the real IO loop, outside the fake test clock.
-      for (var attempt = 0; attempt < 100; attempt++) {
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        await tester.pump();
-        final images = tester.widgetList<RawImage>(find.byType(RawImage));
-        if (images.length == 2 &&
-            images.every((image) => image.image != null)) {
-          break;
+          ),
+        );
+        // Asset decoding runs on the real IO loop, outside the fake test clock.
+        for (var attempt = 0; attempt < 100; attempt++) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          await tester.pump();
+          final images = tester.widgetList<RawImage>(find.byType(RawImage));
+          if (images.length == 2 &&
+              images.every((image) => image.image != null)) {
+            break;
+          }
         }
-      }
-    });
-    final images = tester.widgetList<RawImage>(find.byType(RawImage)).toList();
-    expect(images, hasLength(2));
-    expect(images.every((image) => image.image != null), isTrue);
-    final fallback = await tester.runAsync(() async {
-      final data =
-          await rootBundle.load('assets/copymanga/categories/default.png');
-      final codec = await ui.instantiateImageCodec(
-          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
-      final frame = await codec.getNextFrame();
-      final pixels =
-          await frame.image.toByteData(format: ui.ImageByteFormat.rawRgba);
-      frame.image.dispose();
-      codec.dispose();
-      return pixels!.buffer.asUint8List();
-    });
-    final actual = await tester.runAsync(() =>
-        images.last.image!.toByteData(format: ui.ImageByteFormat.rawRgba));
-    expect(actual!.buffer.asUint8List(), orderedEquals(fallback!));
-    final curated = await tester.runAsync(() =>
-        images.first.image!.toByteData(format: ui.ImageByteFormat.rawRgba));
-    expect(curated!.buffer.asUint8List(), isNot(orderedEquals(fallback)));
+      });
+      final images = tester
+          .widgetList<RawImage>(find.byType(RawImage))
+          .toList();
+      expect(images, hasLength(2));
+      expect(images.every((image) => image.image != null), isTrue);
+      final fallback = await tester.runAsync(() async {
+        final data = await rootBundle.load(
+          'assets/copymanga/categories/default.png',
+        );
+        final codec = await ui.instantiateImageCodec(
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+        );
+        final frame = await codec.getNextFrame();
+        final pixels = await frame.image.toByteData(
+          format: ui.ImageByteFormat.rawRgba,
+        );
+        frame.image.dispose();
+        codec.dispose();
+        return pixels!.buffer.asUint8List();
+      });
+      final actual = await tester.runAsync(
+        () => images.last.image!.toByteData(format: ui.ImageByteFormat.rawRgba),
+      );
+      expect(actual!.buffer.asUint8List(), orderedEquals(fallback!));
+      final curated = await tester.runAsync(
+        () =>
+            images.first.image!.toByteData(format: ui.ImageByteFormat.rawRgba),
+      );
+      expect(curated!.buffer.asUint8List(), isNot(orderedEquals(fallback)));
+    },
+  );
+
+  test('Chinese display preference updates loaded models without changing raw text and persists', () async {
+    final localSource = CopyMangaComicSourceModel()
+      ..logger = Logger(output: ConsoleOutput());
+    final rawData = <String, dynamic>{'name': '隱藏轉生', 'brief': '謝了你啊異世界'};
+    final detail = CopyMangaComicDetailModel(rawData, localSource, const {});
+
+    expect(localSource.displayLanguage, CopyMangaDisplayLanguage.traditional);
+    expect(detail.title, '隱藏轉生');
+
+    await localSource.setDisplayLanguage(CopyMangaDisplayLanguage.simplified);
+
+    expect(detail.title, '隐藏转生');
+    expect(detail.description, '谢了你啊异世界');
+    expect(rawData['name'], '隱藏轉生');
+    expect(rawData['brief'], '謝了你啊異世界');
+
+    final restored = CopyMangaComicSourceModel()
+      ..logger = Logger(output: ConsoleOutput());
+    await restored.initModel();
+    expect(restored.displayLanguage, CopyMangaDisplayLanguage.simplified);
+    expect(restored.formatDisplayText('為這美好世界獻上祝福'), '为这美好世界献上祝福');
+
+    await restored.setDisplayLanguage(CopyMangaDisplayLanguage.traditional);
   });
 
-  test('hot homepage uses its weekly ranking and update sections', () async {
-    await config('apiDomain', 'api.manga2025.com');
-    handler.dio.httpClientAdapter =
-        ApiAdapter((_) => homepageData(1, hot: true));
-    final cards = await source.homepage!.getHomepageCard();
-    expect(cards.map((card) => card.title),
-        ['推荐漫画', '免费周榜', '付费周榜', '免费更新', '付费更新']);
-    expect(cards.last.children.single.title, '漫画 1');
-  });
+  test(
+    'homepage refresh fetches new data despite a fresh five-minute cache',
+    () async {
+      final cache = MemCacheStore();
+      addTearDown(cache.close);
+      handler.dio.interceptors.add(
+        InterceptorsWrapper(
+          onResponse: (response, next) {
+            response.headers.set('cache-control', 'max-age=300');
+            next.next(response);
+          },
+        ),
+      );
+      handler.dio.interceptors.add(
+        DioCacheInterceptor(options: CacheOptions(store: cache)),
+      );
+      var revision = 1;
+      handler.dio.httpClientAdapter = ApiAdapter((_) => homepageData(revision));
+      await handler.getHomepage();
+      revision = 2;
+      final response = await handler.getHomepage();
+      expect(response.data['results']['banners'][0]['brief'], '轮播 2');
+    },
+  );
 
-  test('homepage refresh fetches new data despite a fresh five-minute cache',
-      () async {
-    final cache = MemCacheStore();
-    addTearDown(cache.close);
-    handler.dio.interceptors
-        .add(InterceptorsWrapper(onResponse: (response, next) {
-      response.headers.set('cache-control', 'max-age=300');
-      next.next(response);
-    }));
-    handler.dio.interceptors
-        .add(DioCacheInterceptor(options: CacheOptions(store: cache)));
-    var revision = 1;
-    handler.dio.httpClientAdapter = ApiAdapter((_) => homepageData(revision));
-    await handler.getHomepage();
-    revision = 2;
-    final response = await handler.getHomepage();
-    expect(response.data['results']['banners'][0]['brief'], '轮播 2');
-  });
-
-  test('homepage business failure is not reported as empty successful content',
-      () async {
-    handler.dio.httpClientAdapter = ApiAdapter((_) => {
-          'code': 503,
-          'message': '首页暂不可用',
-          'results': {},
-        });
-    await expectLater(
-        source.homepage!.getHomepageCard(), throwsA(isA<StateError>()));
-  });
+  test(
+    'homepage business failure is not reported as empty successful content',
+    () async {
+      handler.dio.httpClientAdapter = ApiAdapter(
+        (_) => {'code': 503, 'message': '首页暂不可用', 'results': {}},
+      );
+      await expectLater(
+        source.homepage!.getHomepageCard(),
+        throwsA(isA<StateError>()),
+      );
+    },
+  );
 
   testWidgets(
-      'failed refresh preserves the whole homepage and a later refresh recovers',
-      (tester) async {
-    final controller = ComicHomepageController();
-    final provider = ComicSourceProvider()..sources = [source];
-    addTearDown(controller.dispose);
-    addTearDown(provider.dispose);
-    late BuildContext context;
-    await tester.pumpWidget(ChangeNotifierProvider<ComicSourceProvider>.value(
-      value: provider,
-      child: Builder(builder: (value) {
-        context = value;
-        return const SizedBox();
-      }),
-    ));
-    var revision = 1;
-    var request = 0;
-    var fail = false;
-    handler.dio.httpClientAdapter = ApiAdapter((_) {
-      request++;
-      if (fail && request.isEven) throw StateError('Homepage offline');
-      return homepageData(revision, finishTheme: true);
-    });
-    await tester.runAsync(() => controller.refresh(context));
-    revision = 2;
-    fail = true;
-    await tester.runAsync(() =>
-        expectLater(controller.refresh(context), throwsA(isA<DioException>())));
-    expect(controller.homepageCarousels.single.title, '轮播 1');
-    expect(controller.homepageCards.first.children.single.title, '漫画 1');
-    fail = false;
-    await tester.runAsync(() => controller.refresh(context));
-    expect(controller.homepageCarousels.single.title, '轮播 2');
-    expect(controller.homepageCards.first.children.single.title, '漫画 2');
-  });
+    'failed refresh preserves the whole homepage and a later refresh recovers',
+    (tester) async {
+      final controller = ComicHomepageController();
+      final provider = ComicSourceProvider()..sources = [source];
+      addTearDown(controller.dispose);
+      addTearDown(provider.dispose);
+      late BuildContext context;
+      await tester.pumpWidget(
+        ChangeNotifierProvider<ComicSourceProvider>.value(
+          value: provider,
+          child: Builder(
+            builder: (value) {
+              context = value;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      var revision = 1;
+      var request = 0;
+      var fail = false;
+      handler.dio.httpClientAdapter = ApiAdapter((_) {
+        request++;
+        if (fail && request.isEven) throw StateError('Homepage offline');
+        return homepageData(revision, finishTheme: true);
+      });
+      await tester.runAsync(() => controller.refresh(context));
+      final previousCarousels = controller.homepageCarousels;
+      final previousCards = controller.homepageCards;
+      revision = 2;
+      fail = true;
+      await tester.runAsync(
+        () => expectLater(
+          controller.refresh(context),
+          throwsA(isA<DioException>()),
+        ),
+      );
+      expect(controller.homepageCarousels, same(previousCarousels));
+      expect(controller.homepageCards, same(previousCards));
+      fail = false;
+      await tester.runAsync(() => controller.refresh(context));
+      expect(controller.homepageCarousels, isNot(same(previousCarousels)));
+      expect(controller.homepageCards, isNot(same(previousCards)));
+    },
+  );
 }

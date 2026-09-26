@@ -79,70 +79,76 @@ class _SearchPageState extends State<SearchPage> {
               for (var item in Provider.of<ComicSourceProvider>(
                 context,
               ).orderedSources)
-                EasyRefresh(
-                  onRefresh: () async {
-                    await Provider.of<ComicSearchPageController>(
-                      context,
-                      listen: false,
-                    ).refresh(item);
-                  },
-                  onLoad: () async {
-                    await Provider.of<ComicSearchPageController>(
-                      context,
-                      listen: false,
-                    ).load(item);
-                  },
-                  refreshOnStart: true,
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: AppLayout.contentMaxWidth,
-                      ),
-                      child: ListView.builder(
-                        padding: const EdgeInsets.only(top: 4, bottom: 12),
-                        itemCount:
-                            Provider.of<ComicSearchPageController>(context)
-                                .data[item]!
-                                .data
-                                .length +
-                            (Provider.of<ComicSearchPageController>(context)
-                                    .data[item]!
-                                    .hasError
-                                ? 1
-                                : 0),
-                        itemBuilder: (context, index) {
-                          final controller =
-                              Provider.of<ComicSearchPageController>(context);
-                          final state = controller.data[item]!;
-                          if (index == state.data.length) {
-                            final isZh =
-                                Localizations.localeOf(context).languageCode ==
-                                'zh';
-                            return ListTile(
-                              leading: Icon(
-                                Icons.cloud_off_rounded,
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                              title: Text(
-                                isZh ? '搜索失败，请重试' : 'Search failed. Try again.',
-                              ),
-                              trailing: IconButton(
-                                tooltip: isZh ? '重试' : 'Retry',
-                                icon: const Icon(Icons.refresh_rounded),
-                                onPressed: () => state.data.isEmpty
-                                    ? controller.refresh(item)
-                                    : controller.load(item),
-                              ),
+                ListenableBuilder(
+                  listenable: item,
+                  builder: (context, _) => EasyRefresh(
+                    onRefresh: () async {
+                      await Provider.of<ComicSearchPageController>(
+                        context,
+                        listen: false,
+                      ).refresh(item);
+                    },
+                    onLoad: () async {
+                      await Provider.of<ComicSearchPageController>(
+                        context,
+                        listen: false,
+                      ).load(item);
+                    },
+                    refreshOnStart: true,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: AppLayout.contentMaxWidth,
+                        ),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.only(top: 4, bottom: 12),
+                          itemCount:
+                              Provider.of<ComicSearchPageController>(context)
+                                  .data[item]!
+                                  .data
+                                  .length +
+                              (Provider.of<ComicSearchPageController>(context)
+                                      .data[item]!
+                                      .hasError
+                                  ? 1
+                                  : 0),
+                          itemBuilder: (context, index) {
+                            final controller =
+                                Provider.of<ComicSearchPageController>(context);
+                            final state = controller.data[item]!;
+                            if (index == state.data.length) {
+                              final isZh =
+                                  Localizations.localeOf(context)
+                                      .languageCode ==
+                                  'zh';
+                              return ListTile(
+                                leading: Icon(
+                                  Icons.cloud_off_rounded,
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                                title: Text(
+                                  isZh
+                                      ? '搜索失败，请重试'
+                                      : 'Search failed. Try again.',
+                                ),
+                                trailing: IconButton(
+                                  tooltip: isZh ? '重试' : 'Retry',
+                                  icon: const Icon(Icons.refresh_rounded),
+                                  onPressed: () => state.data.isEmpty
+                                      ? controller.refresh(item)
+                                      : controller.load(item),
+                                ),
+                              );
+                            }
+                            final entity = state.data[index];
+                            return CardListItem(
+                              cover: entity.cover,
+                              title: entity.title,
+                              details: entity.details,
+                              onTap: entity.onTap,
                             );
-                          }
-                          final entity = state.data[index];
-                          return CardListItem(
-                            cover: entity.cover,
-                            title: entity.title,
-                            details: entity.details,
-                            onTap: entity.onTap,
-                          );
-                        },
+                          },
+                        ),
                       ),
                     ),
                   ),

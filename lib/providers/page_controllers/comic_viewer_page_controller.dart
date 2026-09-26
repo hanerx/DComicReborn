@@ -117,7 +117,7 @@ class ComicViewerPageController extends BaseProvider {
           : _currentPage + 1;
       await detailModel.addComicHistory(
         currentChapter!.chapterId,
-        currentChapter!.title,
+        currentChapter!.rawTitle,
         page: page,
       );
     }

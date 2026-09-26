@@ -1,4 +1,5 @@
 import 'package:dcomic/providers/page_controllers/comic_rank_page_controller.dart';
+import 'package:dcomic/providers/source_provider.dart';
 import 'package:dcomic/utils/layout_utils.dart';
 import 'package:dcomic/view/components/card_list_item.dart';
 import 'package:easy_refresh/easy_refresh.dart';
@@ -17,42 +18,48 @@ class _RankPageState extends State<RankPage> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<ComicRankPageController>(
       create: (_) => ComicRankPageController(),
-      builder: (context, child) => EasyRefresh(
-        refreshOnStart: true,
-        onRefresh: () async {
-          await Provider.of<ComicRankPageController>(
-            context,
-            listen: false,
-          ).refresh(context);
-        },
-        onLoad: () async {
-          await Provider.of<ComicRankPageController>(
-            context,
-            listen: false,
-          ).load(context);
-        },
-        child: ColoredBox(
-          color: Theme.of(context).colorScheme.surface,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: AppLayout.contentMaxWidth,
-              ),
-              child: ListView.builder(
-                padding: const EdgeInsets.only(top: 4, bottom: 12),
-                itemCount: Provider.of<ComicRankPageController>(context)
-                    .rankingList
-                    .length,
-                itemBuilder: (context, index) {
-                  var entity = Provider.of<ComicRankPageController>(context)
-                      .rankingList[index];
-                  return CardListItem(
-                    cover: entity.cover,
-                    title: entity.title,
-                    details: entity.details,
-                    onTap: entity.onTap,
-                  );
-                },
+      builder: (context, child) => ListenableBuilder(
+        listenable: Provider.of<ComicSourceProvider>(
+          context,
+          listen: false,
+        ).activeHomeModel,
+        builder: (context, _) => EasyRefresh(
+          refreshOnStart: true,
+          onRefresh: () async {
+            await Provider.of<ComicRankPageController>(
+              context,
+              listen: false,
+            ).refresh(context);
+          },
+          onLoad: () async {
+            await Provider.of<ComicRankPageController>(
+              context,
+              listen: false,
+            ).load(context);
+          },
+          child: ColoredBox(
+            color: Theme.of(context).colorScheme.surface,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: AppLayout.contentMaxWidth,
+                ),
+                child: ListView.builder(
+                  padding: const EdgeInsets.only(top: 4, bottom: 12),
+                  itemCount: Provider.of<ComicRankPageController>(context)
+                      .rankingList
+                      .length,
+                  itemBuilder: (context, index) {
+                    var entity = Provider.of<ComicRankPageController>(context)
+                        .rankingList[index];
+                    return CardListItem(
+                      cover: entity.cover,
+                      title: entity.title,
+                      details: entity.details,
+                      onTap: entity.onTap,
+                    );
+                  },
+                ),
               ),
             ),
           ),

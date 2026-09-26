@@ -197,6 +197,9 @@
   "ReleaseInfoDownloadStarted": "已开始下载，下载完成后将自动打开",
   "CopyMangaApiDomain": "漫画与图片 API 线路",
   "CopyMangaChapterCommentDomain": "拷贝评论与吐槽 API 线路",
+  "CopyMangaChineseDisplay": "中文显示",
+  "CopyMangaChineseTraditional": "繁体中文",
+  "CopyMangaChineseSimplified": "简体中文",
   "CopyMangaRoutingHint": "上方选择热辣即可使用热辣图片配合拷贝章节吐槽。两站账号独立，切换立即生效，保留本地收藏与阅读记录。",
   "HotMangaTitle": "热辣漫画"
 }

@@ -97,109 +97,118 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
         );
         final controller = Provider.of<ComicDetailPageController>(context);
         final ready = controller.loadState == ComicDetailLoadState.ready;
-        return Scaffold(
-          backgroundColor: theme.colorScheme.surface,
-          endDrawer: ready ? _buildEndDrawer(context) : null,
-          bottomNavigationBar: ready ? _buildBottomBar(context) : null,
-          body: EasyRefresh(
-            controller: _easyRefreshController,
-            header: const ClassicHeader(
-              triggerOffset: 48,
-              position: IndicatorPosition.locator,
-              clamping: true,
-              safeArea: false,
-              showMessage: false,
-              textStyle: TextStyle(fontSize: 12),
-            ),
-            onRefresh: () async {
-              await Provider.of<ComicDetailPageController>(
-                context,
-                listen: false,
-              ).refresh(context, widget.comicId, widget.title);
-            },
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                // 封面和工具栏属于同一个可收缩头部，展开时图片延伸到状态栏。
-                if (ready && !widget.embedded)
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _DetailCoverHeaderDelegate(
-                      minExtent: media.padding.top + kToolbarHeight,
-                      compactExtent:
-                          media.padding.top + kToolbarHeight + compactExtent,
-                      maxExtent:
-                          media.padding.top + kToolbarHeight + expandedExtent,
-                      toolbarExtent: media.padding.top + kToolbarHeight,
-                      title: controller.title,
-                      compactCoverSize: _compactCoverSize,
-                      cover: DComicImage(controller.cover, fit: BoxFit.cover),
-                      details: _buildInfoDetails(context),
-                      expandedDetails: Row(
-                        children: [
-                          Expanded(child: _buildUpdateStatus(context)),
-                          const SizedBox(width: 12),
-                          _buildFavoriteButton(context),
-                        ],
+        final displaySource =
+            controller.comicSourceModel ??
+            Provider.of<ComicSourceProvider>(
+              context,
+              listen: false,
+            ).activeModel;
+        return ListenableBuilder(
+          listenable: displaySource,
+          builder: (context, _) => Scaffold(
+            backgroundColor: theme.colorScheme.surface,
+            endDrawer: ready ? _buildEndDrawer(context) : null,
+            bottomNavigationBar: ready ? _buildBottomBar(context) : null,
+            body: EasyRefresh(
+              controller: _easyRefreshController,
+              header: const ClassicHeader(
+                triggerOffset: 48,
+                position: IndicatorPosition.locator,
+                clamping: true,
+                safeArea: false,
+                showMessage: false,
+                textStyle: TextStyle(fontSize: 12),
+              ),
+              onRefresh: () async {
+                await Provider.of<ComicDetailPageController>(
+                  context,
+                  listen: false,
+                ).refresh(context, widget.comicId, widget.title);
+              },
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  // 封面和工具栏属于同一个可收缩头部，展开时图片延伸到状态栏。
+                  if (ready && !widget.embedded)
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _DetailCoverHeaderDelegate(
+                        minExtent: media.padding.top + kToolbarHeight,
+                        compactExtent:
+                            media.padding.top + kToolbarHeight + compactExtent,
+                        maxExtent:
+                            media.padding.top + kToolbarHeight + expandedExtent,
+                        toolbarExtent: media.padding.top + kToolbarHeight,
+                        title: controller.title,
+                        compactCoverSize: _compactCoverSize,
+                        cover: DComicImage(controller.cover, fit: BoxFit.cover),
+                        details: _buildInfoDetails(context),
+                        expandedDetails: Row(
+                          children: [
+                            Expanded(child: _buildUpdateStatus(context)),
+                            const SizedBox(width: 12),
+                            _buildFavoriteButton(context),
+                          ],
+                        ),
+                      ),
+                    )
+                  else if (ready)
+                    // 详情面板采用紧凑标题和单栏正文，避免双栏内再次分栏。
+                    SliverAppBar(
+                      pinned: true,
+                      title: Text(
+                        controller.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      actions: const [EndDrawerButton()],
+                    )
+                  else
+                    SliverAppBar(
+                      pinned: true,
+                      title: Text(
+                        displaySource.formatDisplayText(widget.title),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  )
-                else if (ready)
-                  // 详情面板采用紧凑标题和单栏正文，避免双栏内再次分栏。
-                  SliverAppBar(
-                    pinned: true,
-                    title: Text(
-                      controller.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  const HeaderLocator.sliver(clearExtent: false),
+                  if (ready)
+                    SliverPadding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          if (widget.embedded) ...[
+                            const SizedBox(height: 16),
+                            _buildWideCoverSection(context),
+                            const SizedBox(height: 16),
+                          ],
+                          _buildDescriptionSection(context),
+                          _buildTagSection(
+                            context,
+                            Icons.person_outline,
+                            _tr(context, '作者', 'Authors'),
+                            controller.authors,
+                          ),
+                          _buildTagSection(
+                            context,
+                            Icons.category_outlined,
+                            _tr(context, '分类', 'Categories'),
+                            controller.categories,
+                          ),
+                          _buildBindingSection(context),
+                          _buildChapterToolbar(context),
+                          ..._buildChapters(context),
+                        ]),
+                      ),
+                    )
+                  else
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _buildUnavailableDetails(context),
                     ),
-                    actions: const [EndDrawerButton()],
-                  )
-                else
-                  SliverAppBar(
-                    pinned: true,
-                    title: Text(
-                      widget.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                const HeaderLocator.sliver(clearExtent: false),
-                if (ready)
-                  SliverPadding(
-                    padding: const EdgeInsets.only(bottom: 24),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        if (widget.embedded) ...[
-                          const SizedBox(height: 16),
-                          _buildWideCoverSection(context),
-                          const SizedBox(height: 16),
-                        ],
-                        _buildDescriptionSection(context),
-                        _buildTagSection(
-                          context,
-                          Icons.person_outline,
-                          _tr(context, '作者', 'Authors'),
-                          controller.authors,
-                        ),
-                        _buildTagSection(
-                          context,
-                          Icons.category_outlined,
-                          _tr(context, '分类', 'Categories'),
-                          controller.categories,
-                        ),
-                        _buildBindingSection(context),
-                        _buildChapterToolbar(context),
-                        ..._buildChapters(context),
-                      ]),
-                    ),
-                  )
-                else
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: _buildUnavailableDetails(context),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -886,7 +895,8 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 4),
                 child: Text(
-                  tuple.key,
+                  controller.comicSourceModel?.formatDisplayText(tuple.key) ??
+                      tuple.key,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: colors.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
@@ -1054,7 +1064,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
     var detailModel = controller.detailModel!;
     var chapters = controller.reverse ? data.reversed.toList() : data;
     if (writeHistory) {
-      controller.addComicHistory(chapter.chapterId, chapter.title);
+      controller.addComicHistory(chapter.chapterId, chapter.rawTitle);
     }
     Provider.of<NavigatorProvider>(context, listen: false)
         .getNavigator(context, NavigatorType.root)
@@ -1104,7 +1114,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
     var chapters = controller.reverse
         ? resultChapters.reversed.toList()
         : resultChapters;
-    controller.addComicHistory(resultChapter.chapterId, resultChapter.title);
+    controller.addComicHistory(resultChapter.chapterId, resultChapter.rawTitle);
     Provider.of<NavigatorProvider>(context, listen: false)
         .getNavigator(context, NavigatorType.root)
         ?.push(

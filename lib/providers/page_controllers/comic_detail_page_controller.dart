@@ -159,11 +159,15 @@ class ComicDetailPageController extends BaseProvider {
 
   String? get latestChapterId => detailModel?.latestChapterId;
 
-  String get title => _detail?.title ?? _originTitle ?? '';
+  String get title =>
+      detailModel?.title ??
+      comicSourceModel?.formatDisplayText(_originTitle ?? '') ??
+      _originTitle ??
+      '';
 
   ImageEntity get cover => _detail?.cover ?? ImageEntity(ImageType.unknown, "");
 
-  String get description => _detail?.description ?? "";
+  String get description => detailModel?.description ?? "";
 
   String get status => _detail?.status ?? "";
 
