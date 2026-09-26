@@ -102,41 +102,34 @@ abstract class BaseComicSourceModel extends BaseModel {
     }
   }
 
-  /// 解析 origin 侧书目 ID（[comicId] 来自 [sourceModel]）在当前源上的绑定结果：
-  /// - 已存在的映射（含同源显式覆盖）优先，空 [ComicMappingEntity.resultComicId]
-  ///   表示用户显式解绑，直接返回 null，不再触发自动搜索；
-  /// - 同源且无映射时直接返回原始 ID；
-  /// - 跨源且无映射时按标题自动匹配（唯一结果或简体中文标题相等），
-  ///   仅在匹配成功后才以事务方式写入（不覆盖显式绑定/解绑）。
+  /// Resolves [comicId] from [sourceModel] on this source.
+  ///
+  /// Stored bindings and suppression take precedence. Missing same-source
+  /// bindings retain identity; missing cross-source bindings may be discovered
+  /// by title and stored atomically.
   Future<String?> resolveComicId(
     String comicId,
     String title,
     BaseComicSourceModel sourceModel,
   ) async {
-    var databaseInstance = await DatabaseInstance.instance;
-    var comicMappingEntity = await databaseInstance.comicMappingDao
-        .getComicMappingByComicId(
-          comicId,
-          sourceModel.type.sourceId,
-          type.sourceId,
-        );
-    if (comicMappingEntity != null) {
-      if (comicMappingEntity.resultComicId.isEmpty) {
-        return null;
-      }
-      return comicMappingEntity.resultComicId;
-    }
-    if (sourceModel.type.sourceId == type.sourceId) {
-      return comicId;
-    }
-    var searchResultList = await searchComicDetail(title);
+    final database = await DatabaseInstance.instance;
+    final mapping = await database.comicMappingDao.lookupComicId(
+      comicId,
+      sourceModel.type.sourceId,
+      type.sourceId,
+    );
+    if (mapping != null) return mapping.isEmpty ? null : mapping;
+    if (sourceModel.type.sourceId == type.sourceId) return comicId;
+
+    final searchResults = await searchComicDetail(title);
     String? matchedComicId;
-    if (searchResultList.length == 1) {
-      matchedComicId = searchResultList.first.comicId;
+    if (searchResults.length == 1 && searchResults.first.comicId.isNotEmpty) {
+      matchedComicId = searchResults.first.comicId;
     } else {
-      var targetTitle = ChineseHelper.convertToSimplifiedChinese(title);
-      for (var item in searchResultList) {
-        var sourceTitle = ChineseHelper.convertToSimplifiedChinese(item.title);
+      final targetTitle = ChineseHelper.convertToSimplifiedChinese(title);
+      for (final item in searchResults) {
+        if (item.comicId.isEmpty) continue;
+        final sourceTitle = ChineseHelper.convertToSimplifiedChinese(item.title);
         if (sourceTitle == targetTitle) {
           matchedComicId = item.comicId;
           break;
@@ -144,28 +137,24 @@ abstract class BaseComicSourceModel extends BaseModel {
       }
     }
     if (matchedComicId == null) {
-      // 未匹配成功时不持久化空结果；但搜索期间可能已有显式绑定/解绑
-      // 落库，此时按显式结果返回。
-      var existing = await databaseInstance.comicMappingDao
-          .getComicMappingByComicId(
-            comicId,
-            sourceModel.type.sourceId,
-            type.sourceId,
-          );
-      if (existing != null) {
-        return existing.resultComicId.isEmpty ? null : existing.resultComicId;
-      }
-      return null;
+      final existing = await database.comicMappingDao.lookupComicId(
+        comicId,
+        sourceModel.type.sourceId,
+        type.sourceId,
+      );
+      return existing == null || existing.isEmpty ? null : existing;
     }
-    var entity = await databaseInstance.comicMappingDao
+    final result = await database.comicMappingDao
         .insertAutomaticMappingIfAbsent(
           comicId,
           sourceModel.type.sourceId,
           type.sourceId,
           matchedComicId,
         );
-    SubscribeBadgeState.changes.notifyListeners();
-    return entity.resultComicId.isEmpty ? null : entity.resultComicId;
+    if (result == matchedComicId) {
+      SubscribeBadgeState.changes.notifyListeners();
+    }
+    return result.isEmpty ? null : result;
   }
 
   Future<void> bindComicIdFromSourceModel(
@@ -173,16 +162,12 @@ abstract class BaseComicSourceModel extends BaseModel {
     String targetComicId,
     BaseComicSourceModel sourceModel,
   ) async {
-    var databaseInstance = await DatabaseInstance.instance;
-    var comicMappingEntity = await databaseInstance.comicMappingDao
-        .getOrCreateConfigByComicId(
-          comicId,
-          sourceModel.type.sourceId,
-          type.sourceId,
-        );
-    comicMappingEntity.resultComicId = targetComicId;
-    await databaseInstance.comicMappingDao.updateComicMapping(
-      comicMappingEntity,
+    final database = await DatabaseInstance.instance;
+    await database.comicMappingDao.bindComic(
+      comicId,
+      sourceModel.type.sourceId,
+      type.sourceId,
+      targetComicId,
     );
     SubscribeBadgeState.changes.notifyListeners();
   }

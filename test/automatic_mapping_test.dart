@@ -81,10 +81,15 @@ void main() {
     return value;
   }
 
-  Future<String?> mapping(String id) async =>
-      (await (await DatabaseInstance.instance).comicMappingDao
-              .getComicMappingByComicId(id, 'origin', 'target'))
-          ?.resultComicId;
+  Future<String?> mapping(
+    String id, {
+    String provider = 'origin',
+    String otherProvider = 'target',
+  }) async => (await DatabaseInstance.instance).comicMappingDao.lookupComicId(
+    id,
+    provider,
+    otherProvider,
+  );
 
   setUpAll(() async {
     directory = await Directory.systemTemp.createTemp('automatic_mapping_');
@@ -272,18 +277,31 @@ void main() {
     },
   );
 
-  test('reliable reverse bindings require no search and reverse unbind prevents linking', () async {
-    await origin.bindComicIdFromSourceModel('linked', 'a', target);
-    final q = queue();
-    q.enqueue(origin, [_book('a')]);
-    await q.idle;
-    expect(target.searches, 0);
-    await origin.bindComicIdFromSourceModel('blocked', '', target);
-    target.results = [_hit('blocked')];
-    q.enqueue(origin, [_book('b')]);
-    await q.idle;
-    expect(await mapping('b'), isNull);
-  });
+  test(
+    'stored relationships work from either endpoint and suppression prevents linking',
+    () async {
+      await origin.bindComicIdFromSourceModel('linked', 'a', target);
+      final q = queue();
+      q.enqueue(origin, [_book('a')]);
+      await q.idle;
+      expect(target.searches, 0);
+      expect(await mapping('a'), 'linked');
+
+      await origin.bindComicIdFromSourceModel('blocked', '', target);
+      expect(
+        await mapping(
+          'blocked',
+          provider: 'target',
+          otherProvider: 'origin',
+        ),
+        '',
+      );
+      target.results = [_hit('blocked')];
+      q.enqueue(origin, [_book('b')]);
+      await q.idle;
+      expect(await mapping('b'), isNull);
+    },
+  );
 
   test('custom interval applies between completed searches', () async {
     await config.setAutoMapIntervalSeconds(2);

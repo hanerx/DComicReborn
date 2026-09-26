@@ -1,26 +1,56 @@
 import 'package:dcomic/database/entity/entity_base.dart';
 import 'package:floor_community/floor.dart';
 
-@Entity()
+@Entity(
+  primaryKeys: ['providerA', 'comicA', 'providerB', 'comicB'],
+  indices: [
+    Index(value: ['providerB', 'comicB', 'providerA']),
+  ],
+)
 class ComicMappingEntity extends EntityBase {
-  @PrimaryKey(autoGenerate: true)
-  final int? id;
+  final String providerA;
+  final String comicA;
+  final String providerB;
+  final String comicB;
+  final bool blocked;
 
-  final String comicId;
+  ComicMappingEntity(
+    this.providerA,
+    this.comicA,
+    this.providerB,
+    this.comicB,
+    this.blocked,
+  );
 
-  final String sourceProviderName;
-
-  final String targetProviderName;
-
-  String resultComicId;
-
-  ComicMappingEntity(this.id, this.comicId, this.sourceProviderName,
-      this.targetProviderName, this.resultComicId);
-
-  ComicMappingEntity.createComicMappingEntity(
-      this.comicId, this.sourceProviderName, this.targetProviderName,
-      {this.id, this.resultComicId = ''});
+  factory ComicMappingEntity.between(
+    String provider,
+    String comic,
+    String otherProvider,
+    String otherComic, {
+    bool blocked = false,
+  }) {
+    final providerOrder = provider.compareTo(otherProvider);
+    final ordered = providerOrder < 0 ||
+        (providerOrder == 0 && comic.compareTo(otherComic) <= 0);
+    return ordered
+        ? ComicMappingEntity(
+            provider,
+            comic,
+            otherProvider,
+            otherComic,
+            blocked,
+          )
+        : ComicMappingEntity(
+            otherProvider,
+            otherComic,
+            provider,
+            comic,
+            blocked,
+          );
+  }
 }
+
+typedef _ComicMappingKey = (String, String, String, String);
 
 @dao
 abstract class ComicMappingDao {
@@ -28,51 +58,172 @@ abstract class ComicMappingDao {
   Future<List<ComicMappingEntity>> getAllComicMappingEntity();
 
   @Query(
-      'SELECT * FROM ComicMappingEntity WHERE `comicId` = :comicId AND `sourceProviderName` = :sourceProviderName AND `targetProviderName` = :targetProviderName')
-  Future<ComicMappingEntity?> getComicMappingByComicId(
-      String comicId, String sourceProviderName, String targetProviderName);
+    'SELECT * FROM ComicMappingEntity '
+    'WHERE (`providerA` = :provider AND `comicA` = :comicId '
+    'AND `providerB` = :otherProvider) '
+    'OR (`providerB` = :provider AND `comicB` = :comicId '
+    'AND `providerA` = :otherProvider)',
+  )
+  Future<List<ComicMappingEntity>> getIncidentComicMappings(
+    String comicId,
+    String provider,
+    String otherProvider,
+  );
 
   @Insert(onConflict: OnConflictStrategy.replace)
   Future<void> insertComicMapping(ComicMappingEntity comicMappingEntity);
 
-  @Update(onConflict: OnConflictStrategy.replace)
-  Future<void> updateComicMapping(ComicMappingEntity comicMappingEntity);
-
-  @transaction
-  Future<ComicMappingEntity> getOrCreateConfigByComicId(String comicId,
-      String sourceProviderName, String targetProviderName) async {
-    var result = await getComicMappingByComicId(
-        comicId, sourceProviderName, targetProviderName);
-    if (result == null) {
-      result ??= ComicMappingEntity.createComicMappingEntity(
-          comicId, sourceProviderName, targetProviderName);
-      await insertComicMapping(result);
-      result = await getComicMappingByComicId(
-              comicId, sourceProviderName, targetProviderName) ??
-          result;
+  /// Returns `null` for no stored decision, an empty string for suppression or
+  /// ambiguity, and the unique active counterpart otherwise.
+  Future<String?> lookupComicId(
+    String comicId,
+    String provider,
+    String otherProvider,
+  ) async {
+    String? activeComicId;
+    var activeConflict = false;
+    var suppressed = false;
+    for (final mapping
+        in await getIncidentComicMappings(comicId, provider, otherProvider)) {
+      final counterpart = _counterpart(mapping, comicId, provider);
+      if (mapping.blocked || counterpart.isEmpty) {
+        suppressed = true;
+      } else if (activeComicId == null) {
+        activeComicId = counterpart;
+      } else if (activeComicId != counterpart) {
+        activeConflict = true;
+      }
     }
-    return result;
+    if (activeConflict) {
+      return '';
+    }
+    return activeComicId ?? (suppressed ? '' : null);
   }
 
-  /// 返回已存在的映射（显式绑定/解绑优先，不会被自动匹配覆盖），
-  /// 或在映射缺失时原子地插入 [resultComicId]。
+  /// Applies a manual bind or unbind atomically.
+  ///
+  /// An empty [otherComicId] means unbind. Displaced active edges are retained
+  /// as suppression records so automatic matching cannot recreate them.
   @transaction
-  Future<ComicMappingEntity> insertAutomaticMappingIfAbsent(
-      String comicId,
-      String sourceProviderName,
-      String targetProviderName,
-      String resultComicId) async {
-    var existing = await getComicMappingByComicId(
-        comicId, sourceProviderName, targetProviderName);
-    if (existing != null) {
-      return existing;
+  Future<void> bindComic(
+    String comicId,
+    String provider,
+    String otherProvider,
+    String otherComicId,
+  ) async {
+    if (comicId.isEmpty) {
+      throw ArgumentError.value(comicId, 'comicId', 'must not be empty');
     }
-    var entity = ComicMappingEntity.createComicMappingEntity(
-        comicId, sourceProviderName, targetProviderName);
-    entity.resultComicId = resultComicId;
-    await insertComicMapping(entity);
-    return await getComicMappingByComicId(
-            comicId, sourceProviderName, targetProviderName) ??
-        entity;
+    if (otherComicId.isEmpty) {
+      final incident =
+          await getIncidentComicMappings(comicId, provider, otherProvider);
+      var blockedActiveEdge = false;
+      for (final mapping in incident) {
+        if (!mapping.blocked) {
+          blockedActiveEdge = true;
+          await insertComicMapping(_withBlocked(mapping));
+        }
+      }
+      if (!blockedActiveEdge) {
+        await insertComicMapping(
+          ComicMappingEntity.between(
+            provider,
+            comicId,
+            otherProvider,
+            '',
+            blocked: true,
+          ),
+        );
+      }
+      return;
+    }
+
+    final desired = ComicMappingEntity.between(
+      provider,
+      comicId,
+      otherProvider,
+      otherComicId,
+    );
+    final incident = <_ComicMappingKey, ComicMappingEntity>{};
+    for (final mapping
+        in await getIncidentComicMappings(comicId, provider, otherProvider)) {
+      incident[_key(mapping)] = mapping;
+    }
+    for (final mapping in await getIncidentComicMappings(
+      otherComicId,
+      otherProvider,
+      provider,
+    )) {
+      incident[_key(mapping)] = mapping;
+    }
+    final desiredKey = _key(desired);
+    for (final entry in incident.entries) {
+      if (!entry.value.blocked && entry.key != desiredKey) {
+        await insertComicMapping(_withBlocked(entry.value));
+      }
+    }
+    await insertComicMapping(desired);
   }
+
+  /// Inserts an automatic edge only while both endpoints have no stored state.
+  ///
+  /// The caller-side result wins unchanged. Any occupied, suppressed, or
+  /// ambiguous counterpart prevents insertion and returns an empty string.
+  @transaction
+  Future<String> insertAutomaticMappingIfAbsent(
+    String comicId,
+    String provider,
+    String otherProvider,
+    String otherComicId,
+  ) async {
+    if (comicId.isEmpty || otherComicId.isEmpty) {
+      return '';
+    }
+    final callerResult =
+        await lookupComicId(comicId, provider, otherProvider);
+    if (callerResult != null) {
+      return callerResult;
+    }
+    final counterpartResult =
+        await lookupComicId(otherComicId, otherProvider, provider);
+    if (counterpartResult != null) {
+      return '';
+    }
+    await insertComicMapping(
+      ComicMappingEntity.between(
+        provider,
+        comicId,
+        otherProvider,
+        otherComicId,
+      ),
+    );
+    return otherComicId;
+  }
+
+  static String _counterpart(
+    ComicMappingEntity mapping,
+    String comicId,
+    String provider,
+  ) {
+    if (mapping.providerA == provider && mapping.comicA == comicId) {
+      return mapping.comicB;
+    }
+    return mapping.comicA;
+  }
+
+  static _ComicMappingKey _key(ComicMappingEntity mapping) => (
+        mapping.providerA,
+        mapping.comicA,
+        mapping.providerB,
+        mapping.comicB,
+      );
+
+  static ComicMappingEntity _withBlocked(ComicMappingEntity mapping) =>
+      ComicMappingEntity(
+        mapping.providerA,
+        mapping.comicA,
+        mapping.providerB,
+        mapping.comicB,
+        true,
+      );
 }

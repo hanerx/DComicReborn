@@ -87,6 +87,87 @@ void main() {
     await directory.delete(recursive: true);
   });
 
+  test('one binding can be used from either endpoint after reloading', () async {
+    final copy = _FakeSource('copy');
+    final zai = _FakeSource('zai');
+    await zai.bindComicIdFromSourceModel('copy-book', 'zai-book', copy);
+    final reloadedCopy = _FakeSource('copy')
+      ..searchError = StateError('stored binding must work offline');
+    final reloadedZai = _FakeSource('zai')
+      ..searchError = StateError('stored binding must work offline');
+
+    expect(await reloadedCopy.resolveComicId('zai-book', 'Different', zai),
+        'copy-book');
+    expect(await reloadedZai.resolveComicId('copy-book', 'Comic', copy),
+        'zai-book');
+  });
+
+  test('unbinding from either endpoint removes the relationship for both',
+      () async {
+    final copy = _FakeSource('copy')
+      ..searchError = StateError('explicit unbind must prevent search');
+    final zai = _FakeSource('zai')
+      ..searchError = StateError('explicit unbind must prevent search');
+    await zai.bindComicIdFromSourceModel('copy-book', 'zai-book', copy);
+    await copy.bindComicIdFromSourceModel('zai-book', '', zai);
+
+    expect(await zai.resolveComicId('copy-book', 'Comic', copy), isNull);
+    expect(await copy.resolveComicId('zai-book', 'Comic', zai), isNull);
+    await zai.bindComicIdFromSourceModel('copy-book', 'zai-book', copy);
+    expect(await copy.resolveComicId('zai-book', 'Comic', zai), 'copy-book');
+    expect(await zai.resolveComicId('copy-book', 'Comic', copy), 'zai-book');
+  });
+
+  test('rebinding displaces the old relationship without resurrecting it',
+      () async {
+    final copy = _FakeSource('copy')
+      ..searchError = StateError('displaced bindings must prevent search');
+    final zai = _FakeSource('zai')
+      ..searchError = StateError('existing bindings must prevent search');
+    await zai.bindComicIdFromSourceModel('copy-book', 'old-zai', copy);
+    await zai.bindComicIdFromSourceModel('copy-book', 'new-zai', copy);
+
+    expect(await copy.resolveComicId('old-zai', 'Comic', zai), isNull);
+    expect(await copy.resolveComicId('new-zai', 'Comic', zai), 'copy-book');
+    expect(await zai.resolveComicId('copy-book', 'Comic', copy), 'new-zai');
+  });
+
+  test('a late automatic match cannot undo an unbind from the other endpoint',
+      () async {
+    final copy = _FakeSource('copy');
+    final zai = _FakeSource.gated('zai');
+    final pending = zai.resolveComicId('copy-book', 'Comic', copy);
+    await zai.searchStarted!.future;
+    await zai.bindComicIdFromSourceModel('copy-book', 'zai-book', copy);
+    await copy.bindComicIdFromSourceModel('zai-book', '', zai);
+    zai.searchGate!.complete([_searchHit('Comic', 'zai-book')]);
+
+    expect(await pending, isNull);
+    expect(await zai.resolveComicId('copy-book', 'Comic', copy), isNull);
+  });
+
+  test('an automatic match also creates one shared relationship', () async {
+    final copy = _FakeSource('copy')
+      ..searchError = StateError('automatic binding must be shared');
+    final zai = _FakeSource('zai', results: [_searchHit('Comic', 'zai-book')]);
+
+    expect(await zai.resolveComicId('copy-book', 'Comic', copy), 'zai-book');
+    expect(await copy.resolveComicId('zai-book', 'Comic', zai), 'copy-book');
+  });
+
+  test('an automatic match cannot take an occupied counterpart', () async {
+    final copy = _FakeSource('copy');
+    final zai = _FakeSource.gated('zai');
+    final pending = zai.resolveComicId('copy-book', 'Comic', copy);
+    await zai.searchStarted!.future;
+    await copy.bindComicIdFromSourceModel('zai-book', 'another-copy', zai);
+    zai.searchGate!.complete([_searchHit('Comic', 'zai-book')]);
+
+    expect(await pending, isNull);
+    expect(await copy.resolveComicId('zai-book', 'Comic', zai), 'another-copy');
+    expect(await zai.resolveComicId('another-copy', 'Comic', copy), 'zai-book');
+  });
+
   test('an explicitly cleared binding stays unbound after loading again',
       () async {
     final origin = _FakeSource('origin');

@@ -38,13 +38,18 @@ void main() {
   late GridItemEntityWithStatus item;
 
   Future<void> mapping(
-    String from,
-    String fromId,
-    String to,
-    String toId,
+    String provider,
+    String comic,
+    String otherProvider,
+    String otherComic,
   ) async {
     await (await DatabaseInstance.instance).comicMappingDao.insertComicMapping(
-      ComicMappingEntity(null, fromId, from, to, toId),
+      ComicMappingEntity.between(
+        provider,
+        comic,
+        otherProvider,
+        otherComic,
+      ),
     );
   }
 
@@ -136,26 +141,29 @@ void main() {
     expect(stored!.get<bool>(), isFalse);
   });
 
-  test('opt in aggregates reverse mappings without copying state; disabling restores badge', () async {
-    await mapping('b', '2', 'a', '1');
-    await seen('b', '2', update);
-    await account.refreshSubscribeBadges([item]);
-    expect(item.badges, isNotEmpty);
-    await enabled(true);
-    await account.refreshSubscribeBadges([item]);
-    expect(item.badges, isEmpty);
-    expect(
-      await (await DatabaseInstance.instance).comicSubscribeStateDao
-          .getComicSubscribeStateByComicId('1', 'a'),
-      isNull,
-    );
-    await enabled(false);
-    await account.refreshSubscribeBadges([item]);
-    expect(item.badges, isNotEmpty);
-  });
+  test(
+    'opt in aggregates an undirected mapping without copying state',
+    () async {
+      await mapping('b', '2', 'a', '1');
+      await seen('b', '2', update);
+      await account.refreshSubscribeBadges([item]);
+      expect(item.badges, isNotEmpty);
+      await enabled(true);
+      await account.refreshSubscribeBadges([item]);
+      expect(item.badges, isEmpty);
+      expect(
+        await (await DatabaseInstance.instance).comicSubscribeStateDao
+            .getComicSubscribeStateByComicId('1', 'a'),
+        isNull,
+      );
+      await enabled(false);
+      await account.refreshSubscribeBadges([item]);
+      expect(item.badges, isNotEmpty);
+    },
+  );
 
   test(
-    'forward mapping retains updates newer than either viewing time',
+    'an undirected mapping retains updates newer than either viewing time',
     () async {
       await enabled(true);
       await mapping('a', '1', 'b', '2');
@@ -172,10 +180,15 @@ void main() {
     },
   );
 
-  test('explicit reverse unbinding blocks aggregation', () async {
+  test('unbinding from either endpoint blocks aggregation', () async {
     await enabled(true);
     await mapping('b', '2', 'a', '1');
-    await mapping('a', '1', 'b', '');
+    await (await DatabaseInstance.instance).comicMappingDao.bindComic(
+      '1',
+      'a',
+      'b',
+      '',
+    );
     await seen('b', '2', update);
     await account.refreshSubscribeBadges([item]);
     expect(item.badges, isNotEmpty);

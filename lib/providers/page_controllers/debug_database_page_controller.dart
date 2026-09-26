@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 class DatabaseDebugPageController extends BaseProvider {
   final List<String> tabNames = [
     'ComicHistoryEntity',
+    'ComicMappingEntity',
     'ConfigEntity',
     'CookieEntity',
     'ModelConfigEntity'

@@ -88,7 +88,7 @@ class _$DComicDatabase extends DComicDatabase {
     Callback? callback,
   ]) async {
     final databaseOptions = sqflite.OpenDatabaseOptions(
-      version: 6,
+      version: 7,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
         await callback?.onConfigure?.call(database);
@@ -120,7 +120,7 @@ class _$DComicDatabase extends DComicDatabase {
           'CREATE TABLE IF NOT EXISTS `ModelConfigEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT, `sourceModel` TEXT)',
         );
         await database.execute(
-          'CREATE TABLE IF NOT EXISTS `ComicMappingEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `sourceProviderName` TEXT NOT NULL, `targetProviderName` TEXT NOT NULL, `resultComicId` TEXT NOT NULL)',
+          'CREATE TABLE IF NOT EXISTS `ComicMappingEntity` (`providerA` TEXT NOT NULL, `comicA` TEXT NOT NULL, `providerB` TEXT NOT NULL, `comicB` TEXT NOT NULL, `blocked` INTEGER NOT NULL, PRIMARY KEY (`providerA`, `comicA`, `providerB`, `comicB`))',
         );
         await database.execute(
           'CREATE TABLE IF NOT EXISTS `ComicSubscribeStateEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `timestamp` INTEGER, `providerName` TEXT NOT NULL)',
@@ -130,6 +130,9 @@ class _$DComicDatabase extends DComicDatabase {
         );
         await database.execute(
           'CREATE TABLE IF NOT EXISTS `ChapterRulePatternEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `groupId` INTEGER NOT NULL, `pattern` TEXT NOT NULL, FOREIGN KEY (`groupId`) REFERENCES `ChapterRuleGroupEntity` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE)',
+        );
+        await database.execute(
+          'CREATE INDEX `index_ComicMappingEntity_providerB_comicB_providerA` ON `ComicMappingEntity` (`providerB`, `comicB`, `providerA`)',
         );
         await database.execute(
           'CREATE INDEX `index_ChapterRulePatternEntity_groupId` ON `ChapterRulePatternEntity` (`groupId`)',
@@ -563,23 +566,11 @@ class _$ComicMappingDao extends ComicMappingDao {
         database,
         'ComicMappingEntity',
         (ComicMappingEntity item) => <String, Object?>{
-          'id': item.id,
-          'comicId': item.comicId,
-          'sourceProviderName': item.sourceProviderName,
-          'targetProviderName': item.targetProviderName,
-          'resultComicId': item.resultComicId,
-        },
-      ),
-      _comicMappingEntityUpdateAdapter = UpdateAdapter(
-        database,
-        'ComicMappingEntity',
-        ['id'],
-        (ComicMappingEntity item) => <String, Object?>{
-          'id': item.id,
-          'comicId': item.comicId,
-          'sourceProviderName': item.sourceProviderName,
-          'targetProviderName': item.targetProviderName,
-          'resultComicId': item.resultComicId,
+          'providerA': item.providerA,
+          'comicA': item.comicA,
+          'providerB': item.providerB,
+          'comicB': item.comicB,
+          'blocked': item.blocked ? 1 : 0,
         },
       );
 
@@ -592,38 +583,36 @@ class _$ComicMappingDao extends ComicMappingDao {
   final InsertionAdapter<ComicMappingEntity>
   _comicMappingEntityInsertionAdapter;
 
-  final UpdateAdapter<ComicMappingEntity> _comicMappingEntityUpdateAdapter;
-
   @override
   Future<List<ComicMappingEntity>> getAllComicMappingEntity() async {
     return _queryAdapter.queryList(
       'SELECT * FROM ComicMappingEntity',
       mapper: (Map<String, Object?> row) => ComicMappingEntity(
-        row['id'] as int?,
-        row['comicId'] as String,
-        row['sourceProviderName'] as String,
-        row['targetProviderName'] as String,
-        row['resultComicId'] as String,
+        row['providerA'] as String,
+        row['comicA'] as String,
+        row['providerB'] as String,
+        row['comicB'] as String,
+        (row['blocked'] as int) != 0,
       ),
     );
   }
 
   @override
-  Future<ComicMappingEntity?> getComicMappingByComicId(
+  Future<List<ComicMappingEntity>> getIncidentComicMappings(
     String comicId,
-    String sourceProviderName,
-    String targetProviderName,
+    String provider,
+    String otherProvider,
   ) async {
-    return _queryAdapter.query(
-      'SELECT * FROM ComicMappingEntity WHERE `comicId` = ?1 AND `sourceProviderName` = ?2 AND `targetProviderName` = ?3',
+    return _queryAdapter.queryList(
+      'SELECT * FROM ComicMappingEntity WHERE (`providerA` = ?2 AND `comicA` = ?1 AND `providerB` = ?3) OR (`providerB` = ?2 AND `comicB` = ?1 AND `providerA` = ?3)',
       mapper: (Map<String, Object?> row) => ComicMappingEntity(
-        row['id'] as int?,
-        row['comicId'] as String,
-        row['sourceProviderName'] as String,
-        row['targetProviderName'] as String,
-        row['resultComicId'] as String,
+        row['providerA'] as String,
+        row['comicA'] as String,
+        row['providerB'] as String,
+        row['comicB'] as String,
+        (row['blocked'] as int) != 0,
       ),
-      arguments: [comicId, sourceProviderName, targetProviderName],
+      arguments: [comicId, provider, otherProvider],
     );
   }
 
@@ -636,56 +625,46 @@ class _$ComicMappingDao extends ComicMappingDao {
   }
 
   @override
-  Future<void> updateComicMapping(ComicMappingEntity comicMappingEntity) async {
-    await _comicMappingEntityUpdateAdapter.update(
-      comicMappingEntity,
-      OnConflictStrategy.replace,
-    );
-  }
-
-  @override
-  Future<ComicMappingEntity> getOrCreateConfigByComicId(
+  Future<void> bindComic(
     String comicId,
-    String sourceProviderName,
-    String targetProviderName,
+    String provider,
+    String otherProvider,
+    String otherComicId,
   ) async {
     if (database is sqflite.Transaction) {
-      return super.getOrCreateConfigByComicId(
-        comicId,
-        sourceProviderName,
-        targetProviderName,
-      );
+      await super.bindComic(comicId, provider, otherProvider, otherComicId);
     } else {
-      return (database as sqflite.Database).transaction<ComicMappingEntity>((
+      await (database as sqflite.Database).transaction<void>((
         transaction,
       ) async {
         final transactionDatabase = _$DComicDatabase(changeListener)
           ..database = transaction;
-        return transactionDatabase.comicMappingDao.getOrCreateConfigByComicId(
+        await transactionDatabase.comicMappingDao.bindComic(
           comicId,
-          sourceProviderName,
-          targetProviderName,
+          provider,
+          otherProvider,
+          otherComicId,
         );
       });
     }
   }
 
   @override
-  Future<ComicMappingEntity> insertAutomaticMappingIfAbsent(
+  Future<String> insertAutomaticMappingIfAbsent(
     String comicId,
-    String sourceProviderName,
-    String targetProviderName,
-    String resultComicId,
+    String provider,
+    String otherProvider,
+    String otherComicId,
   ) async {
     if (database is sqflite.Transaction) {
       return super.insertAutomaticMappingIfAbsent(
         comicId,
-        sourceProviderName,
-        targetProviderName,
-        resultComicId,
+        provider,
+        otherProvider,
+        otherComicId,
       );
     } else {
-      return (database as sqflite.Database).transaction<ComicMappingEntity>((
+      return (database as sqflite.Database).transaction<String>((
         transaction,
       ) async {
         final transactionDatabase = _$DComicDatabase(changeListener)
@@ -693,9 +672,9 @@ class _$ComicMappingDao extends ComicMappingDao {
         return transactionDatabase.comicMappingDao
             .insertAutomaticMappingIfAbsent(
               comicId,
-              sourceProviderName,
-              targetProviderName,
-              resultComicId,
+              provider,
+              otherProvider,
+              otherComicId,
             );
       });
     }

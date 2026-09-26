@@ -118,11 +118,15 @@ class GridCardItem extends StatelessWidget {
   static const double titleSubtitleSpacing = 2.0;
   static const double gridSpacing = 16.0;
 
+  static const double sourceIconSize = 16.0;
+  static const double sourceIconGap = 2.0;
+  static const double sourceIconInset = 4.0;
   final String? title;
   final String? subtitle;
   final ImageEntity image;
   final void Function()? onTap;
   final Map<badges.BadgePosition, String Function(BuildContext)>? badgeMaps;
+  final List<String> sourceIds;
 
   /// Cover width / height. Comic covers use 2/3, square artwork 1/1.
   final double coverAspectRatio;
@@ -134,6 +138,7 @@ class GridCardItem extends StatelessWidget {
     required this.image,
     this.onTap,
     this.badgeMaps,
+    this.sourceIds = const [],
     this.coverAspectRatio = 2 / 3,
   });
 
@@ -216,10 +221,53 @@ class GridCardItem extends StatelessWidget {
           aspectRatio: coverAspectRatio,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: DComicImage(
-              image,
-              errorMessageOverflow: TextOverflow.ellipsis,
-              fit: BoxFit.cover,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                DComicImage(
+                  image,
+                  errorMessageOverflow: TextOverflow.ellipsis,
+                  fit: BoxFit.cover,
+                ),
+                if (sourceIds.isNotEmpty)
+                  Positioned(
+                    left: sourceIconInset,
+                    right: sourceIconInset,
+                    bottom: sourceIconInset,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        var visibleCount =
+                            (constraints.maxWidth + sourceIconGap) ~/
+                            (sourceIconSize + sourceIconGap);
+                        if (visibleCount > 5) visibleCount = 5;
+                        if (visibleCount > sourceIds.length) {
+                          visibleCount = sourceIds.length;
+                        }
+                        if (visibleCount == 0) {
+                          return const SizedBox.shrink();
+                        }
+                        return Row(
+                          children: [
+                            for (var index = 0; index < visibleCount; index++) ...[
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(3),
+                                child: Image.asset(
+                                  'assets/sources/${sourceIds[index]}.png',
+                                  width: sourceIconSize,
+                                  height: sourceIconSize,
+                                  fit: BoxFit.contain,
+                                  semanticLabel: sourceIds[index],
+                                ),
+                              ),
+                              if (index + 1 < visibleCount)
+                                const SizedBox(width: sourceIconGap),
+                            ],
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+              ],
             ),
           ),
         ),

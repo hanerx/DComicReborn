@@ -42,10 +42,8 @@ class _MappingTask {
 /// - The attempt count is persisted immediately before the search starts; a
 ///   disable arriving while that persistence is awaited rolls the count back
 ///   so unstarted requests are never counted.
-/// - Existing forward mappings (explicit bind or unbind) are skipped, a
-///   unique reliable reverse mapping answers without network, and an explicit
-///   reverse unbind or a conflicting reverse binding blocks new unreliable
-///   relationships.
+/// - Existing relationships or suppression records are skipped regardless of
+///   which endpoint was stored first.
 /// - Matches are strict: exactly one search result with a simplified Chinese
 ///   equivalent title and a non-empty id, inserted via
 ///   [ComicMappingDao.insertAutomaticMappingIfAbsent] so concurrent explicit
@@ -180,31 +178,13 @@ class AutomaticMappingQueue extends ChangeNotifier {
   Future<void> _process(_MappingTask task) async {
     final database = await DatabaseInstance.instance;
     if (!_enabled) return;
-    // An existing forward mapping (explicit bind or unbind) wins outright.
-    final existing = await database.comicMappingDao.getComicMappingByComicId(
+    final existing = await database.comicMappingDao.lookupComicId(
       task.comicId,
       task.origin.type.sourceId,
       task.target.type.sourceId,
     );
     if (!_enabled) return;
     if (existing != null) {
-      _touchedThisRun.add(task.key);
-      return;
-    }
-    // A unique reliable reverse relationship answers without any network.
-    final reverseCandidates = <String>{};
-    for (final row
-        in await database.comicMappingDao.getAllComicMappingEntity()) {
-      if (row.sourceProviderName == task.target.type.sourceId &&
-          row.targetProviderName == task.origin.type.sourceId &&
-          row.resultComicId == task.comicId) {
-        reverseCandidates.add(row.comicId);
-      }
-    }
-    if (!_enabled) return;
-    if (reverseCandidates.isNotEmpty) {
-      // Reverse relationships already participate in badges; do not duplicate
-      // them or search past conflicting claims.
       _touchedThisRun.add(task.key);
       return;
     }
@@ -220,12 +200,11 @@ class AutomaticMappingQueue extends ChangeNotifier {
     await _waitPacing();
     if (!_enabled) return;
     // Bindings and retry settings may change while pacing.
-    final currentMapping = await database.comicMappingDao
-        .getComicMappingByComicId(
-          task.comicId,
-          task.origin.type.sourceId,
-          task.target.type.sourceId,
-        );
+    final currentMapping = await database.comicMappingDao.lookupComicId(
+      task.comicId,
+      task.origin.type.sourceId,
+      task.target.type.sourceId,
+    );
     if (!_enabled) return;
     if (currentMapping != null ||
         (!config.autoMapRetryEveryLaunch &&
@@ -268,29 +247,19 @@ class AutomaticMappingQueue extends ChangeNotifier {
       matched = result.comicId;
     }
     if (matched == null) return;
-    // An explicit reverse unbind or a reverse binding pointing elsewhere must
-    // not be turned into a new unreliable relationship.
-    final reverse = await database.comicMappingDao.getComicMappingByComicId(
-      matched,
-      task.target.type.sourceId,
-      task.origin.type.sourceId,
-    );
-    if (reverse != null && reverse.resultComicId != task.comicId) return;
     await _insertMapping(task, matched);
   }
 
   Future<void> _insertMapping(_MappingTask task, String targetComicId) async {
     final database = await DatabaseInstance.instance;
-    final entity = await database.comicMappingDao
+    final result = await database.comicMappingDao
         .insertAutomaticMappingIfAbsent(
           task.comicId,
           task.origin.type.sourceId,
           task.target.type.sourceId,
           targetComicId,
         );
-    // Only a mapping this queue actually created is worth announcing; an
-    // existing explicit bind/unbind must not fire badge updates.
-    if (entity.resultComicId == targetComicId) {
+    if (result == targetComicId) {
       SubscribeBadgeState.changes.notifyListeners();
     }
   }

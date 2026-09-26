@@ -65,9 +65,16 @@ class _FavoritePageState extends State<FavoritePage> {
                         refreshOnStart: true,
                         child: LayoutBuilder(
                           builder: (context, constraints) {
-                            var data = Provider.of<ComicFavoritePageController>(
-                              context,
-                            ).data;
+                            var controller =
+                                Provider.of<ComicFavoritePageController>(
+                                  context,
+                                );
+                            var data = controller.data;
+                            var installedSourceIds = context
+                                .read<ComicSourceProvider>()
+                                .sources
+                                .map((source) => source.type.sourceId)
+                                .toSet();
                             return GridView(
                               padding: const EdgeInsets.fromLTRB(
                                 16,
@@ -96,6 +103,10 @@ class _FavoritePageState extends State<FavoritePage> {
                                       }
                                     },
                                     badgeMaps: item.badges,
+                                    sourceIds: controller
+                                        .sourceIdsFor(item)
+                                        .where(installedSourceIds.contains)
+                                        .toList(growable: false),
                                   ),
                               ],
                             );

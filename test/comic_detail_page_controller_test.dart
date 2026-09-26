@@ -178,6 +178,12 @@ void main() {
     await databaseFactory.setDatabasesPath(directory.path);
   });
 
+  setUp(() async {
+    await (await DatabaseInstance.instance)
+        .database
+        .delete('ComicMappingEntity');
+  });
+
   tearDownAll(() async {
     await (await DatabaseInstance.instance).close();
     await directory.delete(recursive: true);

@@ -72,13 +72,18 @@ void main() {
   }
 
   Future<void> bind(
-    String source,
+    String provider,
     String comic,
-    String target,
-    String targetComic,
+    String otherProvider,
+    String otherComic,
   ) async {
     await (await DatabaseInstance.instance).comicMappingDao.insertComicMapping(
-      ComicMappingEntity(null, comic, source, target, targetComic),
+      ComicMappingEntity.between(
+        provider,
+        comic,
+        otherProvider,
+        otherComic,
+      ),
     );
   }
 
@@ -148,7 +153,7 @@ void main() {
     expect(model.latestChapterId, 'a-20');
   });
 
-  test('forward binding uses latest reading time rather than highest chapter number', () async {
+  test('an undirected binding uses the latest reading time', () async {
     await enable(true);
     final model = await detail(
       source: 'b',
@@ -266,9 +271,14 @@ void main() {
     expect(model.latestChapterId, 'a-20');
   });
 
-  test('unbinding takes precedence over a reverse mapping', () async {
+  test('unbinding from either endpoint suppresses linked history', () async {
     await enable(true);
-    await bind('a', 'book-a', 'b', '');
+    await (await DatabaseInstance.instance).comicMappingDao.bindComic(
+      'book-a',
+      'a',
+      'b',
+      '',
+    );
     expect((await detail()).latestChapterId, 'a-20');
   });
 
