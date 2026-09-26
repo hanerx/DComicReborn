@@ -20,6 +20,10 @@ class ConfigProvider extends BaseProvider {
   ConfigEntity? _aggregateSubscribeBadges;
   ConfigEntity? _aggregateReadingProgress;
   ConfigEntity? _advancedSettingsUnlocked;
+  ConfigEntity? _autoMapMissingComics;
+  ConfigEntity? _autoMapIntervalSeconds;
+  ConfigEntity? _autoMapRetryEveryLaunch;
+  ConfigEntity? _autoMapMaxAttempts;
 
   @override
   Future<void> init() async {
@@ -64,6 +68,22 @@ class ConfigProvider extends BaseProvider {
     _advancedSettingsUnlocked = await database.configDao.getOrCreateConfigByKey(
       'ExperimentalFeaturesUnlocked',
       value: false,
+    );
+    _autoMapMissingComics = await database.configDao.getOrCreateConfigByKey(
+      'AutoMapMissingComics',
+      value: false,
+    );
+    _autoMapIntervalSeconds = await database.configDao.getOrCreateConfigByKey(
+      'AutoMapIntervalSeconds',
+      value: 1,
+    );
+    _autoMapRetryEveryLaunch = await database.configDao.getOrCreateConfigByKey(
+      'AutoMapRetryEveryLaunch',
+      value: true,
+    );
+    _autoMapMaxAttempts = await database.configDao.getOrCreateConfigByKey(
+      'AutoMapMaxAttempts',
+      value: 3,
     );
     notifyListeners();
   }
@@ -240,6 +260,81 @@ class ConfigProvider extends BaseProvider {
     setting.set(value);
     await database.configDao.updateConfig(setting);
     _advancedSettingsUnlocked = setting;
+    notifyListeners();
+  }
+
+  bool get autoMapMissingComics => _autoMapMissingComics?.get<bool>() == true;
+
+  Future<void> setAutoMapMissingComics(bool value) async {
+    if (autoMapMissingComics == value) return;
+    final database = await DatabaseInstance.instance;
+    final setting = await database.configDao.getOrCreateConfigByKey(
+      'AutoMapMissingComics',
+      value: false,
+    );
+    setting.set(value);
+    await database.configDao.updateConfig(setting);
+    _autoMapMissingComics = setting;
+    notifyListeners();
+  }
+
+  int get autoMapIntervalSeconds {
+    final value = _autoMapIntervalSeconds?.get<int>() as int?;
+    if (value == null || value < 1) {
+      return 1;
+    }
+    return value;
+  }
+
+  Future<void> setAutoMapIntervalSeconds(int value) async {
+    final clamped = value < 1 ? 1 : value;
+    if (autoMapIntervalSeconds == clamped) return;
+    final database = await DatabaseInstance.instance;
+    final setting = await database.configDao.getOrCreateConfigByKey(
+      'AutoMapIntervalSeconds',
+      value: 1,
+    );
+    setting.set(clamped);
+    await database.configDao.updateConfig(setting);
+    _autoMapIntervalSeconds = setting;
+    notifyListeners();
+  }
+
+  bool get autoMapRetryEveryLaunch =>
+      _autoMapRetryEveryLaunch?.get<bool>() != false;
+
+  Future<void> setAutoMapRetryEveryLaunch(bool value) async {
+    if (autoMapRetryEveryLaunch == value) return;
+    final database = await DatabaseInstance.instance;
+    final setting = await database.configDao.getOrCreateConfigByKey(
+      'AutoMapRetryEveryLaunch',
+      value: true,
+    );
+    setting.set(value);
+    await database.configDao.updateConfig(setting);
+    _autoMapRetryEveryLaunch = setting;
+    notifyListeners();
+  }
+
+  int get autoMapMaxAttempts {
+    final value = _autoMapMaxAttempts?.get<int>() as int?;
+    if (value == null || value < 1) {
+      return 3;
+    }
+    return value;
+  }
+
+  Future<void> setAutoMapMaxAttempts(int value) async {
+    final clamped = value < 1 ? 1 : value;
+    if (autoMapMaxAttempts == clamped) return;
+    final database = await DatabaseInstance.instance;
+    final setting = await database.configDao.getOrCreateConfigByKey(
+      'AutoMapMaxAttempts',
+      value: 3,
+    );
+    setting.set(clamped);
+    await database.configDao.updateConfig(setting);
+    _autoMapMaxAttempts = setting;
     notifyListeners();
   }
 }

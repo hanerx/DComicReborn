@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dcomic/providers/automatic_mapping.dart';
 import 'package:dcomic/providers/base_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/subscribe_badge_state.dart';
@@ -9,9 +10,15 @@ class ComicFavoritePageController extends BaseProvider {
   int _page = 0;
   List<GridItemEntity> data = [];
   bool _disposed = false;
+  final AutomaticMappingQueue? mappingQueue;
 
-  ComicFavoritePageController(this.sourceModel) {
+  ComicFavoritePageController(this.sourceModel, {this.mappingQueue}) {
     SubscribeBadgeState.changes.addListener(_onBadgeStateChanged);
+    mappingQueue?.addListener(_enqueueMissingMappings);
+  }
+
+  void _enqueueMissingMappings() {
+    if (!_disposed) mappingQueue?.enqueue(sourceModel, data);
   }
 
   Future<void> _badgeRefresh = Future.value();
@@ -32,6 +39,7 @@ class ComicFavoritePageController extends BaseProvider {
     _page = 0;
     data = await sourceModel.accountModel!.getSubscribeStateComics(page: _page);
     notifyListeners();
+    _enqueueMissingMappings();
   }
 
   Future<void> load() async {
@@ -40,6 +48,7 @@ class ComicFavoritePageController extends BaseProvider {
       page: _page,
     );
     notifyListeners();
+    _enqueueMissingMappings();
   }
 
   Future<void> refreshBadges() {
@@ -63,6 +72,7 @@ class ComicFavoritePageController extends BaseProvider {
   void dispose() {
     _disposed = true;
     SubscribeBadgeState.changes.removeListener(_onBadgeStateChanged);
+    mappingQueue?.removeListener(_enqueueMissingMappings);
     super.dispose();
   }
 }

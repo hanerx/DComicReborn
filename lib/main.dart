@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dcomic/providers/automatic_mapping.dart';
 import 'package:dcomic/providers/download_provider.dart';
 import 'package:dcomic/providers/version_provider.dart';
 import 'package:dcomic/view/drawer_page/search_page.dart';
@@ -79,6 +80,12 @@ class App extends StatelessWidget {
         ChangeNotifierProvider<ComicSourceProvider>(
           create: (_) => ComicSourceProvider(),
           lazy: false,
+        ),
+        ChangeNotifierProvider<AutomaticMappingQueue>(
+          create: (context) => AutomaticMappingQueue(
+            context.read<ConfigProvider>(),
+            context.read<ComicSourceProvider>().sources,
+          ),
         ),
         ChangeNotifierProvider<VersionProvider>(
           create: (_) => VersionProvider(),
