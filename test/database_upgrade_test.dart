@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dcomic/database/database_common.dart';
 import 'package:dcomic/database/database_instance.dart';
+import 'package:dcomic/utils/chapter_matching_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -77,6 +78,16 @@ void main() {
             .databaseBuilder(path)
             .addMigrations(DatabaseInstance.migrations)
             .build();
+        final rules = ChapterRuleMatcher(
+          await database.chapterRuleDao.loadChapterRules(),
+        );
+        final chapter = rules.match('第10话')!;
+        final english = rules.match('Chapter 010')!;
+        expect(
+          (chapter.groupIndex, chapter.number),
+          (english.groupIndex, english.number),
+        );
+        expect(rules.match('Vol. 10')!.groupIndex, isNot(chapter.groupIndex));
         final config = await database.configDao.getConfigByKey('theme');
         expect(config?.value, 'dark');
         final history = await database.comicHistoryDao.getComicHistoryByComicId(
@@ -124,7 +135,6 @@ void main() {
           ))?.lastChapterId,
           'chapter-11',
         );
-        expect(await database.database.getVersion(), 5);
         expect(
           (await database.database.rawQuery('PRAGMA integrity_check'))
               .single

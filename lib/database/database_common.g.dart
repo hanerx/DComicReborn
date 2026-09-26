@@ -80,13 +80,15 @@ class _$DComicDatabase extends DComicDatabase {
 
   ComicSubscribeStateDao? _comicSubscribeStateDaoInstance;
 
+  ChapterRuleDao? _chapterRuleDaoInstance;
+
   Future<sqflite.Database> open(
     String path,
     List<Migration> migrations, [
     Callback? callback,
   ]) async {
     final databaseOptions = sqflite.OpenDatabaseOptions(
-      version: 5,
+      version: 6,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
         await callback?.onConfigure?.call(database);
@@ -122,6 +124,15 @@ class _$DComicDatabase extends DComicDatabase {
         );
         await database.execute(
           'CREATE TABLE IF NOT EXISTS `ComicSubscribeStateEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `timestamp` INTEGER, `providerName` TEXT NOT NULL)',
+        );
+        await database.execute(
+          'CREATE TABLE IF NOT EXISTS `ChapterRuleGroupEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL)',
+        );
+        await database.execute(
+          'CREATE TABLE IF NOT EXISTS `ChapterRulePatternEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `groupId` INTEGER NOT NULL, `pattern` TEXT NOT NULL, FOREIGN KEY (`groupId`) REFERENCES `ChapterRuleGroupEntity` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE)',
+        );
+        await database.execute(
+          'CREATE INDEX `index_ChapterRulePatternEntity_groupId` ON `ChapterRulePatternEntity` (`groupId`)',
         );
 
         await callback?.onCreate?.call(database, version);
@@ -167,6 +178,14 @@ class _$DComicDatabase extends DComicDatabase {
   @override
   ComicSubscribeStateDao get comicSubscribeStateDao {
     return _comicSubscribeStateDaoInstance ??= _$ComicSubscribeStateDao(
+      database,
+      changeListener,
+    );
+  }
+
+  @override
+  ChapterRuleDao get chapterRuleDao {
+    return _chapterRuleDaoInstance ??= _$ChapterRuleDao(
       database,
       changeListener,
     );
@@ -785,6 +804,189 @@ class _$ComicSubscribeStateDao extends ComicSubscribeStateDao {
       comicSubscribeStateEntity,
       OnConflictStrategy.replace,
     );
+  }
+}
+
+class _$ChapterRuleDao extends ChapterRuleDao {
+  _$ChapterRuleDao(this.database, this.changeListener)
+    : _queryAdapter = QueryAdapter(database),
+      _chapterRuleGroupEntityInsertionAdapter = InsertionAdapter(
+        database,
+        'ChapterRuleGroupEntity',
+        (ChapterRuleGroupEntity item) => <String, Object?>{
+          'id': item.id,
+          'name': item.name,
+        },
+      ),
+      _chapterRulePatternEntityInsertionAdapter = InsertionAdapter(
+        database,
+        'ChapterRulePatternEntity',
+        (ChapterRulePatternEntity item) => <String, Object?>{
+          'id': item.id,
+          'groupId': item.groupId,
+          'pattern': item.pattern,
+        },
+      ),
+      _chapterRuleGroupEntityUpdateAdapter = UpdateAdapter(
+        database,
+        'ChapterRuleGroupEntity',
+        ['id'],
+        (ChapterRuleGroupEntity item) => <String, Object?>{
+          'id': item.id,
+          'name': item.name,
+        },
+      );
+
+  final sqflite.DatabaseExecutor database;
+
+  final StreamController<String> changeListener;
+
+  final QueryAdapter _queryAdapter;
+
+  final InsertionAdapter<ChapterRuleGroupEntity>
+  _chapterRuleGroupEntityInsertionAdapter;
+
+  final InsertionAdapter<ChapterRulePatternEntity>
+  _chapterRulePatternEntityInsertionAdapter;
+
+  final UpdateAdapter<ChapterRuleGroupEntity>
+  _chapterRuleGroupEntityUpdateAdapter;
+
+  @override
+  Future<List<ChapterRuleGroupEntity>> getAllChapterRuleGroups() async {
+    return _queryAdapter.queryList(
+      'SELECT * FROM ChapterRuleGroupEntity ORDER BY id ASC',
+      mapper: (Map<String, Object?> row) =>
+          ChapterRuleGroupEntity(row['id'] as int?, row['name'] as String),
+    );
+  }
+
+  @override
+  Future<List<ChapterRulePatternEntity>> getAllChapterRulePatterns() async {
+    return _queryAdapter.queryList(
+      'SELECT * FROM ChapterRulePatternEntity ORDER BY id ASC',
+      mapper: (Map<String, Object?> row) => ChapterRulePatternEntity(
+        row['id'] as int?,
+        row['groupId'] as int,
+        row['pattern'] as String,
+      ),
+    );
+  }
+
+  @override
+  Future<void> deleteChapterRulePatternsByGroupId(int groupId) async {
+    await _queryAdapter.queryNoReturn(
+      'DELETE FROM ChapterRulePatternEntity WHERE `groupId` = ?1',
+      arguments: [groupId],
+    );
+  }
+
+  @override
+  Future<void> deleteAllChapterRulePatterns() async {
+    await _queryAdapter.queryNoReturn('DELETE FROM ChapterRulePatternEntity');
+  }
+
+  @override
+  Future<void> deleteAllChapterRuleGroups() async {
+    await _queryAdapter.queryNoReturn('DELETE FROM ChapterRuleGroupEntity');
+  }
+
+  @override
+  Future<void> deleteChapterRuleGroupById(int id) async {
+    await _queryAdapter.queryNoReturn(
+      'DELETE FROM ChapterRuleGroupEntity WHERE `id` = ?1',
+      arguments: [id],
+    );
+  }
+
+  @override
+  Future<int> insertChapterRuleGroup(ChapterRuleGroupEntity entity) {
+    return _chapterRuleGroupEntityInsertionAdapter.insertAndReturnId(
+      entity,
+      OnConflictStrategy.replace,
+    );
+  }
+
+  @override
+  Future<int> insertChapterRulePattern(ChapterRulePatternEntity entity) {
+    return _chapterRulePatternEntityInsertionAdapter.insertAndReturnId(
+      entity,
+      OnConflictStrategy.replace,
+    );
+  }
+
+  @override
+  Future<void> updateChapterRuleGroup(ChapterRuleGroupEntity entity) async {
+    await _chapterRuleGroupEntityUpdateAdapter.update(
+      entity,
+      OnConflictStrategy.replace,
+    );
+  }
+
+  @override
+  Future<List<ChapterRuleGroup>> loadChapterRules() async {
+    if (database is sqflite.Transaction) {
+      return super.loadChapterRules();
+    } else {
+      return (database as sqflite.Database).transaction<List<ChapterRuleGroup>>(
+        (transaction) async {
+          final transactionDatabase = _$DComicDatabase(changeListener)
+            ..database = transaction;
+          return transactionDatabase.chapterRuleDao.loadChapterRules();
+        },
+      );
+    }
+  }
+
+  @override
+  Future<void> saveChapterRuleGroup(
+    ChapterRuleGroupEntity group,
+    List<String> patterns,
+  ) async {
+    if (database is sqflite.Transaction) {
+      await super.saveChapterRuleGroup(group, patterns);
+    } else {
+      await (database as sqflite.Database).transaction<void>((
+        transaction,
+      ) async {
+        final transactionDatabase = _$DComicDatabase(changeListener)
+          ..database = transaction;
+        await transactionDatabase.chapterRuleDao.saveChapterRuleGroup(
+          group,
+          patterns,
+        );
+      });
+    }
+  }
+
+  @override
+  Future<void> deleteChapterRuleGroup(int id) async {
+    if (database is sqflite.Transaction) {
+      await super.deleteChapterRuleGroup(id);
+    } else {
+      await (database as sqflite.Database).transaction<void>((
+        transaction,
+      ) async {
+        final transactionDatabase = _$DComicDatabase(changeListener)
+          ..database = transaction;
+        await transactionDatabase.chapterRuleDao.deleteChapterRuleGroup(id);
+      });
+    }
+  }
+
+  @override
+  Future<void> replaceChapterRules(List<ChapterRuleGroup> seeds) async {
+    if (database is sqflite.Transaction) {
+      await super.replaceChapterRules(seeds);
+    } else {
+      await (database as sqflite.Database).transaction<void>((
+        transaction,
+      ) async {
+        final transactionDatabase = _$DComicDatabase(changeListener)
+          ..database = transaction;
+        await transactionDatabase.chapterRuleDao.replaceChapterRules(seeds);
+      });
+    }
   }
 }
 

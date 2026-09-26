@@ -224,7 +224,7 @@ class ConfigProvider extends BaseProvider {
     await database.configDao.updateConfig(setting);
     _aggregateReadingProgress = setting;
     notifyListeners();
-    ComicReadingProgress.changes.notifyListeners();
+    ComicReadingProgress.changes.value++;
   }
 
   bool get advancedSettingsUnlocked =>

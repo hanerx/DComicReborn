@@ -1,30 +1,39 @@
 import 'package:dcomic/database/converter/datetime_converter.dart';
 import 'package:dcomic/database/converter/image_type_converter.dart';
 import 'package:dcomic/database/entity/comic_history.dart';
+import 'package:dcomic/database/entity/chapter_rule.dart';
 import 'package:dcomic/database/entity/comic_mapping.dart';
 import 'package:dcomic/database/entity/config.dart';
 import 'package:dcomic/database/entity/cookie.dart';
 import 'package:dcomic/database/entity/model_config.dart';
 import 'package:dcomic/database/entity/somic_subscribe_state.dart';
+import 'package:dcomic/utils/chapter_matching_rules.dart';
+
 import 'dart:async';
+
 import 'package:floor_community/floor.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
 part 'database_common.g.dart';
 
-@Database(version: 5, entities: [
-  ConfigEntity,
-  ComicHistoryEntity,
-  CookieEntity,
-  ModelConfigEntity,
-  ComicMappingEntity,
-  ComicSubscribeStateEntity
-])
+@Database(
+  version: 6,
+  entities: [
+    ConfigEntity,
+    ComicHistoryEntity,
+    CookieEntity,
+    ModelConfigEntity,
+    ComicMappingEntity,
+    ComicSubscribeStateEntity,
+    ChapterRuleGroupEntity,
+    ChapterRulePatternEntity,
+  ],
+)
 @TypeConverters([
   DateTimeConverter,
   DateTimeNullableConverter,
   ImageTypeConverter,
-  ImageTypeNullableConverter
+  ImageTypeNullableConverter,
 ])
 abstract class DComicDatabase extends FloorDatabase {
   ConfigDao get configDao;
@@ -39,6 +48,5 @@ abstract class DComicDatabase extends FloorDatabase {
 
   ComicSubscribeStateDao get comicSubscribeStateDao;
 
-
-
+  ChapterRuleDao get chapterRuleDao;
 }

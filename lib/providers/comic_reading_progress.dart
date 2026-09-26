@@ -1,26 +1,12 @@
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/entity/comic_history.dart';
+import 'package:dcomic/providers/chapter_rule_store.dart';
+import 'package:dcomic/utils/chapter_matching_rules.dart';
 import 'package:dcomic/utils/comic_mapping_utils.dart';
-import 'package:flutter/foundation.dart';
-import 'package:pinyin/pinyin.dart';
 
 class ComicReadingProgress {
   static const configKey = 'AggregateReadingProgress';
-  static final changes = ChangeNotifier();
-  static final _whitespace = RegExp(r'\s+', unicode: true);
-
-  static String _chapterTitle(String title) {
-    // Fold only full-width ASCII and whitespace, not chapter numbers, types,
-    // suffixes or punctuation. In particular, volumes and extras stay distinct.
-    final widthFolded = String.fromCharCodes(
-      title.runes.map((rune) {
-        if (rune >= 0xff01 && rune <= 0xff5e) return rune - 0xfee0;
-        return rune == 0x3000 ? 0x20 : rune;
-      }),
-    );
-    return ChineseHelper.convertToSimplifiedChinese(widthFolded)
-        .replaceAll(_whitespace, '');
-  }
+  static final changes = ChapterRuleStore.changes;
 
   /// Returns a current-source chapter ID, never a foreign chapter ID. The
   /// catalog callback stays lazy so disabled/unbound books do no matching work.
@@ -49,6 +35,8 @@ class ComicReadingProgress {
     if (related == null) return fallback;
 
     Map<String, String?>? byTitle;
+    ChapterRuleMatcher? rules;
+    final byRule = <(int, String), String?>{};
     var selected = fallback;
     var latest = fallback == null ? null : local?.timestamp;
     var ambiguous = false;
@@ -65,19 +53,31 @@ class ComicReadingProgress {
       if (latest != null && timestamp.isBefore(latest)) continue;
       // Equal timestamps keep the local record; no source-order tie breaker.
       if (fallback != null && timestamp == local?.timestamp) continue;
-      final title = _chapterTitle(record.lastChapterTitle);
+      final title = normalizeChapterTitle(record.lastChapterTitle);
       if (title.isEmpty) continue;
       if (byTitle == null) {
         byTitle = {};
+        rules = ChapterRuleMatcher(await ChapterRuleStore.load());
         for (final (chapterId, chapterTitle) in chapters()) {
-          final normalized = _chapterTitle(chapterTitle);
+          final normalized = normalizeChapterTitle(chapterTitle);
           if (normalized.isEmpty || chapterId.isEmpty) continue;
           byTitle[normalized] = byTitle.containsKey(normalized)
               ? null
               : chapterId;
+          final rule = rules.matchNormalized(normalized);
+          if (rule != null) {
+            final key = (rule.groupIndex, rule.number);
+            byRule[key] = byRule.containsKey(key) ? null : chapterId;
+          }
         }
       }
-      final match = byTitle[title];
+      // Exact titles retain precedence, including an ambiguous exact title.
+      // Regex matching only supplements titles with no exact counterpart.
+      var match = byTitle[title];
+      if (!byTitle.containsKey(title)) {
+        final rule = rules!.matchNormalized(title);
+        if (rule != null) match = byRule[(rule.groupIndex, rule.number)];
+      }
       if (match == null) continue;
       if (timestamp == latest) {
         if (selected != match) ambiguous = true;

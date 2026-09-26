@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/entity/comic_mapping.dart';
+import 'package:dcomic/providers/chapter_rule_store.dart';
+import 'package:dcomic/utils/chapter_matching_rules.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -113,6 +115,7 @@ void main() {
   });
   setUp(() async {
     final db = await DatabaseInstance.instance;
+    await ChapterRuleStore.reset();
     for (final table in [
       'ComicHistoryEntity',
       'ComicMappingEntity',
@@ -165,6 +168,77 @@ void main() {
     await model.loadComicHistory();
     expect(model.latestChapterId, 'b-20');
   });
+
+  test(
+    'built-in equivalent chapter forms use the newer foreign progress',
+    () async {
+      await enable(true);
+      await history('b', 'book-b', 'b-10', 'Chapter 010', newer);
+      final model = await detail();
+      expect(model.latestChapterId, 'a-10');
+    },
+  );
+
+  test(
+    'multiple catalog chapters with the same rule number stay local',
+    () async {
+      await enable(true);
+      await history('b', 'book-b', 'b-10', 'Chapter 10', newer);
+      final model = await detail(
+        catalog: {
+          '正篇': [('a-20', '第20话'), ('a-10', '第10话'), ('duplicate-10', '10话')],
+        },
+      );
+      expect(model.latestChapterId, 'a-20');
+    },
+  );
+
+  test(
+    'deleting database rules disables numeric matching until reset',
+    () async {
+      await enable(true);
+      await history('b', 'book-b', 'b-10', 'Chapter 10', newer);
+      final model = await detail();
+      expect(model.latestChapterId, 'a-10');
+      for (final group in await ChapterRuleStore.load()) {
+        await ChapterRuleStore.delete(group.id!);
+      }
+      await model.loadComicHistory();
+      expect(model.latestChapterId, 'a-20');
+      // Empty rule tables still allow the existing exact-title behavior.
+      await history('b', 'book-b', 'b-10', '第10话', newer);
+      await model.loadComicHistory();
+      expect(model.latestChapterId, 'a-10');
+      await history('b', 'book-b', 'b-10', 'Chapter 10', newer);
+      await ChapterRuleStore.reset();
+      await model.loadComicHistory();
+      expect(model.latestChapterId, 'a-10');
+    },
+  );
+
+  test(
+    'custom database rules participate and overlapping groups do not guess',
+    () async {
+      await enable(true);
+      final groups = await ChapterRuleStore.load();
+      final chapters = groups.first;
+      await ChapterRuleStore.save(
+        ChapterRuleGroup(
+          id: chapters.id,
+          name: chapters.name,
+          patterns: [...chapters.patterns, r'^Episode(\d+)$'],
+        ),
+      );
+      await history('b', 'book-b', 'b-10', 'Episode 10', newer);
+      final model = await detail();
+      expect(model.latestChapterId, 'a-10');
+      await ChapterRuleStore.save(
+        const ChapterRuleGroup(name: 'overlap', patterns: [r'^Episode(\d+)$']),
+      );
+      await model.loadComicHistory();
+      expect(model.latestChapterId, 'a-20');
+    },
+  );
 
   test('same chapter numbers with different types or punctuation remain independent', () async {
     await enable(true);
