@@ -135,6 +135,13 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                       compactCoverSize: _compactCoverSize,
                       cover: DComicImage(controller.cover, fit: BoxFit.cover),
                       details: _buildInfoDetails(context),
+                      expandedDetails: Row(
+                        children: [
+                          Expanded(child: _buildUpdateStatus(context)),
+                          const SizedBox(width: 12),
+                          _buildFavoriteButton(context),
+                        ],
+                      ),
                     ),
                   )
                 else if (ready)
@@ -203,7 +210,6 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
   Widget _buildInfoDetails(BuildContext context, {int titleMaxLines = 2}) {
     final controller = Provider.of<ComicDetailPageController>(context);
     final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,44 +224,46 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Icon(Icons.update, size: 14, color: colors.onSurfaceVariant),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                '${controller.status} · ${controller.lastUpdate}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
+        _buildUpdateStatus(context),
         const SizedBox(height: 16),
-        IconButton(
-          onPressed: () {
-            Provider.of<ComicDetailPageController>(
-              context,
-              listen: false,
-            ).subscribe = !Provider.of<ComicDetailPageController>(
-              context,
-              listen: false,
-            ).subscribe;
-          },
-          icon: Icon(
-            controller.subscribe
-                ? Icons.favorite_rounded
-                : Icons.favorite_border_rounded,
-            color: controller.subscribe
-                ? colors.error
-                : colors.onSurfaceVariant,
+        _buildFavoriteButton(context),
+      ],
+    );
+  }
+
+  Widget _buildUpdateStatus(BuildContext context) {
+    final controller = context.watch<ComicDetailPageController>();
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(Icons.update, size: 14, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            '${controller.status} · ${controller.lastUpdate}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          tooltip: _tr(context, '收藏', 'Favorite'),
         ),
       ],
+    );
+  }
+
+  Widget _buildFavoriteButton(BuildContext context) {
+    final controller = context.watch<ComicDetailPageController>();
+    final colors = Theme.of(context).colorScheme;
+    return IconButton(
+      onPressed: () => controller.subscribe = !controller.subscribe,
+      icon: Icon(
+        controller.subscribe
+            ? Icons.favorite_rounded
+            : Icons.favorite_border_rounded,
+        color: controller.subscribe ? colors.error : colors.onSurfaceVariant,
+      ),
+      tooltip: _tr(context, '收藏', 'Favorite'),
     );
   }
 
@@ -1260,6 +1268,7 @@ class _DetailCoverHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Size compactCoverSize;
   final Widget cover;
   final Widget details;
+  final Widget expandedDetails;
 
   _DetailCoverHeaderDelegate({
     required this.minExtent,
@@ -1270,6 +1279,7 @@ class _DetailCoverHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.compactCoverSize,
     required this.cover,
     required this.details,
+    required this.expandedDetails,
   });
 
   @override
@@ -1289,6 +1299,8 @@ class _DetailCoverHeaderDelegate extends SliverPersistentHeaderDelegate {
     final detailsOpacity = Curves.easeOut.transform(
       ((progress - 0.85) / 0.15).clamp(0.0, 1.0),
     );
+    final expandedDetailsOpacity =
+        1 - Curves.easeIn.transform((progress / 0.85).clamp(0.0, 1.0));
     final toolbarProgress = ((progress - 0.55) / 0.45).clamp(0.0, 1.0);
     final background = colors.surface;
     return ClipRect(
@@ -1306,7 +1318,7 @@ class _DetailCoverHeaderDelegate extends SliverPersistentHeaderDelegate {
             final titleTextScaler = MediaQuery.textScalerOf(context)
                 .clamp(maxScaleFactor: 2);
             final titleHeight = titleTextScaler.scale(titleFontSize) * 1.25;
-            final expandedTitleTop = maxExtent - titleHeight - 20;
+            final expandedTitleTop = maxExtent - titleHeight - 68;
             final collapsedTitleTop =
                 toolbarExtent - (kToolbarHeight + titleHeight) / 2;
             final titleTop =
@@ -1377,6 +1389,23 @@ class _DetailCoverHeaderDelegate extends SliverPersistentHeaderDelegate {
                     ),
                   ),
                 ),
+                if (expandedDetailsOpacity > 0)
+                  Positioned(
+                    left: 16,
+                    right: 16,
+                    top: maxExtent - 60 - shrinkOffset,
+                    height: 48,
+                    child: IgnorePointer(
+                      ignoring: progress >= 0.5,
+                      child: ExcludeSemantics(
+                        excluding: progress >= 0.5,
+                        child: Opacity(
+                          opacity: expandedDetailsOpacity,
+                          child: expandedDetails,
+                        ),
+                      ),
+                    ),
+                  ),
                 if (detailsOpacity > 0)
                   Positioned(
                     left: coverRect.right + 12,
@@ -1471,6 +1500,7 @@ class _DetailCoverHeaderDelegate extends SliverPersistentHeaderDelegate {
       compactExtent != oldDelegate.compactExtent ||
       title != oldDelegate.title ||
       compactCoverSize != oldDelegate.compactCoverSize ||
+      expandedDetails != oldDelegate.expandedDetails ||
       cover != oldDelegate.cover ||
       details != oldDelegate.details;
 }
