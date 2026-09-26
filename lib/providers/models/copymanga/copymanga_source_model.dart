@@ -6,8 +6,10 @@ import 'package:dcomic/providers/page_controllers/comic_favorite_page_controller
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/requests/copymanga/copymanga_request.dart';
 import 'package:dcomic/utils/image_utils.dart';
+import 'package:dcomic/utils/layout_utils.dart';
 import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
+import 'package:dcomic/view/components/settings_widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -186,6 +188,92 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
     builder: (context, _) => _buildSourceSettings(context),
   );
 
+  Future<CopyMangaApiDomain?> _selectApiDomain(
+    BuildContext context,
+    String title,
+    CopyMangaApiDomain current,
+    Iterable<CopyMangaApiDomain> domains,
+  ) {
+    final copyDomains = domains.where((domain) => !domain.isHotManga).toList();
+    final hotDomains = domains.where((domain) => domain.isHotManga).toList();
+    return showModalBottomSheet<CopyMangaApiDomain>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      constraints: BoxConstraints(
+        maxWidth: AppLayout.formMaxWidth,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+      ),
+      builder: (sheetContext) {
+        final strings = S.of(sheetContext);
+        Widget group(String label, List<CopyMangaApiDomain> options) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SettingsSection(title: label),
+            SettingsGroup(
+              children: [
+                for (final domain in options)
+                  Semantics(
+                    selected: domain == current,
+                    child: SettingsTile(
+                      title: Text(domain.host),
+                      leading: const Icon(Icons.dns_outlined),
+                      trailing: domain == current
+                          ? Icon(
+                              Icons.check_circle_rounded,
+                              color: Theme.of(sheetContext).colorScheme.primary,
+                            )
+                          : const SizedBox(width: 24),
+                      onTap: () => Navigator.of(sheetContext).pop(domain),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        );
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                child: Text(
+                  title,
+                  style: Theme.of(sheetContext).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: EdgeInsets.fromLTRB(
+                  12,
+                  0,
+                  12,
+                  16 + MediaQuery.paddingOf(sheetContext).bottom,
+                ),
+                children: [
+                  if (copyDomains.isNotEmpty)
+                    group(strings.CopyMangaTitle, copyDomains),
+                  if (hotDomains.isNotEmpty)
+                    group(strings.HotMangaTitle, hotDomains),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildSourceSettings(BuildContext context) {
     final strings = S.of(context);
     Widget selector(
@@ -194,87 +282,82 @@ class CopyMangaComicSourceModel extends BaseComicSourceModel {
       Iterable<CopyMangaApiDomain> domains,
       bool comments,
     ) {
-      return ListTile(
-        leading: Icon(comments ? Icons.comment_outlined : Icons.http),
+      return SettingsTile(
+        leading: Icon(comments ? Icons.comment_outlined : Icons.link_rounded),
         title: Text(label),
-        subtitle: DropdownButton<CopyMangaApiDomain>(
-          value: value,
-          isDense: true,
-          isExpanded: true,
-          style:
-              ListTileTheme.of(context).subtitleTextStyle ??
-              Theme.of(context).textTheme.bodySmall,
-          iconSize: 20,
-          items: domains
-              .map(
-                (domain) => DropdownMenuItem(
-                  value: domain,
-                  child: Text(
-                    '${domain.isHotManga ? strings.HotMangaTitle : strings.CopyMangaTitle} · ${domain.host}',
-                  ),
-                ),
-              )
-              .toList(),
-          onChanged: _changingDomain
-              ? null
-              : (domain) async {
-                  if (domain == null || domain == value) return;
-                  _changingDomain = true;
-                  notifyListeners();
-                  try {
-                    final dao =
-                        (await DatabaseInstance.instance).modelConfigDao;
-                    final config = await dao.getOrCreateConfigByKey(
-                      comments ? 'chapterCommentApiDomain' : 'apiDomain',
-                      type.sourceId,
-                    );
-                    config.set(domain.host);
-                    await dao.updateConfig(config);
-                    if (comments) {
-                      _chapterCommentDomain = domain;
-                    } else {
-                      _apiDomain = domain;
-                      await _accountModel.initAccount();
-                    }
-                  } catch (e, s) {
-                    logger.e('$e', error: e, stackTrace: s);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(SnackBar(content: Text('$e')));
-                    }
-                  } finally {
-                    _changingDomain = false;
-                    notifyListeners();
-                  }
-                },
+        subtitle: Text(
+          '${value.isHotManga ? strings.HotMangaTitle : strings.CopyMangaTitle} · ${value.host}',
         ),
+        enabled: !_changingDomain,
+        onTap: _changingDomain
+            ? null
+            : () async {
+                final domain = await _selectApiDomain(
+                  context,
+                  label,
+                  value,
+                  domains,
+                );
+                if (domain == null ||
+                    domain == value ||
+                    !context.mounted ||
+                    _changingDomain)
+                  return;
+                _changingDomain = true;
+                notifyListeners();
+                try {
+                  final dao = (await DatabaseInstance.instance).modelConfigDao;
+                  final config = await dao.getOrCreateConfigByKey(
+                    comments ? 'chapterCommentApiDomain' : 'apiDomain',
+                    type.sourceId,
+                  );
+                  config.set(domain.host);
+                  await dao.updateConfig(config);
+                  if (comments) {
+                    _chapterCommentDomain = domain;
+                  } else {
+                    _apiDomain = domain;
+                    await _accountModel.initAccount();
+                  }
+                } catch (e, s) {
+                  logger.e('$e', error: e, stackTrace: s);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text('$e')));
+                  }
+                } finally {
+                  _changingDomain = false;
+                  notifyListeners();
+                }
+              },
       );
     }
 
-    return Column(
-      children: [
-        selector(
-          strings.CopyMangaApiDomain,
-          _apiDomain,
-          CopyMangaApiDomain.values,
-          false,
-        ),
-        selector(
-          strings.CopyMangaChapterCommentDomain,
-          _chapterCommentDomain,
-          CopyMangaApiDomain.values.where((domain) => !domain.isHotManga),
-          true,
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          child: Text(
-            strings.CopyMangaRoutingHint,
-            style:
-                ListTileTheme.of(context).subtitleTextStyle ??
-                Theme.of(context).textTheme.bodySmall,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SettingsGroup(
+            children: [
+              selector(
+                strings.CopyMangaApiDomain,
+                _apiDomain,
+                CopyMangaApiDomain.values,
+                false,
+              ),
+              selector(
+                strings.CopyMangaChapterCommentDomain,
+                _chapterCommentDomain,
+                CopyMangaApiDomain.values.where((domain) => !domain.isHotManga),
+                true,
+              ),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 10),
+          SettingsNotice(child: Text(strings.CopyMangaRoutingHint)),
+        ],
+      ),
     );
   }
 }
@@ -536,188 +619,145 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
     TextEditingController usernameController = TextEditingController();
     TextEditingController passwordController = TextEditingController();
     TextEditingController tokenController = TextEditingController();
-    return Stack(
-      children: [
-        Container(color: Theme.of(context).colorScheme.primary, height: 100),
-        Column(
-          children: [
-            Card(
-              elevation: 0,
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  children: [
-                    Center(
-                      child: Text(
-                        parent?._apiDomain.isHotManga == true
-                            ? S.of(context).HotMangaTitle
-                            : S.of(context).CopyMangaTitle,
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                    ),
-                    Form(
-                      key: formKey,
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: TextFormField(
-                              controller: usernameController,
-                              decoration: InputDecoration(
-                                isDense: true,
-                                border: const OutlineInputBorder(gapPadding: 1),
-                                labelText: S.of(context).CommonLoginUsername,
-                                prefixIcon: const Icon(Icons.account_circle),
-                                hintText: S
-                                    .of(context)
-                                    .CopyMangaLoginUsernameHint,
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: TextFormField(
-                              controller: passwordController,
-                              obscureText: true,
-                              decoration: InputDecoration(
-                                isDense: true,
-                                border: const OutlineInputBorder(gapPadding: 1),
-                                labelText: S.of(context).CommonLoginPassword,
-                                prefixIcon: const Icon(Icons.lock),
-                                hintText: S
-                                    .of(context)
-                                    .CopyMangaLoginPasswordHint,
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: TextFormField(
-                              controller: tokenController,
-                              obscureText: true,
-                              decoration: InputDecoration(
-                                isDense: true,
-                                border: const OutlineInputBorder(gapPadding: 1),
-                                labelText: S.of(context).CopyMangaToken,
-                                prefixIcon: const Icon(Icons.token_outlined),
-                                hintText: S.of(context).CopyMangaTokenHint,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Row(
-                children: [
-                  const Expanded(child: SizedBox()),
-                  Expanded(
-                    flex: 2,
-                    child: FilledButton.icon(
-                      onPressed: () async {
-                        try {
-                          if (formKey.currentState!.validate()) {
-                            if (await login(
-                              usernameController.text,
-                              passwordController.text,
-                            )) {
-                              Provider.of<NavigatorProvider>(
-                                    context,
-                                    listen: false,
-                                  )
-                                  .getNavigator(
-                                    context,
-                                    NavigatorType.defaultNavigator,
-                                  )
-                                  ?.pop();
-                            }
-                          }
-                        } catch (e, s) {
-                          logger.e(e, error: e, stackTrace: s);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                S.of(context).CommonLoginLoginFailed(e),
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.arrow_forward_rounded),
-                      label: Text(S.of(context).CommonLoginLogin),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              child: Row(
-                children: [
-                  const Expanded(flex: 2, child: SizedBox()),
-                  Expanded(
-                    flex: 3,
-                    child: FilledButton.tonalIcon(
-                      onPressed: () async {
-                        try {
-                          if (formKey.currentState!.validate()) {
-                            if (await loginWithToken(tokenController.text)) {
-                              if (!context.mounted) {
-                                return;
-                              }
-                              Provider.of<NavigatorProvider>(
-                                    context,
-                                    listen: false,
-                                  )
-                                  .getNavigator(
-                                    context,
-                                    NavigatorType.defaultNavigator,
-                                  )
-                                  ?.pop();
-                            }
-                          }
-                        } catch (e, s) {
-                          logger.e(e, error: e, stackTrace: s);
-                          if (!context.mounted) {
-                            return;
-                          }
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                S.of(context).CommonLoginLoginFailed(e),
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.generating_tokens_outlined),
-                      label: Text(S.of(context).TokenLogin),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+    final theme = Theme.of(context);
+    final strings = S.of(context);
+    final inputDecoration = InputDecoration(
+      filled: true,
+      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
+        alpha: 0.45,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: theme.colorScheme.primary.withValues(alpha: 0.6),
+          width: 1.4,
         ),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      isDense: true,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 20, 8, 14),
+          child: Center(
+            child: Text(
+              parent?._apiDomain.isHotManga == true
+                  ? strings.HotMangaTitle
+                  : strings.CopyMangaTitle,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+        SettingsCard(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: usernameController,
+                  decoration: inputDecoration.copyWith(
+                    labelText: strings.CommonLoginUsername,
+                    prefixIcon: const Icon(Icons.account_circle),
+                    hintText: strings.CopyMangaLoginUsernameHint,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: inputDecoration.copyWith(
+                    labelText: strings.CommonLoginPassword,
+                    prefixIcon: const Icon(Icons.lock),
+                    hintText: strings.CopyMangaLoginPasswordHint,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: tokenController,
+                  obscureText: true,
+                  decoration: inputDecoration.copyWith(
+                    labelText: strings.CopyMangaToken,
+                    prefixIcon: const Icon(Icons.token_outlined),
+                    hintText: strings.CopyMangaTokenHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        FilledButton.icon(
+          onPressed: () async {
+            try {
+              if (formKey.currentState!.validate()) {
+                if (await login(
+                  usernameController.text,
+                  passwordController.text,
+                )) {
+                  Provider.of<NavigatorProvider>(context, listen: false)
+                      .getNavigator(context, NavigatorType.defaultNavigator)
+                      ?.pop();
+                }
+              }
+            } catch (e, s) {
+              logger.e(e, error: e, stackTrace: s);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(strings.CommonLoginLoginFailed(e))),
+              );
+            }
+          },
+          icon: const Icon(Icons.arrow_forward_rounded),
+          label: Text(strings.CommonLoginLogin),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+        ),
+        const SizedBox(height: 12),
+        FilledButton.tonalIcon(
+          onPressed: () async {
+            try {
+              if (formKey.currentState!.validate()) {
+                if (await loginWithToken(tokenController.text)) {
+                  if (!context.mounted) {
+                    return;
+                  }
+                  Provider.of<NavigatorProvider>(context, listen: false)
+                      .getNavigator(context, NavigatorType.defaultNavigator)
+                      ?.pop();
+                }
+              }
+            } catch (e, s) {
+              logger.e(e, error: e, stackTrace: s);
+              if (!context.mounted) {
+                return;
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(strings.CommonLoginLoginFailed(e))),
+              );
+            }
+          },
+          icon: const Icon(Icons.generating_tokens_outlined),
+          label: Text(strings.TokenLogin),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+        ),
+        const SizedBox(height: 4),
       ],
     );
   }

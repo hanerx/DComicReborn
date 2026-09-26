@@ -2,6 +2,7 @@ import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/utils/layout_utils.dart';
+import 'package:dcomic/view/components/settings_widgets.dart';
 import 'package:dcomic/view/settings/about_page.dart';
 import 'package:dcomic/view/settings/account_manage_page.dart';
 import 'package:dcomic/view/settings/debug_page.dart';
@@ -23,76 +24,93 @@ class MainSettingPage extends StatefulWidget {
 class _MainSettingPageState extends State<MainSettingPage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(S.of(context).DrawerSetting)),
+    return SettingsPage(
+      title: Text(S.of(context).DrawerSetting),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: AppLayout.formMaxWidth),
           child: ListView(
             padding: EdgeInsets.only(
-              top: 8,
-              bottom: 8 + MediaQuery.paddingOf(context).bottom,
+              left: 12,
+              top: 12,
+              right: 12,
+              bottom: 16 + MediaQuery.paddingOf(context).bottom,
             ),
             children: [
-              _sectionHeader(context, '阅读', 'Reading', top: 8),
-              _settingTile(
-                context,
-                icon: Icons.auto_stories_outlined,
-                title: S.of(context).ReaderSettings,
-                subtitle: S.of(context).ReaderSettingsDescription,
-                routeName: 'ViewerSettingPage',
-                builder: (context) => const ViewerSettingPage(),
-              ),
-              _sectionHeader(context, '内容源', 'Content Sources'),
-              _settingTile(
-                context,
-                icon: Icons.apps_outlined,
-                title: S.of(context).SourceSettings,
-                subtitle: S.of(context).SourceSettingsDescription,
-                routeName: 'SourceManagePage',
-                builder: (context) => const SourceManagePage(),
-              ),
-              _sectionHeader(context, '账户', 'Account'),
-              _settingTile(
-                context,
-                icon: Icons.account_box_outlined,
-                title: S.of(context).AccountSettings,
-                subtitle: S.of(context).AccountSettingsDescription,
-                routeName: 'AccountManagePage',
-                builder: (context) => const AccountManagePage(),
-              ),
-              _sectionHeader(context, '高级与关于', 'Advanced & About'),
-              if (context.select<ConfigProvider, bool>(
-                (config) => config.advancedSettingsUnlocked,
-              )) ...[
-                _settingTile(
-                  context,
-                  icon: Icons.science_outlined,
-                  title: _locale(context, '实验性功能', 'Experimental Features'),
-                  subtitle: _locale(
-                    context,
-                    '试用可能不稳定的功能，默认关闭',
-                    'Try potentially unstable features, off by default',
+              SettingsSection(title: _locale(context, '阅读', 'Reading')),
+              SettingsGroup(
+                children: [
+                  _settingTile(
+                    icon: Icons.auto_stories_outlined,
+                    title: S.of(context).ReaderSettings,
+                    subtitle: S.of(context).ReaderSettingsDescription,
+                    routeName: 'ViewerSettingPage',
+                    builder: (context) => const ViewerSettingPage(),
                   ),
-                  routeName: 'ExperimentalFeaturesPage',
-                  builder: (context) => const ExperimentalFeaturesPage(),
-                ),
-                _settingTile(
-                  context,
-                  icon: Icons.code,
-                  title: S.of(context).DebugSettings,
-                  subtitle: S.of(context).DebugSettingsDescription,
-                  routeName: 'DebugPage',
-                  builder: (context) => const DebugPage(),
-                ),
-              ],
-              _settingTile(
-                context,
-                icon: Icons.info_outline,
-                title: S.of(context).AboutSettings,
-                subtitle: S.of(context).AboutSettingsDescription,
-                routeName: 'AboutPage',
-                builder: (context) => const AboutPage(),
+                ],
+              ),
+              SettingsSection(
+                title: _locale(context, '内容源', 'Content Sources'),
+              ),
+              SettingsGroup(
+                children: [
+                  _settingTile(
+                    icon: Icons.apps_outlined,
+                    title: S.of(context).SourceSettings,
+                    subtitle: S.of(context).SourceSettingsDescription,
+                    routeName: 'SourceManagePage',
+                    builder: (context) => const SourceManagePage(),
+                  ),
+                ],
+              ),
+              SettingsSection(title: _locale(context, '账户', 'Account')),
+              SettingsGroup(
+                children: [
+                  _settingTile(
+                    icon: Icons.account_box_outlined,
+                    title: S.of(context).AccountSettings,
+                    subtitle: S.of(context).AccountSettingsDescription,
+                    routeName: 'AccountManagePage',
+                    builder: (context) => const AccountManagePage(),
+                  ),
+                ],
+              ),
+              SettingsSection(
+                title: _locale(context, '高级与关于', 'Advanced & About'),
+              ),
+              SettingsGroup(
+                children: [
+                  if (context.select<ConfigProvider, bool>(
+                    (config) => config.advancedSettingsUnlocked,
+                  )) ...[
+                    _settingTile(
+                      icon: Icons.science_outlined,
+                      title: _locale(context, '实验性功能', 'Experimental Features'),
+                      subtitle: _locale(
+                        context,
+                        '试用可能不稳定的功能，默认关闭',
+                        'Try potentially unstable features, off by default',
+                      ),
+                      routeName: 'ExperimentalFeaturesPage',
+                      builder: (context) => const ExperimentalFeaturesPage(),
+                    ),
+                    _settingTile(
+                      icon: Icons.code,
+                      title: S.of(context).DebugSettings,
+                      subtitle: S.of(context).DebugSettingsDescription,
+                      routeName: 'DebugPage',
+                      builder: (context) => const DebugPage(),
+                    ),
+                  ],
+
+                  _settingTile(
+                    icon: Icons.info_outline,
+                    title: S.of(context).AboutSettings,
+                    subtitle: S.of(context).AboutSettingsDescription,
+                    routeName: 'AboutPage',
+                    builder: (context) => const AboutPage(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -101,43 +119,17 @@ class _MainSettingPageState extends State<MainSettingPage> {
     );
   }
 
-  Widget _sectionHeader(
-    BuildContext context,
-    String zh,
-    String en, {
-    double top = 24,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, top, 16, 4),
-      child: Text(
-        _locale(context, zh, en),
-        style: Theme.of(context).textTheme.titleSmall
-            ?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-
-  Widget _settingTile(
-    BuildContext context, {
+  Widget _settingTile({
     required IconData icon,
     required String title,
     required String subtitle,
     required String routeName,
     required WidgetBuilder builder,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return ListTile(
-      leading: Icon(icon, color: colorScheme.primary),
-      title: Text(
-        title,
-        style: Theme.of(context).textTheme.bodyLarge
-            ?.copyWith(color: colorScheme.onSurface),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(color: colorScheme.onSurfaceVariant),
-      ),
+    return SettingsTile(
+      leading: Icon(icon),
+      title: Text(title),
+      subtitle: Text(subtitle),
       onTap: () {
         Provider.of<NavigatorProvider>(context, listen: false)
             .getNavigator(context, NavigatorType.defaultNavigator)

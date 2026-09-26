@@ -8,6 +8,7 @@ import 'package:dcomic/providers/models/base_model.dart';
 import 'package:dcomic/providers/subscribe_badge_state.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
+import 'package:dcomic/view/components/settings_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -187,10 +188,9 @@ abstract class BaseComicSourceModel extends BaseModel {
   }
 
   Widget getSourceSettingWidget(BuildContext context) {
-    return ListTile(
+    return SettingsTile(
       leading: const Icon(Icons.hourglass_empty),
       title: Text(S.of(context).SourceProviderSettingEmpty),
-      dense: true,
     );
   }
 }

@@ -9,6 +9,7 @@ import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
+import 'package:dcomic/view/components/settings_widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -211,68 +212,75 @@ class _ZaiManHuaSourceSettingsState extends State<_ZaiManHuaSourceSettings>
     builder: (context, _) {
       final account = widget.account;
       final strings = S.of(context);
-      return Column(
-        children: [
-          SwitchListTile(
-            secondary: const Icon(Icons.event_repeat),
-            title: Text(strings.ZaiManHuaAutoSignIn),
-            subtitle: Text(strings.ZaiManHuaAutoSignInHint),
-            value: account.autoSignInEnabled,
-            onChanged: account.isLoading || account.savingAutoSignIn
-                ? null
-                : (enabled) async {
-                    try {
-                      await account.setAutoSignInEnabled(enabled);
-                    } catch (_) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(strings.ZaiManHuaSaveSettingFailed),
-                          ),
-                        );
-                      }
-                    }
-                  },
-          ),
-          ListTile(
-            leading: Icon(
-              account.signInStatus == ZaiManHuaSignInStatus.signedIn
-                  ? Icons.event_available
-                  : Icons.event_note,
-            ),
-            title: Text(strings.ZaiManHuaTodaySignIn),
-            subtitle: Text(
-              strings.ZaiManHuaSignInStatus(account.signInStatus.name),
-            ),
-            trailing: IconButton(
-              tooltip: strings.ZaiManHuaRefreshSignInStatus,
-              onPressed: account.isLoading || account.savingAutoSignIn
+      final busy = account.isLoading || account.savingAutoSignIn;
+      Future<void> toggleAutoSignIn(bool enabled) async {
+        try {
+          await account.setAutoSignInEnabled(enabled);
+        } catch (_) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(strings.ZaiManHuaSaveSettingFailed)),
+            );
+          }
+        }
+      }
+
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        child: SettingsGroup(
+          children: [
+            SettingsTile(
+              leading: const Icon(Icons.event_repeat),
+              title: Text(strings.ZaiManHuaAutoSignIn),
+              subtitle: Text(strings.ZaiManHuaAutoSignInHint),
+              onTap: busy
                   ? null
-                  : account.refreshSignInStatus,
-              icon: const Icon(Icons.refresh),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.workspace_premium_outlined),
-            title: Text(strings.ZaiManHuaMembership),
-            subtitle: Text(
-              strings.ZaiManHuaMembershipStatus(
-                account.isLoading
-                    ? 'checking'
-                    : !account.isLogin
-                    ? 'notLoggedIn'
-                    : account.isMember?.toString() ?? 'unknown',
+                  : () => toggleAutoSignIn(!account.autoSignInEnabled),
+              trailing: Switch(
+                value: account.autoSignInEnabled,
+                onChanged: busy ? null : toggleAutoSignIn,
               ),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.card_giftcard),
-            title: Text(strings.ZaiManHuaVipDailyReward),
-            subtitle: Text(
-              strings.ZaiManHuaVipRewardStatus(account.vipRewardStatus.name),
+            SettingsTile(
+              leading: Icon(
+                account.signInStatus == ZaiManHuaSignInStatus.signedIn
+                    ? Icons.event_available
+                    : Icons.event_note,
+              ),
+              title: Text(strings.ZaiManHuaTodaySignIn),
+              subtitle: Text(
+                strings.ZaiManHuaSignInStatus(account.signInStatus.name),
+              ),
+              trailing: IconButton(
+                tooltip: strings.ZaiManHuaRefreshSignInStatus,
+                onPressed: account.isLoading || account.savingAutoSignIn
+                    ? null
+                    : account.refreshSignInStatus,
+                icon: const Icon(Icons.refresh),
+              ),
             ),
-          ),
-        ],
+            SettingsTile(
+              leading: const Icon(Icons.workspace_premium_outlined),
+              title: Text(strings.ZaiManHuaMembership),
+              subtitle: Text(
+                strings.ZaiManHuaMembershipStatus(
+                  account.isLoading
+                      ? 'checking'
+                      : !account.isLogin
+                      ? 'notLoggedIn'
+                      : account.isMember?.toString() ?? 'unknown',
+                ),
+              ),
+            ),
+            SettingsTile(
+              leading: const Icon(Icons.card_giftcard),
+              title: Text(strings.ZaiManHuaVipDailyReward),
+              subtitle: Text(
+                strings.ZaiManHuaVipRewardStatus(account.vipRewardStatus.name),
+              ),
+            ),
+          ],
+        ),
       );
     },
   );
@@ -339,190 +347,149 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
     TextEditingController usernameController = TextEditingController();
     TextEditingController passwordController = TextEditingController();
     TextEditingController tokenController = TextEditingController();
-    return Stack(
-      children: [
-        Container(color: Theme.of(context).colorScheme.primary, height: 100),
-        Column(
-          children: [
-            Card(
-              elevation: 0,
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  children: [
-                    Center(
-                      child: Text(
-                        S.of(context).ZaiManHuaTitle,
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                    ),
-                    Form(
-                      key: formKey,
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: TextFormField(
-                              controller: usernameController,
-                              decoration: InputDecoration(
-                                isDense: true,
-                                border: const OutlineInputBorder(gapPadding: 1),
-                                labelText: S.of(context).CommonLoginUsername,
-                                prefixIcon: const Icon(Icons.account_circle),
-                                hintText: S.of(context).CommonLoginUsernameHint,
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: TextFormField(
-                              controller: passwordController,
-                              obscureText: true,
-                              decoration: InputDecoration(
-                                isDense: true,
-                                border: const OutlineInputBorder(gapPadding: 1),
-                                labelText: S.of(context).CommonLoginPassword,
-                                prefixIcon: const Icon(Icons.lock),
-                                hintText: S
-                                    .of(context)
-                                    .ZaiManHuaLoginPasswordHint,
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: TextFormField(
-                              controller: tokenController,
-                              obscureText: true,
-                              decoration: InputDecoration(
-                                isDense: true,
-                                border: const OutlineInputBorder(gapPadding: 1),
-                                labelText: S.of(context).CopyMangaToken,
-                                prefixIcon: const Icon(Icons.token_outlined),
-                                hintText: S.of(context).CopyMangaTokenHint,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Row(
-                children: [
-                  const Expanded(child: SizedBox()),
-                  Expanded(
-                    flex: 2,
-                    child: FilledButton.icon(
-                      onPressed: () async {
-                        try {
-                          if (formKey.currentState!.validate()) {
-                            if (await login(
-                              usernameController.text,
-                              passwordController.text,
-                            )) {
-                              if (!context.mounted) {
-                                return;
-                              }
-                              Provider.of<NavigatorProvider>(
-                                    context,
-                                    listen: false,
-                                  )
-                                  .getNavigator(
-                                    context,
-                                    NavigatorType.defaultNavigator,
-                                  )
-                                  ?.pop();
-                            }
-                          }
-                        } catch (e, s) {
-                          logger.e(e, error: e, stackTrace: s);
-                          if (!context.mounted) {
-                            return;
-                          }
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                S.of(context).CommonLoginLoginFailed(e),
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.arrow_forward_rounded),
-                      label: Text(S.of(context).CommonLoginLogin),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              child: Row(
-                children: [
-                  const Expanded(flex: 2, child: SizedBox()),
-                  Expanded(
-                    flex: 3,
-                    child: FilledButton.tonalIcon(
-                      onPressed: () async {
-                        try {
-                          if (formKey.currentState!.validate()) {
-                            if (await loginWithToken(tokenController.text)) {
-                              if (!context.mounted) {
-                                return;
-                              }
-                              Provider.of<NavigatorProvider>(
-                                    context,
-                                    listen: false,
-                                  )
-                                  .getNavigator(
-                                    context,
-                                    NavigatorType.defaultNavigator,
-                                  )
-                                  ?.pop();
-                            }
-                          }
-                        } catch (e, s) {
-                          logger.e(e, error: e, stackTrace: s);
-                          if (!context.mounted) {
-                            return;
-                          }
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                S.of(context).CommonLoginLoginFailed(e),
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.generating_tokens_outlined),
-                      label: Text(S.of(context).TokenLogin),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+    final theme = Theme.of(context);
+    final strings = S.of(context);
+    final inputDecoration = InputDecoration(
+      filled: true,
+      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
+        alpha: 0.45,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: theme.colorScheme.primary.withValues(alpha: 0.6),
+          width: 1.4,
         ),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      isDense: true,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 20, 8, 14),
+          child: Center(
+            child: Text(
+              strings.ZaiManHuaTitle,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+        SettingsCard(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: usernameController,
+                  decoration: inputDecoration.copyWith(
+                    labelText: strings.CommonLoginUsername,
+                    prefixIcon: const Icon(Icons.account_circle),
+                    hintText: strings.CommonLoginUsernameHint,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: inputDecoration.copyWith(
+                    labelText: strings.CommonLoginPassword,
+                    prefixIcon: const Icon(Icons.lock),
+                    hintText: strings.ZaiManHuaLoginPasswordHint,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: tokenController,
+                  obscureText: true,
+                  decoration: inputDecoration.copyWith(
+                    labelText: strings.CopyMangaToken,
+                    prefixIcon: const Icon(Icons.token_outlined),
+                    hintText: strings.CopyMangaTokenHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        FilledButton.icon(
+          onPressed: () async {
+            try {
+              if (formKey.currentState!.validate()) {
+                if (await login(
+                  usernameController.text,
+                  passwordController.text,
+                )) {
+                  if (!context.mounted) {
+                    return;
+                  }
+                  Provider.of<NavigatorProvider>(context, listen: false)
+                      .getNavigator(context, NavigatorType.defaultNavigator)
+                      ?.pop();
+                }
+              }
+            } catch (e, s) {
+              logger.e(e, error: e, stackTrace: s);
+              if (!context.mounted) {
+                return;
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(strings.CommonLoginLoginFailed(e))),
+              );
+            }
+          },
+          icon: const Icon(Icons.arrow_forward_rounded),
+          label: Text(strings.CommonLoginLogin),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+        ),
+        const SizedBox(height: 12),
+        FilledButton.tonalIcon(
+          onPressed: () async {
+            try {
+              if (formKey.currentState!.validate()) {
+                if (await loginWithToken(tokenController.text)) {
+                  if (!context.mounted) {
+                    return;
+                  }
+                  Provider.of<NavigatorProvider>(context, listen: false)
+                      .getNavigator(context, NavigatorType.defaultNavigator)
+                      ?.pop();
+                }
+              }
+            } catch (e, s) {
+              logger.e(e, error: e, stackTrace: s);
+              if (!context.mounted) {
+                return;
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(strings.CommonLoginLoginFailed(e))),
+              );
+            }
+          },
+          icon: const Icon(Icons.generating_tokens_outlined),
+          label: Text(strings.TokenLogin),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+        ),
+        const SizedBox(height: 4),
       ],
     );
   }

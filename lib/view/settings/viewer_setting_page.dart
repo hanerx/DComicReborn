@@ -1,5 +1,6 @@
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/utils/layout_utils.dart';
+import 'package:dcomic/view/components/settings_widgets.dart';
 import 'package:dcomic/view/components/viewer_setting_list.dart';
 import 'package:flutter/material.dart';
 
@@ -13,8 +14,8 @@ class ViewerSettingPage extends StatefulWidget {
 class _ViewerSettingState extends State<ViewerSettingPage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(S.of(context).ReaderSettings)),
+    return SettingsPage(
+      title: Text(S.of(context).ReaderSettings),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: AppLayout.formMaxWidth),

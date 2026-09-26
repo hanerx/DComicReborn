@@ -4,6 +4,7 @@ import 'package:dcomic/providers/source_provider.dart';
 import 'package:dcomic/utils/layout_utils.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:dcomic/view/components/dcomic_mark.dart';
+import 'package:dcomic/view/components/settings_widgets.dart';
 import 'package:dcomic/view/settings/account_login_page.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
@@ -23,8 +24,8 @@ class _AccountManagePageState extends State<AccountManagePage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(title: Text(S.of(context).AccountSettings)),
+    return SettingsPage(
+      title: Text(S.of(context).AccountSettings),
       body: EasyRefresh(
         onRefresh: () {
           Provider.of<ComicSourceProvider>(context, listen: false).callNotify();
@@ -43,27 +44,24 @@ class _AccountManagePageState extends State<AccountManagePage> {
               itemBuilder: (context, index) {
                 var sourceModel = Provider.of<ComicSourceProvider>(context)
                     .hasAccountSettingSources[index];
-                return Container(
-                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: colorScheme.outlineVariant),
-                  ),
-                  clipBehavior: Clip.antiAlias,
+                return SettingsCard(
+                  key: ValueKey(sourceModel),
+                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       ListTile(
+                        contentPadding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
                         title: Text(
                           sourceModel.type.sourceName,
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(fontWeight: FontWeight.w600),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         leading: SizedBox(
-                          height: 50,
-                          width: 50,
+                          height: 48,
+                          width: 48,
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
                             child: sourceModel.accountModel?.avatar != null
                                 ? DComicImage(
                                     sourceModel.accountModel!.avatar!,
@@ -72,7 +70,7 @@ class _AccountManagePageState extends State<AccountManagePage> {
                                     errorLogoSize: 48,
                                     fit: BoxFit.cover,
                                   )
-                                : const DComicMark(size: 50),
+                                : const DComicMark(size: 48),
                           ),
                         ),
                         subtitle: Column(
@@ -162,11 +160,15 @@ class _AccountManagePageState extends State<AccountManagePage> {
                           ),
                         ),
                       ),
-                      Divider(height: 1, color: colorScheme.outlineVariant),
-                      ListTile(
-                        leading: Icon(Icons.token, color: colorScheme.primary),
+                      Divider(
+                        height: 1,
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.3,
+                        ),
+                      ),
+                      SettingsTile(
+                        leading: const Icon(Icons.token),
                         title: Text(S.of(context).TokenCopy),
-                        dense: true,
                         enabled: sourceModel.accountModel?.token != null,
                         onTap: () {
                           if (sourceModel.accountModel?.token != null) {
