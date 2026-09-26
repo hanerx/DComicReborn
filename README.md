@@ -144,6 +144,12 @@ DMZJ（大妈之家）已停止支持，专属 provider、请求处理器、Prot
 - 登录信息区分应用当前状态与本地保存的登录标记（包括独立的拷贝/热辣账户空间），不重新验证凭据、不触发签到或修改账户。报告不包含 Token、Cookie、密码及原始响应正文。
 
 
+## 正式 Logo 与应用图标
+
+- 正式标志采用应用内的漫画书页、对话框与闪电造型，唯一绘制源为 `lib/view/components/dcomic_mark.dart`。应用内继续跟随主题，平台应用图标使用默认浅色主题的蓝色与米白底。
+- 1024 × 1024 原图位于 `assets/branding/logo.png`；Android 同时提供传统图标和带安全留白的自适应前景，iOS 图标不含透明通道，Windows 使用多尺寸 ICO。
+- 修改造型或默认品牌配色后，在项目根目录运行 `python tool/generate_brand_icons.py`（需要 Flutter 与 Pillow，可用 `python -m pip install Pillow` 安装）。脚本直接渲染 `DComicMark`，同步生成原图和三个平台资源，不需手工重画或额外打包插件。
+
 ## 发布说明
 
 - 在 [RELEASE_NOTES.md](RELEASE_NOTES.md) 中按 `# 版本号` 分节，维护本版本的亮点、寄语和升级提示；内容可自行编写，或由 AI 根据实际改动起草后审阅。版本内使用二级及以下标题。
