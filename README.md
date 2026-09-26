@@ -118,11 +118,19 @@ iOS 原生依赖须在 macOS / Xcode 环境重新解析。本次 Firebase 升级
 
 ### 依赖清理
 
-已删除无实际调用的 `cupertino_icons`、`direct_select_flutter`、`extended_nested_scroll_view`、`folding_cell`、`flutter_adaptive_scaffold` 和 `open_file`。安装包打开仍使用 `FlutterDownloader.open`。
+已删除无实际调用的 `cupertino_icons`、`direct_select_flutter`、`extended_nested_scroll_view`、`folding_cell`、`flutter_adaptive_scaffold` 和 `open_file`，网络诊断也不再依赖 `motion_toast`。安装包打开仍使用 `FlutterDownloader.open`。
 
 `sqlite3_flutter_libs` 已由 `sqlite3 3.x` 的原生资产机制取代。`firebase_analytics` 虽无显式 Dart 埋点调用，但会自动采集事件，因此保留。
 
-DMZJ（大妈之家）已停止支持，专属 provider、请求处理器、Protobuf 协议及 `crypton`、`protobuf`、`fixnum` 直接依赖已移除。保留拷贝漫画和再漫画，不自动删除旧源的本地历史、收藏或配置；共享登录文案已改为通用字段。调试页网络检查复用 GitHub API 请求，不再访问 DMZJ。
+DMZJ（大妈之家）已停止支持，专属 provider、请求处理器、Protobuf 协议及 `crypton`、`protobuf`、`fixnum` 直接依赖已移除。保留拷贝漫画和再漫画，不自动删除旧源的本地历史、收藏或配置；共享登录文案已改为通用字段。网络诊断不再访问 DMZJ。
+
+### 网络诊断
+
+- 在「调试设置 → 网络检查」打开标准诊断弹框，立即显示并逐项追加结果；完成后不自动关闭，右下角「复制报告」可复制当前已完成的部分或完整报告。关闭弹框会取消尚未完成的请求。
+- 使用 `connectivity_plus` 获取系统网络类型，列出非回环网卡的 IPv4/IPv6 地址，并通过 `https://api64.ipify.org` 查询公网出口 IP；查询失败会显示原因，不影响后续检测。报告包含 IP，分享前请检查内容。
+- Android 同时读取当前活动网络的 DNS 服务器地址；Android 9 及以上还显示私人 DNS 的启用状态和配置主机名。未连接网络、系统未提供地址或平台未实现读取接口时如实标注，不用公共 DNS 预设值替代；读取失败不影响后续检测。
+- 检测拷贝/热辣全部预设 API 域名、再漫画网页/API/账户/任务域名、GitHub 网站和 API，报告当前 API/章节评论线路、HTTP 状态及耗时。单项最多 8 秒，不重试、不跟随重定向，不使用登录凭据或缓存；域名根路径返回 `403/404` 仍代表服务器已响应，不等同于漫画业务接口不可用。
+- 登录信息区分应用当前状态与本地保存的登录标记（包括独立的拷贝/热辣账户空间），不重新验证凭据、不触发签到或修改账户。报告不包含 Token、Cookie、密码及原始响应正文。
 
 
 ## 发布说明

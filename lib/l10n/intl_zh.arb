@@ -36,7 +36,7 @@
   "ExperimentalSettingsDescription": "了解，DComic 00Q[T] Trans-Arm, Quantum Burst!",
 
   "DebugPageNetworkCheck": "网络检查",
-  "DebugPageNetworkCheckDescription": "暂时没用",
+  "DebugPageNetworkCheckDescription": "逐项检测网络、IP、漫画源与 GitHub，可复制诊断报告",
   "DebugPageTryCrash": "伪造崩溃日志",
   "DebugPageTryCrashDescription": "向firebase传输一个伪造的崩溃日志",
   "DebugPagePrintModelDatabase": "本地数据库解析",

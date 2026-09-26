@@ -2,17 +2,19 @@ import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/page_controllers/debug_database_page_controller.dart';
-import 'package:dcomic/requests/base_request.dart';
+import 'package:dcomic/providers/network_diagnostics_config.dart';
+import 'package:dcomic/providers/network_diagnostics_controller.dart';
+import 'package:dcomic/providers/source_provider.dart';
 import 'package:dcomic/utils/firbaselogoutput.dart';
 import 'package:dcomic/utils/layout_utils.dart';
 import 'package:dcomic/view/components/empty_widget.dart';
 import 'package:dcomic/view/components/settings_widgets.dart';
+import 'package:dcomic/view/settings/network_diagnostics_dialog.dart';
 import 'package:dcomic/view/splash_page.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:logger/logger.dart';
-import 'package:motion_toast/motion_toast.dart';
 import 'package:provider/provider.dart';
 
 class DebugPage extends StatefulWidget {
@@ -84,30 +86,22 @@ class _DebugPageState extends State<DebugPage> {
                     subtitle: Text(
                       S.of(context).DebugPageNetworkCheckDescription,
                     ),
-                    onTap: () async {
-                      try {
-                        var request = RequestHandlers.githubRequestHandler;
-                        int ping = await request.ping();
-                        if (!context.mounted) {
-                          return;
-                        }
-                        MotionToast.success(
-                          title: Text(S.of(context).DebugPagePingSuccessTitle),
-                          description: Text(
-                            S.of(context).DebugPagePingSuccessDescription(ping),
+                    onTap: () {
+                      final chinese =
+                          Localizations.localeOf(context).languageCode == 'zh';
+                      final sources =
+                          context.read<ComicSourceProvider>().sources;
+                      showNetworkDiagnosticsDialog(
+                        context,
+                        controller: NetworkDiagnosticsController(
+                          chinese: chinese,
+                          targets: networkDiagnosticTargets(chinese: chinese),
+                          readAccountStatus: () => readNetworkDiagnosticAccounts(
+                            sources,
+                            chinese: chinese,
                           ),
-                        ).show(context);
-                      } catch (e) {
-                        if (!context.mounted) {
-                          return;
-                        }
-                        MotionToast.error(
-                          title: Text(S.of(context).DebugPagePingFailedTitle),
-                          description: Text(
-                            S.of(context).DebugPagePingFailedDescription(e),
-                          ),
-                        ).show(context);
-                      }
+                        ),
+                      );
                     },
                   ),
                   SettingsTile(

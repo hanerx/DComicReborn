@@ -34,25 +34,21 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m5(Reason) => "Login Failed, Failed Reason: ${Reason}.";
 
-  static String m6(Reason) => "Fail Reason: ${Reason}";
+  static String m6(version) => "Release Light Up ${version}";
 
-  static String m7(Ping) => "Ping: ${Ping} ms";
-
-  static String m8(version) => "Release Light Up ${version}";
-
-  static String m9(sourceId) =>
+  static String m7(sourceId) =>
       "${Intl.select(sourceId, {'BaseComicSource': 'A Base Class, If you see it, Please report an issue.', 'copymanga': 'Copy Managa, Powerful but may not connectable.', 'zaimanhua': 'ZaiManHua Source, Maybe New Home?', 'other': 'Bug!!!!!'})}";
 
-  static String m10(modes) =>
+  static String m8(modes) =>
       "${Intl.select(modes, {'ranking': 'Ranking', 'latestUpdate': 'Latest Update', 'other': 'Unknown'})}";
 
-  static String m11(status) =>
+  static String m9(status) =>
       "${Intl.select(status, {'checking': 'Checking…', 'notLoggedIn': 'Not logged in', 'true': 'VIP member', 'false': 'Not a VIP member', 'other': 'Unknown membership status'})}";
 
-  static String m12(status) =>
+  static String m10(status) =>
       "${Intl.select(status, {'checking': 'Checking…', 'notLoggedIn': 'Not logged in', 'signedIn': 'Checked in today', 'notSignedIn': 'Not checked in today', 'queryFailed': 'Could not check status. Refresh to retry.', 'signInFailed': 'Check-in did not succeed. Refresh to confirm.', 'other': 'Unknown check-in status'})}";
 
-  static String m13(status) =>
+  static String m11(status) =>
       "${Intl.select(status, {'checking': 'Checking…', 'notLoggedIn': 'Not logged in', 'notMember': 'VIP members only', 'unavailable': 'No reward available', 'claimable': 'Not claimed today', 'claimed': 'Claimed today', 'queryFailed': 'Could not check status. Refresh to retry.', 'claimFailed': 'Claim did not succeed. Refresh to confirm.', 'other': 'Unknown reward status'})}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -162,15 +158,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Network Check",
     ),
     "DebugPageNetworkCheckDescription": MessageLookupByLibrary.simpleMessage(
-      "Just check network by ping baidu.com, maybe change to more useful page in future.",
-    ),
-    "DebugPagePingFailedDescription": m6,
-    "DebugPagePingFailedTitle": MessageLookupByLibrary.simpleMessage(
-      "Ping Failed!",
-    ),
-    "DebugPagePingSuccessDescription": m7,
-    "DebugPagePingSuccessTitle": MessageLookupByLibrary.simpleMessage(
-      "Ping Success!",
+      "Check network, IP, comic sources and GitHub with a live, copyable report",
     ),
     "DebugPagePrintModelDatabase": MessageLookupByLibrary.simpleMessage(
       "Try Print All Database Content",
@@ -237,7 +225,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "ReleaseInfoNoApkOrIpa": MessageLookupByLibrary.simpleMessage(
       "No available installation package download link found",
     ),
-    "ReleaseInfoTitle": m8,
+    "ReleaseInfoTitle": m6,
     "RequireLogin": MessageLookupByLibrary.simpleMessage(
       "This Page Needs User Info, Please Login",
     ),
@@ -250,7 +238,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "SettingPageShowReleaseInfo": MessageLookupByLibrary.simpleMessage(
       "Latest Release",
     ),
-    "SourceProviderDesc": m9,
+    "SourceProviderDesc": m7,
     "SourceProviderSettingEmpty": MessageLookupByLibrary.simpleMessage(
       "No Extra Options for this Source Provider",
     ),
@@ -258,7 +246,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "SourceSettingsDescription": MessageLookupByLibrary.simpleMessage(
       "Manage Comic Source",
     ),
-    "TimeOrRankFilterEntityModes": m10,
+    "TimeOrRankFilterEntityModes": m8,
     "TimeOrRankFilterEntityName": MessageLookupByLibrary.simpleMessage(
       "SortType",
     ),
@@ -303,14 +291,14 @@ class MessageLookup extends MessageLookupByLibrary {
       "Your ZaiManHua Password!",
     ),
     "ZaiManHuaMembership": MessageLookupByLibrary.simpleMessage("Membership"),
-    "ZaiManHuaMembershipStatus": m11,
+    "ZaiManHuaMembershipStatus": m9,
     "ZaiManHuaRefreshSignInStatus": MessageLookupByLibrary.simpleMessage(
       "Refresh check-in status",
     ),
     "ZaiManHuaSaveSettingFailed": MessageLookupByLibrary.simpleMessage(
       "Could not save automatic check-in settings. Please try again.",
     ),
-    "ZaiManHuaSignInStatus": m12,
+    "ZaiManHuaSignInStatus": m10,
     "ZaiManHuaTitle": MessageLookupByLibrary.simpleMessage("ZaiManHua"),
     "ZaiManHuaTodaySignIn": MessageLookupByLibrary.simpleMessage(
       "Today\'s check-in",
@@ -318,6 +306,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "ZaiManHuaVipDailyReward": MessageLookupByLibrary.simpleMessage(
       "Daily VIP reward",
     ),
-    "ZaiManHuaVipRewardStatus": m13,
+    "ZaiManHuaVipRewardStatus": m11,
   };
 }

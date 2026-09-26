@@ -34,21 +34,21 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m5(Reason) => "登录失败: ${Reason}.";
 
-  static String m8(version) => "版本点亮： ${version}";
+  static String m6(version) => "版本点亮： ${version}";
 
-  static String m9(sourceId) =>
+  static String m7(sourceId) =>
       "${Intl.select(sourceId, {'BaseComicSource': '所有漫画源的基类，如果你看到这玩意了，说明作者冲晕过去了，请提交issue', 'copymanga': '拷贝漫画，资源齐全但是评论有向8u靠拢的趋势，而且你不一定能连上', 'zaimanhua': '再漫画，新出的不知道是哪位的部将', 'other': '出bug力!'})}";
 
-  static String m10(modes) =>
+  static String m8(modes) =>
       "${Intl.select(modes, {'ranking': '热度', 'latestUpdate': '更新', 'other': '未知'})}";
 
-  static String m11(status) =>
+  static String m9(status) =>
       "${Intl.select(status, {'checking': '正在查询…', 'notLoggedIn': '未登录', 'true': 'VIP 会员', 'false': '非 VIP 会员', 'other': '会员状态未知'})}";
 
-  static String m12(status) =>
+  static String m10(status) =>
       "${Intl.select(status, {'checking': '正在查询…', 'notLoggedIn': '未登录', 'signedIn': '今日已签到', 'notSignedIn': '今日未签到', 'queryFailed': '查询失败，请刷新重试', 'signInFailed': '签到未成功，请刷新确认', 'other': '签到状态未知'})}";
 
-  static String m13(status) =>
+  static String m11(status) =>
       "${Intl.select(status, {'checking': '正在查询…', 'notLoggedIn': '未登录', 'notMember': '仅限 VIP 会员', 'unavailable': '暂无可领取福利', 'claimable': '今日未领取', 'claimed': '今日已领取', 'queryFailed': '查询失败，请刷新重试', 'claimFailed': '领取未成功，请刷新确认', 'other': '福利状态未知'})}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -132,7 +132,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "DatabaseDebugPageTitle": MessageLookupByLibrary.simpleMessage("本地数据库老巢"),
     "DebugPageNetworkCheck": MessageLookupByLibrary.simpleMessage("网络检查"),
     "DebugPageNetworkCheckDescription": MessageLookupByLibrary.simpleMessage(
-      "暂时没用",
+      "逐项检测网络、IP、漫画源与 GitHub，可复制诊断报告",
     ),
     "DebugPagePrintModelDatabase": MessageLookupByLibrary.simpleMessage(
       "本地数据库解析",
@@ -193,7 +193,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "ReleaseInfoNoApkOrIpa": MessageLookupByLibrary.simpleMessage(
       "未找到可用的安装包下载链接",
     ),
-    "ReleaseInfoTitle": m8,
+    "ReleaseInfoTitle": m6,
     "RequireLogin": MessageLookupByLibrary.simpleMessage("本界面需要用户数据，请先登录"),
     "RequireLoginForToken": MessageLookupByLibrary.simpleMessage(
       "无法复制Token，可能是没登录",
@@ -202,13 +202,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "没有可用的更新数据",
     ),
     "SettingPageShowReleaseInfo": MessageLookupByLibrary.simpleMessage("最近更新"),
-    "SourceProviderDesc": m9,
+    "SourceProviderDesc": m7,
     "SourceProviderSettingEmpty": MessageLookupByLibrary.simpleMessage(
       "该漫画源暂无更多设置选项",
     ),
     "SourceSettings": MessageLookupByLibrary.simpleMessage("漫画源设置"),
     "SourceSettingsDescription": MessageLookupByLibrary.simpleMessage("管理漫画源"),
-    "TimeOrRankFilterEntityModes": m10,
+    "TimeOrRankFilterEntityModes": m8,
     "TimeOrRankFilterEntityName": MessageLookupByLibrary.simpleMessage("排序方式"),
     "TitleCopied": MessageLookupByLibrary.simpleMessage("分类标题已复制到剪贴板"),
     "TokenCopied": MessageLookupByLibrary.simpleMessage("Token已复制到剪贴板"),
@@ -239,17 +239,17 @@ class MessageLookup extends MessageLookupByLibrary {
       "你的拷贝漫画账号密码",
     ),
     "ZaiManHuaMembership": MessageLookupByLibrary.simpleMessage("会员状态"),
-    "ZaiManHuaMembershipStatus": m11,
+    "ZaiManHuaMembershipStatus": m9,
     "ZaiManHuaRefreshSignInStatus": MessageLookupByLibrary.simpleMessage(
       "刷新签到状态",
     ),
     "ZaiManHuaSaveSettingFailed": MessageLookupByLibrary.simpleMessage(
       "保存自动签到设置失败，请重试",
     ),
-    "ZaiManHuaSignInStatus": m12,
+    "ZaiManHuaSignInStatus": m10,
     "ZaiManHuaTitle": MessageLookupByLibrary.simpleMessage("再漫画"),
     "ZaiManHuaTodaySignIn": MessageLookupByLibrary.simpleMessage("今日签到"),
     "ZaiManHuaVipDailyReward": MessageLookupByLibrary.simpleMessage("VIP 每日福利"),
-    "ZaiManHuaVipRewardStatus": m13,
+    "ZaiManHuaVipRewardStatus": m11,
   };
 }

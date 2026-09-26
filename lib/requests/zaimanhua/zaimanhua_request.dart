@@ -24,7 +24,9 @@ void _configureAppClient(Dio dio) {
 }
 
 class ZaiManHuaRequestHandler extends RequestHandler {
-  ZaiManHuaRequestHandler() : super("https://manhua.zaimanhua.com");
+  static const endpoint = 'https://manhua.zaimanhua.com';
+
+  ZaiManHuaRequestHandler() : super(endpoint);
 
   Future<Response> getComicDetail(String comicPinYin) {
     return dio.get(
@@ -43,8 +45,9 @@ class ZaiManHuaRequestHandler extends RequestHandler {
 }
 
 class ZaiManHuaMobileRequestHandler extends RequestHandler {
-  ZaiManHuaMobileRequestHandler()
-      : super('https://v4api.zaimanhua.com/app/v1') {
+  static const endpoint = 'https://v4api.zaimanhua.com/app/v1';
+
+  ZaiManHuaMobileRequestHandler() : super(endpoint) {
     _configureAppClient(dio);
   }
 
@@ -235,8 +238,9 @@ class ZaiManHuaMobileRequestHandler extends RequestHandler {
 }
 
 class ZaiManHuaAccountRequestHandler extends RequestHandler {
-  ZaiManHuaAccountRequestHandler()
-      : super('https://account-api.zaimanhua.com/v1') {
+  static const endpoint = 'https://account-api.zaimanhua.com/v1';
+
+  ZaiManHuaAccountRequestHandler() : super(endpoint) {
     _configureAppClient(dio);
   }
 
@@ -275,9 +279,10 @@ class ZaiManHuaAccountRequestHandler extends RequestHandler {
 }
 
 class ZaiManHuaTaskRequestHandler extends RequestHandler {
+  static const endpoint = 'https://m.zaimanhua.com/lpi/v1';
+
   ZaiManHuaTaskRequestHandler()
-      : super('https://m.zaimanhua.com/lpi/v1',
-            policy: CachePolicy.noCache, useCookie: false) {
+      : super(endpoint, policy: CachePolicy.noCache, useCookie: false) {
     dio.options.connectTimeout = const Duration(seconds: 10);
     dio.options.receiveTimeout = const Duration(seconds: 10);
   }

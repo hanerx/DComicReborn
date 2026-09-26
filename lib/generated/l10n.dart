@@ -320,10 +320,10 @@ class S {
     );
   }
 
-  /// `Just check network by ping baidu.com, maybe change to more useful page in future.`
+  /// `Check network, IP, comic sources and GitHub with a live, copyable report`
   String get DebugPageNetworkCheckDescription {
     return Intl.message(
-      'Just check network by ping baidu.com, maybe change to more useful page in future.',
+      'Check network, IP, comic sources and GitHub with a live, copyable report',
       name: 'DebugPageNetworkCheckDescription',
       desc: '',
       args: [],
@@ -772,46 +772,6 @@ class S {
   /// `Login`
   String get LoginPageTitle {
     return Intl.message('Login', name: 'LoginPageTitle', desc: '', args: []);
-  }
-
-  /// `Ping Success!`
-  String get DebugPagePingSuccessTitle {
-    return Intl.message(
-      'Ping Success!',
-      name: 'DebugPagePingSuccessTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Ping: {Ping} ms`
-  String DebugPagePingSuccessDescription(Object Ping) {
-    return Intl.message(
-      'Ping: $Ping ms',
-      name: 'DebugPagePingSuccessDescription',
-      desc: '',
-      args: [Ping],
-    );
-  }
-
-  /// `Ping Failed!`
-  String get DebugPagePingFailedTitle {
-    return Intl.message(
-      'Ping Failed!',
-      name: 'DebugPagePingFailedTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Fail Reason: {Reason}`
-  String DebugPagePingFailedDescription(Object Reason) {
-    return Intl.message(
-      'Fail Reason: $Reason',
-      name: 'DebugPagePingFailedDescription',
-      desc: '',
-      args: [Reason],
-    );
   }
 
   /// `Show Splash Page`

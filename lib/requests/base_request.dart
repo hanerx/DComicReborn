@@ -78,17 +78,6 @@ class RequestHandler {
     await (await RequestStatics.store).clean(staleOnly: true);
     return true;
   }
-
-  Future<int> ping({String path = '/'}) async {
-    DateTime now = DateTime.now();
-    try {
-      await dio.get(path);
-      return DateTime.now().millisecondsSinceEpoch - now.millisecondsSinceEpoch;
-    } catch (e) {
-      rethrow;
-    }
-    return -1;
-  }
 }
 
 class RequestHandlers{

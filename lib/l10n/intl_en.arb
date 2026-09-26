@@ -31,7 +31,7 @@
   "ExperimentalSettings": "Experimental Settings",
   "ExperimentalSettingsDescription": "DComic 00Q[T] Trans-Arm, Quantum Burst!",
   "DebugPageNetworkCheck": "Network Check",
-  "DebugPageNetworkCheckDescription": "Just check network by ping baidu.com, maybe change to more useful page in future.",
+  "DebugPageNetworkCheckDescription": "Check network, IP, comic sources and GitHub with a live, copyable report",
   "DebugPageTryCrash": "Try Crash",
   "DebugPageTryCrashDescription": "Try call a crash to test firebase collection method.",
   "DebugPagePrintModelDatabase": "Try Print All Database Content",
@@ -116,24 +116,6 @@
   "CopyMangaLoginPasswordHint": "Password for the selected API site's account",
   "CopyMangaLoginUsernameHint": "Username",
   "LoginPageTitle": "Login",
-  "DebugPagePingSuccessTitle": "Ping Success!",
-  "DebugPagePingSuccessDescription": "Ping: {Ping} ms",
-  "@DebugPagePingSuccessDescription": {
-    "placeholders": {
-      "Ping": {
-        "example": "Nan"
-      }
-    }
-  },
-  "DebugPagePingFailedTitle": "Ping Failed!",
-  "DebugPagePingFailedDescription": "Fail Reason: {Reason}",
-  "@DebugPagePingFailedDescription": {
-    "placeholders": {
-      "Reason": {
-        "example": "Unknown"
-      }
-    }
-  },
   "DebugPageShowSplashTitle": "Show Splash Page",
   "DebugPageShowSplashDescription": "Show Splash Page",
   "CopyMangaToken": "Token",
