@@ -603,10 +603,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
       showDragHandle: false,
       backgroundColor: Colors.transparent,
       elevation: 0,
-      constraints: BoxConstraints(
-        maxWidth: AppLayout.formMaxWidth,
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
-      ),
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       builder: (context) => Consumer<ConfigProvider>(
         builder: (context, config, child) {
           // Modal routes capture inherited themes. Resolve from the live app
@@ -624,7 +621,6 @@ class _ComicViewerPageState extends State<ComicViewerPage>
               ),
               clipBehavior: Clip.antiAlias,
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   Semantics(
                     label: MaterialLocalizations.of(context)
@@ -658,7 +654,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                       ),
                     ),
                   ),
-                  Flexible(child: child!),
+                  Expanded(child: child!),
                 ],
               ),
             ),
