@@ -1,186 +1,402 @@
-# DComicReborn
-![GitHub Release](https://img.shields.io/github/v/release/hanerx/DComicReborn?style=for-the-badge&link=https%3A%2F%2Fgithub.com%2Fhanerx%2FDComicReborn%2Freleases%2Flatest)
-![GitHub Release Date](https://img.shields.io/github/release-date/hanerx/DComicReborn?style=for-the-badge)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/hanerx/DComicReborn/main.yml?style=for-the-badge)
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/hanerx/DComicReborn/total?style=for-the-badge)
+<div align="center">
+  <img src="assets/branding/logo.png" width="104" height="104" alt="DComicReborn Logo">
+  <h1>DComicReborn</h1>
+  <p><strong>多源漫画阅读 · 本地优先 · 自托管同步</strong></p>
+  <p>在手机、平板与桌面之间，接着读。</p>
+  <p>
+    <a href="https://github.com/hanerx/DComicReborn/releases/latest"><img src="https://img.shields.io/github/v/release/hanerx/DComicReborn?style=flat-square&amp;color=38658a&amp;label=release" alt="最新版本"></a>
+    <a href="https://github.com/hanerx/DComicReborn/releases"><img src="https://img.shields.io/github/downloads/hanerx/DComicReborn/total?style=flat-square&amp;color=38658a&amp;label=downloads" alt="累计下载"></a>
+  </p>
+  <p>
+    <a href="#下载">下载</a> &nbsp; / &nbsp;
+    <a href="#介绍">介绍</a> &nbsp; / &nbsp;
+    <a href="#界面预览">界面预览</a> &nbsp; / &nbsp;
+    <a href="#部署同步服务器">部署同步服务器</a> &nbsp; / &nbsp;
+    <a href="#如何开发">开发指南</a> &nbsp; / &nbsp;
+    <a href="#鸣谢">鸣谢</a>
+  </p>
+</div>
 
+## 下载
 
-DComic Ver2.0
+<p align="center">
+  <a href="https://github.com/hanerx/DComicReborn/releases/latest/download/app-release.apk"><img src="https://img.shields.io/badge/Android-下载_APK-38658a?style=for-the-badge&amp;logo=android&amp;logoColor=white" alt="Android APK 下载"></a>
+  <a href="https://github.com/hanerx/DComicReborn/releases/latest/download/ios-release.ipa"><img src="https://img.shields.io/badge/iOS-下载_IPA-455a70?style=for-the-badge&amp;logo=apple&amp;logoColor=white" alt="iOS IPA 下载"></a>
+  <a href="https://github.com/hanerx/DComicReborn/releases/latest"><img src="https://img.shields.io/badge/Windows-查看发布-586779?style=for-the-badge" alt="Windows 发布附件"></a>
+</p>
 
-## 界面与阅读体验
+<p align="center">
+  <a href="https://github.com/hanerx/DComicReborn/releases">历史版本</a> ·
+  <a href="RELEASE_NOTES.md">更新说明</a> ·
+  <a href="https://github.com/hanerx/DComicReborn/actions/workflows/main.yml">开发构建</a>
+</p>
 
-- 界面采用封面优先的轻量书架布局，统一浅色 / 暗色主题、文字层级、留白与圆角；保留主题颜色和 Material 3 偏好设置。
-- 首页与收藏的漫画封面使用固定比例，书名预留两行；分类保留随包素材。排行、更新、搜索和历史使用统一图文列表，不拉伸封面。
-- 按可用窗口宽度自适应，不按设备型号判断：从 840 个逻辑像素起采用“左侧选书、右侧详情与章节”双栏，首页保留顶部标签，不再常驻侧边导航。首页、分类、排行、更新、搜索、收藏和历史中的漫画共用详情面板；左栏约占 40%，宽度限制为 320–560 个逻辑像素，其余空间交给详情。窄窗口只显示选书页或当前详情；调整窗口大小时保留选中的漫画、导航标签和列表状态。
-- 漫画查看记录或绑定变化、从详情返回收藏时，刷新已加载条目的“新”角标与源图标，不重新请求收藏列表，保留已加载分页和滚动位置。服务端收藏增删、排序及最新章节信息通过下拉刷新同步。
-- 收藏封面左下角横排显示当前源及有效直接绑定源的图标，当前源始终在最前；图标为 16 逻辑像素，间隔 2 像素，最多五个。空间不足时只显示能完整放下的图标，不换行、不遮挡右上角更新角标。解绑、冲突和仅通过其他漫画间接关联的源不显示；此展示不依赖实验性角标共享开关，也不会为查找图标发起网络搜索。
-- 窄屏详情页使用较小的封面头部，仅渲染一张封面并统一裁切、缩放，图片延伸到标题栏和状态栏背后。标题从封面下部随上滑逐渐缩小、上移到标题栏，封面先收成“小封面＋标题信息”；继续上滑时，封面和信息区滚出屏幕，仅保留标题栏。下拉回到顶部可反向展开。宽屏右侧详情使用紧凑封面、固定标题和单栏章节正文，不在详情面板内再次分栏；宽窄切换共用详情控制器，不因此重新加载详情。简介支持展开 / 收起，底部提供开始 / 继续阅读；进入阅读后覆盖整个选书工作区，返回后恢复原来的选书页面和漫画。章节强调色表示本地记录的阅读位置，不推断未知的“最新章节”。
-- 窄屏封面上下使用正文主题底色的渐变，浅色模式为近白色，暗色模式跟随暗色底；缩放时露出的区域也与正文同色。标题和导航按钮使用主题文字色，避免黑色遮罩与下方内容脱节。
-- 详情页下拉刷新提示位于导航 / 封面头部之后的内容区，触发高度为 48 个逻辑像素，减少小屏幕所需的下拉距离；下拉不移动导航栏与封面头部，也不遮挡它们，上滑收缩封面的交互保持不变。
-- 详情页使用紧凑的 dense 漫画源行，通过底部面板切换源；链条 / 断链图标表示绑定状态，不常驻显示“已绑定”文字。仅当原始源与当前源不同时，在行尾显示无文字的绑定图标：短按绑定或重新绑定，已有绑定时长按同一图标弹出解除绑定确认框。绑定按无向关系保存，一次绑定即可从两端换源，无需再次绑定；解绑同时解除两端关系，保留收藏与阅读记录，刷新和自动匹配不会重新建立已解除的关系。改绑会替换两端在这两个源之间的旧关系，不影响与其他源的绑定。详情不可用时隐藏封面与章节，错误图标、说明和重试居中展示，下方紧接同一套紧凑切换源与绑定操作；错误仍由界面解析原始异常。搜索失败也提供重试入口，不阻断其他源的结果。
-- 侧边栏使用 DComic 矢量标识，点击当前内容源打开选择面板；设置按阅读、内容源、账户、高级与关于分组。未实现的下载、分享等空入口不再伪装成可用功能。
-- 阅读器保留翻页手势及章末吐槽行为；纵向漫画限宽居中，转屏或窗口尺寸变化时保持当前页，并对齐到该页开头，避免图片重排后跳到相邻页。阅读工具栏提供页码与按钮提示，设置面板可滚动；设置与登录表单最大宽度为 640、评论和目录抽屉最大宽度为 480 个逻辑像素。本次适配未扩展 Windows 平台能力。
+| 平台 | 系统要求 | 安装方式 |
+| :--- | :--- | :--- |
+| **Android** | Android 7.0+ | 下载 APK，允许安装此来源的应用。 |
+| **iOS** | iOS 15+ | IPA **未签名**，需要自行签名安装，不是 App Store 安装包。 |
+| **Windows** | Windows 10+ · x64 | 安装版 EXE / 免安装 ZIP，详见下方说明。 |
 
-### 搜索工作台
+<details>
+<summary><strong>Windows 下载与安装须知</strong></summary>
 
-- 标题栏直接放置 Material 3 圆角搜索栏，左侧保留返回按钮，栏内提供清空与搜索按钮；输入漫画名后点击搜索按钮或键盘搜索键提交，输入过程中不发起搜索请求。各漫画源并发搜索，结果按源分栏，切换标签保留结果和滚动位置。
-- 清除输入可返回最近搜索。搜索历史仅保存在本机，最多 20 条，去除关键词首尾空格，重复搜索置顶；点击历史可重搜，右侧叉号删除单条，“清空”需确认，重启后仍保留记录。
-- 下拉刷新只更新当前漫画源，刷新期间和刷新失败时保留已有结果；加载下一页失败时重试同一页，收到空页后停止加载。重复提交当前关键词不重复请求，需要更新结果时请下拉刷新。
-- 加载中、无结果、请求失败和没有更多结果分别呈现。移除重复页面标题与说明头部，为历史和漫画列表留出空间；键盘展开时内容区自动避让，深浅主题与宽屏详情布局沿用应用设置。
+Windows 打包已接入构建工作流，但 **2.5.4 Release 目前只有 APK 和 IPA**，请以发布页实际附件为准。没有 Windows 附件时，可在成功的 Actions 运行中查找 `windows-release`（需登录 GitHub），或按下文自行构建。
 
-## 拷贝 / 热辣源
+选择 `windows-x64-setup.exe` 安装版，或 `windows-x64-portable.zip` 免安装版；文件名前带应用名和版本号。
 
-在「设置 → 漫画源设置 → 拷贝漫画」选择线路：
+免安装版须完整解压，保留 EXE 同目录的 DLL 和 `data`。Windows 包尚未配置代码签名，可能出现未知发布者或 SmartScreen 提示。
 
-- **漫画与图片 API 线路**：支持拷贝和热辣，默认 `api.copy4000.com`。
-- **拷贝评论与吐槽 API 线路**：独立选择拷贝线路。漫画 API 选择热辣（例如 `api.manga2025.com`）后，可使用热辣图片配合拷贝章节吐槽。
-- **中文显示**：选择“简体中文”或“繁体中文”，默认繁体，重启后保留。漫画名称、章节名和简介按所选文字显示，覆盖首页、搜索、详情、收藏、历史和阅读器；作者名和图片不变。仅转换显示文本，不改写原始漫画名称或阅读记录。
-- 两站账号独立；切换站点后在账户设置中登录对应账号。切换立即作用于后续请求；已打开的漫画页面需重新进入。本地收藏和阅读记录仍使用原 `copymanga` 源标识，不迁移或删除。
-- 混合吐槽依赖两站共享漫画 / 章节 UUID；热辣独有内容可能没有对应的拷贝吐槽。线路是否可访问取决于网络和源站状态。
-- 首页下拉刷新会重新请求源站，不沿用尚未过期的本地缓存；请求失败时保留上一次完整内容，恢复网络后可再次下拉刷新。拷贝和热辣分别展示各自提供的首页栏目。
-- 在线收藏通过 `ordering=-datetime_updated` 请求服务端按漫画更新时间倒序返回，保留每页 21 条的分页，不对单页数据做本地排序。
-- 分类图片使用随包提供的精选日漫彩图与 Comiket 官方目录插画，不再随机选图或请求远程分类 Logo。新增、未匹配及“其他”分类显示本地拷贝应用 Logo；分类列表本身仍需从源站加载。
-- 图片位于 `assets/copymanga/categories/`，统一裁切为 256 × 256 PNG；来源、作品名和原图裁切坐标记录在 [素材清单](assets/copymanga/credits.json)。替换素材时同步更新清单；增加分类需在 `CopyMangaComicHomepageModel._categoryArtwork` 中登记 API 的 `path_word`。第三方图片版权归原权利人所有，来源记录不代表转载授权。
+</details>
 
-访问协议参考 [LittleSurvival/copymanga-copy20 v1.4.84](https://github.com/LittleSurvival/copymanga-copy20/blob/7591be034286bb19bc8380c4ec3fd8622090f175/apk/tachiyomi-zh.copymanga-v1.4.84.apk)，包含独立吐槽线路、站点请求头和章节路径差异；不再依赖旧版 App 的动态域名发现与随机签名。
+## 介绍
 
-再漫画搜索会在发送请求前自动将关键词转为简体，输入框保留原文；普通搜索和跨源绑定搜索均生效，不受拷贝源“中文显示”设置影响。
+**DComicReborn 是使用 Flutter 开发的第三方多源漫画阅读应用**，面向 Android、iOS 和 Windows。浏览、收藏、阅读和记录在同一套界面中完成；需要多设备接力时，再连接自己的同步服务器。
 
-## 再漫画收藏
+| 找到想看的 | 按习惯阅读 | 保留自己的记录 |
+| :--- | :--- | :--- |
+| 拷贝 / 热辣 / 再漫画，多源搜索与分类排行 | 左右翻页、纵向阅读、章节目录与章末吐槽 | 本地保存阅读记录与设置，可选文件备份 |
+| 收藏更新提示，同一本漫画跨源绑定 | 深浅主题与阅读配色，手机单栏 / 宽屏双栏 | 自托管多设备同步，按分类选择同步内容 |
 
-- 收藏使用 `/app/v1/bookshelf/updates/list` 书架接口，已读漫画仍保留在列表中；刷新以服务端收藏为准，不与本地旧列表永久合并。
-- 书架混合返回漫画和小说时只显示漫画，继续按服务端页码加载；阅读时间和更新角标沿用本地记录。
+> 不部署同步服务器也能使用应用。同步服务只管理用户和同步数据，**不提供或代理漫画内容**；源站账户与同步账户互相独立。
 
-## 设置界面
+本项目不是漫画站点的官方客户端，内容与接口可用性取决于源站及网络。漫画及相关图片版权归原权利人所有；跨源进度聚合等实验性功能需单独开启。
 
-- 设置首页、阅读器、漫画源、账户与登录、实验性功能、调试和关于页统一使用圆角分组卡片、图标底座和提示条，配色跟随应用深浅主题。
-- 阅读页面内的设置面板与「设置 → 阅读器设置」共用控件；阅读面板仍支持独立配色，切换时即时更新。
-- 漫画源卡片可点击标题区域独立展开、收起，折叠不改变源设置；仍可长按拖动排序。API 线路使用圆角底部选择面板，按拷贝、热辣分组展示完整域名并标记当前选择；评论线路只提供拷贝选项。登录页可在键盘弹出后滚动操作。
+## 界面预览
 
-## 数据库同步与备份
+<p align="center"><strong>从选书到阅读，再到按自己的习惯设置。</strong><br><sub>功能截图统一使用浅色模式；主题色与日夜模式在独立的合成图中对照展示。截图来自实际应用，账户信息已遮盖；点击图片查看大图。</sub></p>
 
-入口：「设置 → 数据库同步与备份」。同步默认关闭；离线读写仍直接落入本地数据库，开启后由持久化变更队列上传，不要求阅读器或漫画源主动调用同步接口。
+### 浏览与选书
 
-- 可分别选择阅读历史与已读状态、漫画绑定、章节规则、应用设置、漫画源设置及登录凭据。登录凭据（Cookie、Token 等）默认不选中；关闭分类后不再上传或应用该分类的远端变更，重新开启会补拉遗漏数据。
-- 使用管理员提供的服务器地址、用户名和密码登录；没有公开注册入口。服务端通过单个 Docker 镜像 `hanerx/dcomic_server` 部署，默认开放 `0.0.0.0:8080`；浏览器访问根地址会跳转到独立的 `/dashboard` Web 后台，无需 App。首次使用容器日志中的初始化码设置 `root` 密码。源码、依赖、Dashboard 和部署说明均位于独立的 [`server/`](server/README.md)。
-- 在线前台通过 SSE 通知与增量游标同步；断线重连后补齐变更。应用被系统挂起或关闭时不保证实时同步，重新进入前台后继续。
-- 冲突按经服务器校时的修改时间及逻辑时钟处理，不按上传先后覆盖。无法可靠确定先后的离线修改保留为候选，可在设置页查看设备、版本和内容后选择；凭据内容不在冲突预览中展示。
-- 漫画绑定图、章节规则集合和登录凭据分别作为完整单元同步，避免关系或凭据被拆散；同时修改这些集合可能需要选择整份内容。删除也会同步，不会因刷新默认设置而重新创建。
-- 切换同步账号时可明确选择是否迁移当前本地数据；不同服务端账号的数据互相隔离。同步会话、设备身份、游标、搜索历史、实验功能解锁状态及图片缓存不随业务数据迁移或备份。
-- 文件导出可选择分类；包含登录凭据时必须设置密码，使用 PBKDF2-SHA256 和 AES-256-GCM 加密。其余分类也可选加密；未加密文件应按私人数据妥善保存。
-- 导入支持“合并”和“替换所选分类”。合并保留原版本，无法安全判断冲突时拒绝整次导入；替换会覆盖所选分类并为缺失记录生成删除标记，未选分类保持不变。错误密码、损坏文件或非法记录不会部分写入；文件上限为 32 MiB。替换前建议先导出当前数据。
-- 支持 HTTP 直连，但密码、令牌和同步数据会明文传输，仅应在可信网络使用；公网部署建议使用 HTTPS。同步凭据不等于端到端加密：HTTPS 保护传输，但服务器管理员仍可访问其存储的数据。只连接可信任的服务器；备份密码请另行保管，丢失后无法恢复加密文件。
+<table>
+  <tr>
+    <td align="center" width="33%"><strong>收藏与更新</strong><br><sub>封面书架 · 更新角标 · 跨源绑定</sub></td>
+    <td align="center" width="33%"><strong>漫画详情</strong><br><sub>封面与简介 · 开始阅读</sub></td>
+    <td align="center" width="33%"><strong>侧栏导航</strong><br><sub>切换内容源 · 收藏 · 历史</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/screenshots/favorites.webp"><img src="docs/screenshots/favorites.webp" width="240" alt="收藏书架与已绑定源图标"></a></td>
+    <td align="center"><a href="docs/screenshots/detail.webp"><img src="docs/screenshots/detail.webp" width="240" alt="浅色漫画详情与开始阅读按钮"></a></td>
+    <td align="center"><a href="docs/screenshots/navigation.webp"><img src="docs/screenshots/navigation.webp" width="240" alt="应用侧栏与内容源切换入口"></a></td>
+  </tr>
+</table>
 
-## 实验性功能
+### 搜索
 
-- “调试设置”和“实验性功能”入口默认一起隐藏。在「设置 → 关于」点击顶部应用名称下方的版本号 7 次即可同时解锁；成功后返回设置即可看到两个入口，解锁状态本地持久保存，重启后仍显示。在「调试设置」点击“重新隐藏调试与实验性功能”可隐藏两个入口并返回设置，重启后仍隐藏，之后可按相同方式再次解锁。解锁和隐藏都不会自动开启功能，也不会重置已有开关值。
-- 在「设置 → 实验性功能」开启“跨源共享‘新’角标状态”，默认关闭，设置会保存在本地。
-- 开启后，使用已有 mapping 双向关联漫画，在查询角标时取关联漫画最近的本地查看时间，与各源自己的更新时间比较。默认不联网搜索绑定，不同步章节进度，不改写另一源的查看记录；关闭后立即恢复各源独立判定。
-- 已解除的关系和同一关联组包含同源多本漫画的歧义关系不参与角标合并；旧库中相互矛盾的绑定在迁移时保留为禁止自动匹配的记录，需要手动重新绑定。查看、绑定和开关变化会重新判定已加载收藏的角标。
-- 可在角标共享下开启“自动匹配缺失绑定”（默认关闭）：仅对已加载的收藏异步补全映射，翻页后追加，不主动拉取全部收藏。全局串行搜索，每次搜索结束后按“搜索间隔（秒）”等待，默认 1 秒、最小 1 秒，可自定义并保存。仅接受简繁转换后标题一致且结果唯一的匹配，不覆盖已有绑定或手动解绑；成功后重算角标，不重载收藏或改变滚动位置。
-- 实验性功能使用圆角分组卡片，角标共享和阅读进度均可通过右侧箭头独立展开或收起；折叠只隐藏说明及子选项，不改变功能开关。“搜索间隔”“每次启动都重试”和“最多尝试次数”均位于自动匹配的嵌套子面板中；详细规则可在“风险提示”查看。界面跟随应用深浅主题。
-- “每次启动都重试”默认开启：缺失映射每次运行最多搜索一次，重启并加载到收藏列表后可重试。关闭后显示“最多尝试次数”，默认 3 次、最小 1 次，包含首次搜索；按“来源源＋漫画 ID＋目标源”分别持久记录，网络失败、无结果或匹配不唯一也计次，未发起搜索不计次。不限次模式仍累计计数，切换开关或重启不清零；达到上限后停止，调高上限后可在下次运行继续尝试。关闭自动匹配或父开关会停止后续搜索，已有映射保留。
-- 此功能可能不稳定：两个源的章节进度可能不同，查看落后源的漫画也可能清除领先源已有的更新提示。它表示“查看过这本漫画”，不表示“所有最新章节均已读”。
-- “跨源聚合上次阅读进度”使用另一个独立开关，默认关闭。通过可靠的已有 mapping 关联漫画，只有另一源的历史章节名称在当前源目录中存在唯一对应时，才按最后阅读时间选择较新的进度，用于详情页高亮和“继续阅读”。
-- 章节匹配优先统一简繁体、空白和全角 ASCII 后匹配完整标题；无标题对应时，按“同一规则组＋第一个捕获组提取的数字相同＋当前目录唯一对应”补充匹配。数字支持前导零和小数（`012.50` 等价于 `12.5`）；跨组、命中多个组、提取多个不同数字、目录对应不唯一或时间无法可靠比较时不按规则聚合。聚合不覆盖原始阅读历史，不同步页码；关闭后恢复当前源自己的记录。
-- 展开阅读进度设置后，点击“章节匹配规则分组”进入二级页面，可新增、重命名、删除分组及增删改组内正则，并输入章节标题试匹配。第一个捕获组必须提取数字，例如 `^第(\d+(?:\.\d+)?)话$`；匹配前会忽略标题空白，正则请按规范化后的标题编写。非法正则或缺少捕获组不能保存。
-- 规则独立存入 `ChapterRuleGroupEntity` 和 `ChapterRulePatternEntity` 两张数据库表，不写入 Config。首次建库及旧库升级至 v6 时写入“正篇”（第 x 话、x 话、Chapter x）和“单行本”（第 x 卷、Vol. x）默认分组。默认规则可编辑或全部删除，空表重启不会补回；“恢复默认规则”经确认后以事务覆盖当前全部分组和正则，不改变聚合总开关。
+<table>
+  <tr>
+    <td align="center" width="50%"><strong>搜索历史</strong><br><sub>保留最近关键词 · 点击再次搜索</sub></td>
+    <td align="center" width="50%"><strong>多源搜索</strong><br><sub>同一关键词 · 按漫画源切换结果</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/screenshots/search.webp"><img src="docs/screenshots/search.webp" width="240" alt="浅色搜索页与最近搜索关键词"></a></td>
+    <td align="center"><a href="docs/screenshots/search-results.webp"><img src="docs/screenshots/search-results.webp" width="240" alt="浅色模式下按漫画源展示的搜索结果"></a></td>
+  </tr>
+</table>
 
-## 再漫画阅读历史
+### 阅读与外观
 
-- 在「历史 → 再漫画」点击右上角图标切换本地 / 云端历史。云端使用 `/app/v1/readingRecord/list`（`source=mh`）分页读取，显示封面、阅读日期和章节；刷新不使用 HTTP 缓存。
-- 登录后，进入章节和翻页会通过 `/app/v1/readingRecord/add` 上传章节及实际图片页码；章末吐槽页按最后一张图片计算，不上传越界页码。上传按顺序执行，不阻塞阅读。
-- 本地阅读记录仍独立保存；未登录不上传，上传失败不影响本地记录，也不自动批量上传旧历史。
-- 历史加载失败会提示检查网络和登录状态，不再静默显示为空；加载下一页失败后不会跳过该页。
+<table>
+  <tr>
+    <td align="center" width="50%"><strong>阅读器</strong><br><sub>翻页 · 进度 · 章节工具栏</sub></td>
+    <td align="center" width="50%"><strong>阅读外观</strong><br><sub>面板配色 · 主题 · 触控区域</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/screenshots/reader.webp"><img src="docs/screenshots/reader.webp" width="240" alt="浅色漫画阅读器及底部进度工具栏"></a></td>
+    <td align="center"><a href="docs/screenshots/reader-appearance.webp"><img src="docs/screenshots/reader-appearance.webp" width="240" alt="浅色阅读器设置与主题配色选项"></a></td>
+  </tr>
+</table>
 
-## 再漫画自动签到
+### 应用设置
 
-- 在「设置 → 漫画源设置 → 再漫画」切换“自动签到”（再漫画卡片位于拷贝漫画卡片下方，可能需要下滑），默认开启，选择会保存并在下次启动时恢复。关闭后不再自动签到或领取 VIP 福利，重新开启时会立即检查并尝试完成当天任务。
-- 开启时，密码登录、Token 登录，以及应用启动时恢复有效登录态后，自动检查并完成当天签到，无需每天重新输入账号密码。
-- 签到状态以服务端当天的 `is_sign` 为准，不使用个人资料缓存；当天已签则跳过，避免跨日后被旧状态阻止签到。
-- 会员身份以个人资料的 `isMember` 为准。VIP 会员会额外查询每日福利任务 `16`，仅在任务可领取时领取；已领取则跳过，不领取其他任务奖励。普通签到与 VIP 福利相互独立，一项失败不会阻止另一项。
-- 源设置分别显示今日签到、会员身份和 VIP 每日福利状态，区分未登录、未完成、已完成及查询 / 领取失败。进入设置、设置页回到前台和点击刷新按钮时查询最新状态；状态查询本身不会触发签到或领取。
-- 签到接口失败不会退出账号；后续登录或启动恢复时会再次检查。退出登录后不再触发签到。
-- 不在应用关闭或停留后台时定时签到。
+<table>
+  <tr>
+    <td align="center" width="33%"><strong>应用设置</strong></td>
+    <td align="center" width="33%"><strong>漫画源设置</strong></td>
+    <td align="center" width="33%"><strong>关于与更新</strong></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/screenshots/settings.webp"><img src="docs/screenshots/settings.webp" width="240" alt="应用设置分组"></a></td>
+    <td align="center"><a href="docs/screenshots/sources.webp"><img src="docs/screenshots/sources.webp" width="240" alt="漫画源设置与独立吐槽线路"></a></td>
+    <td align="center"><a href="docs/screenshots/about.webp"><img src="docs/screenshots/about.webp" width="240" alt="应用关于页面与更新入口"></a></td>
+  </tr>
+</table>
 
-## 章末吐槽页
+### 账户与同步
 
-- 左翻、右翻和纵向阅读都会在每章最后一张漫画后追加一屏「本章吐槽」，无需先打开侧栏。
-- 预览沿用当前章节的吐槽顺序；内容超过一屏时裁切显示，底部「显示更多」打开侧栏的评论标签，查看完整内容。
-- 吐槽页计入阅读进度条，继续翻动可进入下一章；点击操作沿用漫画页的阅读方向和区域大小：横向左右翻页、纵向上下翻页，中间区域或右上角菜单按钮切换阅读工具栏。「显示更多」和菜单按钮优先响应，滑动翻页照常；吐槽页不支持双击或捏合缩放。没有吐槽时显示「本章暂无吐槽」。
-- 吐槽页底色保持铺满，阅读工具栏的圆角不再露出黑底；内容留白与上下工具栏以同一 300ms 缓入缓出动画同步变化，中途切换显隐也不会突然跳动。
-- 在「阅读设置 → 外观 → 阅读面板配色」选择跟随应用、纯白、浅色（冷灰）、深色（低饱和蓝黑）或纯黑，统一调整上下工具栏和页末吐槽的背景、文字与图标；立即生效并保存，默认跟随应用，不改变漫画图片或其他页面的主题。
-- 阅读器内的设置弹层也会实时跟随配色变化，无需关闭重开，切换时保留当前滚动位置。
+<table>
+  <tr>
+    <td align="center" width="33%"><strong>数据库同步与备份</strong><br><sub>自动同步 · 按分类选择同步内容</sub></td>
+    <td align="center" width="33%"><strong>账户设置</strong><br><sub>多源账户 · 个人信息已遮盖</sub></td>
+    <td align="center" width="33%"><strong>实验性功能</strong><br><sub>跨源角标共享 · 自动匹配</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/screenshots/sync.webp"><img src="docs/screenshots/sync.webp" width="240" alt="数据库同步与备份：自动同步、立即同步及同步分类"></a></td>
+    <td align="center"><a href="docs/screenshots/accounts.webp"><img src="docs/screenshots/accounts.webp" width="240" alt="账户设置：两个漫画源的头像、昵称、UID 和用户名均已遮盖"></a></td>
+    <td align="center"><a href="docs/screenshots/experiments.webp"><img src="docs/screenshots/experiments.webp" width="240" alt="跨源角标共享与自动匹配的实验性设置"></a></td>
+  </tr>
+</table>
 
-## Getting Started
+### 主题与日夜模式
 
-### 工具链
+五种主题色均来自实际切换后的主页。每张取顶部约 **20% 高度**，错位叠排为一张条带图，不再逐张铺开整屏截图；日间与夜间使用另一张并排对照图。功能区保持浅色，夜间模式仅在这里展示。
 
-- Flutter stable **3.47.2** / Dart **3.13.2**，CI 使用同一 Flutter 版本。
-- 最低系统：Android **7.0 / API 24**、iOS **15**。
-- Android：JDK 21、SDK 36、NDK 28.2.13676358；NDK 版本跟随 Flutter。
-- AGP **8.13.2**、Gradle **8.14.5**、Kotlin **2.4.0**。保留 Gradle 8.x 是因为 `flutter_downloader 1.12.1` 的构建依赖尚不兼容 Gradle 9；Flutter 的相关弃用警告未被屏蔽。
+<table>
+  <tr>
+    <td align="center" width="40%"><strong>主页主题色</strong><br><sub>蓝 · 红 · 粉 · 紫 · 浅绿</sub></td>
+    <td align="center" width="60%"><strong>日间 / 夜间</strong><br><sub>相同主页布局，不同明暗模式</sub></td>
+  </tr>
+  <tr>
+    <td align="center" valign="top"><a href="docs/screenshots/home-theme-colors.webp"><img src="docs/screenshots/home-theme-colors.webp" width="360" alt="五种真实主页主题色，各取约百分之二十高度错位叠排"></a></td>
+    <td align="center" valign="top"><a href="docs/screenshots/home-day-night.webp"><img src="docs/screenshots/home-day-night.webp" width="540" alt="蓝色主题主页的日间与夜间模式对照"></a></td>
+  </tr>
+</table>
+
+### 宽屏预览
+
+**首页双栏** · 左侧浏览，右侧承载选中漫画的详情。
+
+<a href="docs/screenshots/wide-home.webp"><img src="docs/screenshots/wide-home.webp" width="960" alt="浅色宽屏首页双栏布局，右侧尚未选择漫画"></a>
+
+**阅读目录** · 横向空间容纳阅读正文与章节抽屉。
+
+<a href="docs/screenshots/wide-directory.webp"><img src="docs/screenshots/wide-directory.webp" width="960" alt="浅色宽屏阅读器展开章节目录"></a>
+
+## 部署同步服务器
+
+同步服务器使用 Go + SQLite，单个 Docker 镜像内已包含独立的 Web Dashboard，无需另外部署前端。支持 `linux/amd64` 和 `linux/arm64`。
+
+### 1. 启动容器
+
+在已安装 Docker 的服务器上执行。下面使用 Bash / sh 多行语法；PowerShell 中请将 `docker run` 命令合为一行执行。
 
 ```sh
+docker run -d --name dcomic-server --restart unless-stopped \
+  -p 8080:8080 \
+  -v dcomic-data:/data \
+  hanerx/dcomic_server:latest
+docker logs dcomic-server
+```
+
+- 服务监听 `8080`，数据库保存在 `/data/dcomic.db`；命名卷 `dcomic-data` 用于持久化，更新容器时必须保留。
+- `latest` 跟随 `master` 的最近一次成功镜像发布；正式部署建议固定已发布的版本标签或 `sha-<完整 Git SHA>`。
+- 镜像默认以容器内 root 运行，只挂载专用数据目录；不要开启特权模式或挂载 Docker socket。
+
+### 2. 初始化并创建用户
+
+1. 浏览器打开 `http://服务器地址:8080`，会自动进入 `/dashboard`。
+2. 从容器日志中取得一次性初始化码，按页面提示设置管理员 `root` 的密码（12–72 个 UTF-8 字节）。
+3. 登录 Dashboard，创建用于 App 同步的用户。服务不提供公开注册。
+4. 在 App 的「设置 → 数据库同步与备份」填写服务器根地址、用户名和密码，选择需要同步的分类并开启同步。不要把 `/dashboard` 当作同步服务器地址。
+
+初始化不需要 App。空数据库在重启后会生成新的初始化码；已有数据库完成初始化后不会再次要求设置管理员。
+
+### 3. 公网部署与数据安全
+
+> **公网请使用 HTTPS。** 上面的 HTTP 命令仅适合可信网络，同步不是端到端加密。只连接可信任的服务器。
+
+<details>
+<summary><strong>反向代理、凭据同步与备份注意事项</strong></summary>
+
+反向代理需设置 `DCOMIC_PUBLIC_URL=https://你的域名`，限制后端端口暴露，保留公开 Host，并为 `/api/v1/events` 的 SSE 长连接关闭响应缓冲。
+
+登录凭据（Cookie、Token 等）默认不参与同步，开启前请确认服务器可信。HTTPS 只保护传输，**同步不是端到端加密**，服务器管理员仍可访问存储的数据。应用处于后台或被关闭时不保证实时同步，回到前台后会继续补齐变更。
+
+升级前先备份。SQLite 使用 WAL，运行中不能只复制 `dcomic.db`；可先停止容器，再备份完整 `/data` 目录。完整的反向代理、备份恢复、镜像升级和发布配置见 **[同步服务器部署文档](server/README.md)**。
+
+</details>
+
+### Dashboard 预览
+
+独立浏览器后台支持用户与设备管理、同步数据统计、禁用用户、重置密码和撤销设备会话。下图来自隔离的本地演示环境，不包含生产用户数据。
+
+<p align="center">
+  <a href="docs/screenshots/dashboard.png"><img src="docs/screenshots/dashboard.png" width="960" alt="DComic 同步服务器 Dashboard：用户、设备与同步统计"></a>
+  <br><sub>Web Dashboard · 用户管理 · 设备会话 · 同步统计</sub>
+</p>
+
+## 如何开发
+
+应用和同步服务器在同一个仓库内，但有独立的依赖和运行环境：开发 App 不需要 Go，开发服务器不需要 Flutter。
+
+### 架构与目录
+
+<details>
+<summary><strong>查看架构图与源码目录</strong> · Flutter 客户端 / Go 同步服务</summary>
+
+```mermaid
+flowchart TB
+    subgraph app[Flutter 应用]
+        UI[页面与阅读器] --> State[Provider / 页面控制器]
+        State --> Model[漫画源模型]
+        Model --> HTTP[Dio 请求层]
+        State --> DB[(本地 SQLite / Floor)]
+        Model --> DB
+        DB --> Queue[SyncStore 待同步变更]
+        Queue --> Sync[DatabaseSyncService]
+        Sync -->|应用远端变更| DB
+    end
+    HTTP --> Sources[拷贝 / 热辣 / 再漫画 API]
+    subgraph server[Go 同步服务器]
+        API[HTTP API / SSE] --> Store[Store 鉴权与同步逻辑]
+        Dashboard[Web Dashboard] --> Store
+        Store --> SQLite[(服务端 SQLite)]
+    end
+    Sync <-->|REST 同步 / SSE 通知| API
+    Admin[管理员浏览器] --> Dashboard
+```
+
+| 路径 | 职责 |
+| --- | --- |
+| [`lib/view/`](lib/view/) | 页面、阅读器与共用 UI 组件。 |
+| [`lib/providers/`](lib/providers/) | 应用状态、页面控制器、漫画源模型与同步服务。 |
+| [`lib/requests/`](lib/requests/) | 各漫画源的请求、鉴权、Cookie 与 HTTP 缓存。 |
+| [`lib/database/`](lib/database/) | Floor 实体、DAO、数据库迁移、同步存储与备份。 |
+| [`lib/l10n/`](lib/l10n/) | 中英文 ARB 文案；生成结果位于 `lib/generated/`。 |
+| [`server/`](server/) | Go 服务入口、HTTP API、Dashboard 与 SQLite 存储。 |
+| [`test/`](test/) | Flutter 行为与数据库测试；Go 测试与服务端源码同目录。 |
+| [`.github/workflows/`](.github/workflows/) | 应用构建发布、服务端 Docker 镜像发布。 |
+
+</details>
+
+### 开发应用
+
+<details>
+<summary><strong>展开应用开发指南</strong> · 环境、签名、运行与打包</summary>
+
+**工具链**：Flutter **3.47.2**（与 CI 一致，配套 Dart **3.13.2**）。Android 使用 JDK **21**、SDK **36**，NDK 跟随 Flutter；Gradle、AGP 和 Kotlin 使用仓库内配置，不单独升级。iOS 开发需要 macOS、Xcode 和 CocoaPods；Windows 开发需要 Visual Studio 的 C++ 桌面开发工具链，并开启开发者模式以支持插件符号链接。
+
+```sh
+git clone https://github.com/hanerx/DComicReborn.git
+cd DComicReborn
+flutter doctor
 flutter pub get
+dart run build_runner build
+flutter devices
+```
+
+**Android 签名准备**：当前 Gradle 配置会在配置阶段读取 `android/key.properties`，调试运行也需要此文件。新克隆仓库时请使用自己的开发密钥，不要索取或提交发布密钥：
+
+```sh
+keytool -genkeypair -v -keystore android/app/local-dev.jks -alias local-dev -keyalg RSA -keysize 2048 -validity 10000
+```
+
+创建本地 `android/key.properties`（密码填写上一步自己设置的值）：
+
+```properties
+storePassword=你的密钥库密码
+keyPassword=你的密钥密码
+keyAlias=local-dev
+storeFile=local-dev.jks
+```
+
+随后运行应用；`设备ID` 来自 `flutter devices`，Windows 可直接使用 `windows`：
+
+```sh
+flutter run -d 设备ID
+```
+
+Windows 上建议把 Pub 缓存与项目放在同一盘符，避免 Kotlin 增量编译的跨盘路径错误，例如 PowerShell 中设置 `$env:PUB_CACHE = 'D:\Pub\Cache'` 后再获取依赖。若之前为仅构建 Android 设置过 `FLUTTER_WINDOWS=false`，开发 Windows 版前需移除此环境变量。
+
+iOS 首次准备原生依赖时，在 `ios/` 执行 `pod install --repo-update`；升级原生依赖后如锁文件不兼容，再执行 `pod update --repo-update`。iOS 构建和签名须在 macOS 完成。
+
+日常检查与构建（在仓库根目录执行，按目标平台选择）：
+
+```sh
+dart format lib test
+flutter analyze
 flutter test
 flutter build apk --release
+flutter build windows --release
 ```
 
-Windows 上请将 Pub 缓存与项目放在同一盘符，避免 Kotlin 增量编译报 `this and base files have different roots`。例如项目在 D 盘时，在 PowerShell 中设置本次会话：
+Windows 安装版另需 Inno Setup 6。构建后使用现有脚本打包，`-Version` 与 `pubspec.yaml` 中的三段版本号保持一致：
 
 ```powershell
-$env:PUB_CACHE = 'D:\Pub\Cache'
-# 仅构建 Android 时可跳过 Windows 桌面插件链接，不改变全局 Flutter 配置。
-$env:FLUTTER_WINDOWS = 'false'
-flutter pub get
-flutter build apk --release
+powershell -NoProfile -ExecutionPolicy Bypass -File .github/scripts/package_windows.ps1 -Version 2.5.4
 ```
 
-如果此前已经发生跨盘缓存错误，关闭当前构建后运行 `.\android\gradlew.bat --stop`、`flutter clean`，再执行上述获取依赖和构建命令。Windows 桌面构建不要设置 `FLUTTER_WINDOWS=false`，并需开发者模式或管理员权限来创建插件符号链接。
+产物位于 `build/windows/packages/`。iOS 无签名编译可使用 `flutter build ios --release --no-codesign`，编译成功不代表已具备安装签名。
 
-iOS 原生依赖须在 macOS / Xcode 环境重新解析。本次 Firebase 升级后需运行 `pod update --repo-update`（在 `ios` 目录），再构建；现有 CI 会删除旧 `Podfile.lock` 并重新安装。Windows 上未验证 iOS 和 Windows 桌面产物。
+</details>
 
-### 依赖清理
+### 开发同步服务器
 
-已删除无实际调用的 `cupertino_icons`、`direct_select_flutter`、`extended_nested_scroll_view`、`folding_cell`、`flutter_adaptive_scaffold` 和 `open_file`，网络诊断也不再依赖 `motion_toast`。安装包打开仍使用 `FlutterDownloader.open`。
+<details>
+<summary><strong>展开服务端开发指南</strong> · Go 环境、启动与真机联调</summary>
 
-`sqlite3_flutter_libs` 已由 `sqlite3 3.x` 的原生资产机制取代。`firebase_analytics` 虽无显式 Dart 埋点调用，但会自动采集事件，因此保留。
+服务端是独立 Go module，入口、HTTP 层和存储层分别位于 `server/cmd/`、`server/internal/httpserver/` 和 `server/internal/store/`。Dashboard 使用 Go HTML 模板随服务打包，没有单独的 Node.js 前端构建流程。
 
-DMZJ（大妈之家）已停止支持，专属 provider、请求处理器、Protobuf 协议及 `crypton`、`protobuf`、`fixnum` 直接依赖已移除。保留拷贝漫画和再漫画，不自动删除旧源的本地历史、收藏或配置；共享登录文案已改为通用字段。网络诊断不再访问 DMZJ。
-
-### 网络诊断
-
-- 在「调试设置 → 网络检查」打开标准诊断弹框，立即显示并逐项追加结果；完成后不自动关闭，右下角「复制报告」可复制当前已完成的部分或完整报告。关闭弹框会取消尚未完成的请求。
-- 使用 `connectivity_plus` 获取系统网络类型，列出非回环网卡的 IPv4/IPv6 地址，并通过 `https://api64.ipify.org` 查询公网出口 IP；查询失败会显示原因，不影响后续检测。报告包含 IP，分享前请检查内容。
-- Android 同时读取当前活动网络的 DNS 服务器地址；Android 9 及以上还显示私人 DNS 的启用状态和配置主机名。未连接网络、系统未提供地址或平台未实现读取接口时如实标注，不用公共 DNS 预设值替代；读取失败不影响后续检测。
-- 检测拷贝/热辣全部预设 API 域名、再漫画网页/API/账户/任务域名、GitHub 网站和 API，报告当前 API/章节评论线路、HTTP 状态及耗时。单项最多 8 秒，不重试、不跟随重定向，不使用登录凭据或缓存；域名根路径返回 `403/404` 仍代表服务器已响应，不等同于漫画业务接口不可用。
-- 登录信息区分应用当前状态与本地保存的登录标记（包括独立的拷贝/热辣账户空间），不重新验证凭据、不触发签到或修改账户。报告不包含 Token、Cookie、密码及原始响应正文。
-
-
-## 正式 Logo 与应用图标
-
-- 正式标志采用应用内的漫画书页、对话框与闪电造型，唯一绘制源为 `lib/view/components/dcomic_mark.dart`。应用内继续跟随主题，平台应用图标使用默认浅色主题的蓝色与米白底。
-- 1024 × 1024 原图位于 `assets/branding/logo.png`；Android 同时提供传统图标和带安全留白的自适应前景，iOS 图标不含透明通道，Windows 使用多尺寸 ICO。
-- 修改造型或默认品牌配色后，在项目根目录运行 `python tool/generate_brand_icons.py`（需要 Flutter 与 Pillow，可用 `python -m pip install Pillow` 安装）。脚本直接渲染 `DComicMark`，同步生成原图和三个平台资源，不需手工重画或额外打包插件。
-
-## 发布说明
-
-- 在 [RELEASE_NOTES.md](RELEASE_NOTES.md) 中按 `# 版本号` 分节，维护本版本的亮点、寄语和升级提示；内容可自行编写，或由 AI 根据实际改动起草后审阅。版本内使用二级及以下标题。
-- 发布前先提交对应版本的说明，再推送标签。CI 支持 `2.5.0` / `v2.5.0`，但同一版本不能重复；缺少对应章节、正文为空或版本重复时会报错。
-- `generate_release_note` 拉取完整 Git 历史，先保留该版本说明正文，再追加上一可达标签到当前标签之间的非合并提交列表、作者、提交链接和版本对比链接。首次发布列出截至当前标签的历史。
-- 已有标签的重新运行仍使用该标签中的工作流和说明；修改发布说明文件不会自动覆盖线上 Release。
-
-本地预览（需要 Python 3.9+，并已获取对应标签及完整历史）：
+安装 **Go 1.26.0 或兼容的更新版本**，在仓库根目录进入服务端模块：
 
 ```sh
-python .github/scripts/generate_release_note.py --tag 2.5.0 --repository hanerx/DComicReborn --output .dart_tool/release-note-preview.md
-python -m unittest discover -s .github/scripts -p test_generate_release_note.py -v
+cd server
+go mod download
+go run ./cmd/dcomic-server serve --listen 127.0.0.1:8080 --db data/dev.db
 ```
 
-## ORM Database
+打开 `http://127.0.0.1:8080/dashboard`，用启动日志中的初始化码设置开发环境的管理员密码。使用独立的 `data/dev.db`，不要拿真实同步数据库调试。停止进程后可在 `server/` 执行：
 
-- 数据库已迁移到 `floor_community` / `floor_generator_community` **1.1.0**，避免原生成器依赖新版 Dart 已移除的 `_macros`。
-- 保持数据库文件名 `dcomic.db`，当前 schema version 为 **7**。v6 → v7 将漫画映射迁移为按端点排序的无向关系，以两个端点组成的复合主键去重；解绑记录单独标记，不作为漫画关联。旧单向绑定可从两端使用，互相对应的重复绑定合并，冲突关联保留为禁止自动匹配的记录，不猜测对应漫画。`test/database_upgrade_test.dart` 验证升级、旧数据保留及重新打开，`test/comic_mapping_database_test.dart` 覆盖双端查询、解绑、改绑和事务回滚。
-- 「调试设置 → 本地数据库」中的 `ComicMappingEntity` 标签可查看绑定：`providerA/comicA` 和 `providerB/comicB` 是两个对等端点，`blocked = 0` 表示有效绑定，`blocked = 1` 表示解绑或冲突抑制记录。表格可横向滚动查看所有列；长按会物理删除记录，不等同于漫画详情页的解绑操作。
-- 生成代码：`dart run build_runner build`；持续生成：`dart run build_runner watch`。
+```sh
+go fmt ./...
+go test ./...
+go vet ./...
+go build -o bin/dcomic-server ./cmd/dcomic-server
+```
+
+修改 HTTP API 或 Dashboard 时从 `internal/httpserver/` 入手；鉴权、用户管理、同步冲突和 SQLite 持久化位于 `internal/store/`。模板修改后需重启服务。监听地址、数据库路径和公开 origin 也可分别通过 `DCOMIC_LISTEN`、`DCOMIC_DB`、`DCOMIC_PUBLIC_URL` 设置。
+
+联调时在 App 中填写开发服务器地址。真机应使用开发机的局域网地址，并将监听地址改为 `0.0.0.0:8080`、按需放行防火墙；真机的 `127.0.0.1` 指向真机本身。只在可信网络暴露开发服务，用两个独立客户端验证变更是否真正同步。
+
+</details>
+
+### 同步流程
+
+<details>
+<summary><strong>查看同步时序图</strong> · 本地写入 / 增量同步 / 冲突处理</summary>
+
+```mermaid
+sequenceDiagram
+    participant U as 用户操作
+    participant L as 本地数据库 / SyncStore
+    participant C as DatabaseSyncService
+    participant S as Go 同步服务器
+    participant D as 另一台设备
+    U->>L: 写入阅读记录或设置
+    L->>L: 持久化业务数据与待同步变更
+    Note over L,C: 离线仍可写入，联网且回到前台后继续
+    C->>S: 校准服务器时间
+    C->>S: 提交待同步变更、分类和增量游标
+    S-->>C: 返回处理结果、远端变更和新游标
+    C->>L: 应用变更并保存游标
+    S-->>D: SSE 变更通知
+    D->>S: 按游标拉取增量
+    S-->>D: 返回增量数据
+    opt 修改先后无法可靠确定
+        C->>L: 保存冲突候选
+        U->>C: 在设置页选择保留版本
+        C->>S: 提交冲突解决结果
+    end
+```
+
+SSE 用于通知有变更，数据通过同步 API 拉取。删除同样参与同步；冲突不简单按“最后上传者覆盖”处理。调整同步协议时，需要同时检查客户端 `lib/database/sync/`、`DatabaseSyncService` 与服务端 Store，不能只改其中一端。
+
+</details>
+
+### 开发规范与提交流程
+
+1. **保持分层**：UI 负责展示与交互，页面控制器和模型处理状态，源站协议放在 `lib/requests/`。新增漫画源时复用现有模型接口，不把域名、请求头和解析逻辑散落到页面。
+2. **先保住数据**：修改实体或 DAO 后运行 `dart run build_runner build`，不要手改 `.g.dart`。数据库结构变化必须提供版本迁移，验证旧数据、删除和重新打开；不要绕过现有同步写入机制。
+3. **沿用界面与文案约定**：使用已有主题和响应式组件，检查窄屏、宽屏、深浅主题及键盘展开。文案维护在 `lib/l10n/` 的 ARB 文件中，用 Flutter Intl 插件重新生成，不手改 `lib/generated/`。
+4. **用行为证明改动**：Dart 遵循 `analysis_options.yaml` 的 Flutter lints，Go 使用 `gofmt`。修复应有针对原问题的回归验证；UI 要实际打开检查，同步修改要验证离线补传、账号隔离、删除与冲突。
+5. **不提交敏感信息**：密钥、`key.properties`、真实用户数据库、Token、Cookie 和备份不进入提交。日志、截图及问题反馈也要去除凭据和个人信息。
+6. **提交说明写清范围与验证**：可沿用 `feat(sync): ...`、`fix(reader): ...`、`docs(readme): ...` 等格式；PR 说明修改原因、受影响平台和实际执行的检查，避免夹带无关重构。
+
+发布时同步更新 `pubspec.yaml` 和 [RELEASE_NOTES.md](RELEASE_NOTES.md)，先提交对应版本说明，再推送版本标签。应用工作流会汇总产物并生成 Release；服务端工作流独立发布 Docker 镜像。不要直接修改已发布标签来覆盖旧版本。
+
+## 鸣谢
+
+- **[hanerx](https://github.com/hanerx)**：本项目开发者与维护者。感谢所有通过 [Issue](https://github.com/hanerx/DComicReborn/issues)、PR 和测试反馈参与改进的朋友；完整贡献记录见 [Contributors](https://github.com/hanerx/DComicReborn/graphs/contributors)。
+- **[LittleSurvival/copymanga-copy20](https://github.com/LittleSurvival/copymanga-copy20)**：本项目部分漫画源 API 的访问方式与适配实现参考并获取自该仓库，尤其是拷贝 / 热辣的请求头、章节路径差异及独立吐槽线路。当前相关协议参考其 [v1.4.84 版本产物](https://github.com/LittleSurvival/copymanga-copy20/blob/7591be034286bb19bc8380c4ec3fd8622090f175/apk/tachiyomi-zh.copymanga-v1.4.84.apk)。这不表示上游提供本项目的同步服务或对本项目作出背书。
+- **[fumiama/copymanga](https://github.com/fumiama/copymanga)**：本 README 的界面预览表格与展示方式参考了该项目；这里展示的截图均来自 DComicReborn。
+- **Flutter、Dart、Go 及开源依赖的维护者**：感谢底层框架、网络、数据库和阅读组件的支持，依赖列表见 [pubspec.yaml](pubspec.yaml) 与 [server/go.mod](server/go.mod)。
+- **素材原作者与权利人**：分类图片的来源和裁切记录见 [素材清单](assets/copymanga/credits.json)。来源标注不代表转载授权，相关作品版权仍归原权利人所有。
