@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:dcomic/providers/automatic_mapping.dart';
 import 'package:dcomic/providers/download_provider.dart';
+import 'package:dcomic/providers/database_refresh_binding.dart';
+import 'package:dcomic/providers/database_sync_service.dart';
 import 'package:dcomic/providers/version_provider.dart';
 import 'package:dcomic/view/drawer_page/search_page.dart';
 import 'package:dcomic/view/homepage/category_page.dart';
@@ -79,6 +81,18 @@ class App extends StatelessWidget {
         ),
         ChangeNotifierProvider<ComicSourceProvider>(
           create: (_) => ComicSourceProvider(),
+          lazy: false,
+        ),
+        Provider<DatabaseRefreshBinding>(
+          create: (context) => DatabaseRefreshBinding(
+            context.read<ConfigProvider>(),
+            context.read<ComicSourceProvider>(),
+          ),
+          dispose: (_, binding) => binding.dispose(),
+          lazy: false,
+        ),
+        ChangeNotifierProvider<DatabaseSyncService>(
+          create: (_) => DatabaseSyncService()..initialize(),
           lazy: false,
         ),
         ChangeNotifierProvider<AutomaticMappingQueue>(

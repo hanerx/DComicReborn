@@ -69,6 +69,18 @@ class RequestHandler {
     });
   }
 
+  /// Discard only the in-memory cookie cache; persisted cookies remain intact.
+  void reloadPersistedCookies() {
+    final index = dio.interceptors.indexOf(cookieManager);
+    cookieManager = CookieManager(PersistCookieJar(
+      ignoreExpires: true,
+      storage: DatabaseCookieJarStorage(),
+    ));
+    if (index >= 0) {
+      dio.interceptors[index] = cookieManager;
+    }
+  }
+
   Future<bool> clearCache() async {
     await (await RequestStatics.store).clean();
     return true;

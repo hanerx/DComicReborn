@@ -28,64 +28,39 @@ class ConfigProvider extends BaseProvider {
   @override
   Future<void> init() async {
     final database = await DatabaseInstance.instance;
-    _themeMode = (await database.configDao.getOrCreateConfigByKey(
-      'ThemeMode',
-      value: ThemeMode.system,
-    ));
-    _readDirection = (await database.configDao.getOrCreateConfigByKey(
-      'ReadDirection',
-      value: ReadDirectionType.left,
-    ));
-    _horizontalClickAreaSize = await database.configDao.getOrCreateConfigByKey(
-      'HorizontalClickAreaSize',
-      value: 80,
-    );
-    _verticalClickAreaSize = await database.configDao.getOrCreateConfigByKey(
-      'VerticalClickAreaSize',
-      value: 150,
-    );
-    _themeColor = await database.configDao.getOrCreateConfigByKey(
-      'ThemeColor',
-      value: 'Blue',
-    );
-    _useMaterial3Design = await database.configDao.getOrCreateConfigByKey(
-      'UseMaterial3Design',
-      value: true,
-    );
-    _readerTheme = await database.configDao.getOrCreateConfigByKey(
-      'ReaderTheme',
-      value: ReaderTheme.app.name,
-    );
-    _aggregateSubscribeBadges = await database.configDao.getOrCreateConfigByKey(
-      SubscribeBadgeState.configKey,
-      value: false,
-    );
-    _aggregateReadingProgress = await database.configDao.getOrCreateConfigByKey(
-      ComicReadingProgress.configKey,
-      value: false,
-    );
-    // Keep the persisted key so previously unlocked installations stay unlocked.
-    _advancedSettingsUnlocked = await database.configDao.getOrCreateConfigByKey(
-      'ExperimentalFeaturesUnlocked',
-      value: false,
-    );
-    _autoMapMissingComics = await database.configDao.getOrCreateConfigByKey(
-      'AutoMapMissingComics',
-      value: false,
-    );
-    _autoMapIntervalSeconds = await database.configDao.getOrCreateConfigByKey(
-      'AutoMapIntervalSeconds',
-      value: 1,
-    );
-    _autoMapRetryEveryLaunch = await database.configDao.getOrCreateConfigByKey(
-      'AutoMapRetryEveryLaunch',
-      value: true,
-    );
-    _autoMapMaxAttempts = await database.configDao.getOrCreateConfigByKey(
-      'AutoMapMaxAttempts',
-      value: 3,
-    );
+    final settings = <String, ConfigEntity>{};
+    for (final setting in await database.configDao.getAllConfig()) {
+      settings.putIfAbsent(setting.key, () => setting);
+    }
+    ConfigEntity read(String key, dynamic fallback) =>
+        settings[key] ?? ConfigEntity.createConfigEntity(key, fallback);
+
+    // Defaults remain in memory: refreshing a remote deletion must not
+    // recreate the row and publish it as a new local modification.
+    _themeMode = read('ThemeMode', ThemeMode.system);
+    _readDirection = read('ReadDirection', ReadDirectionType.left);
+    _horizontalClickAreaSize = read('HorizontalClickAreaSize', 80);
+    _verticalClickAreaSize = read('VerticalClickAreaSize', 150);
+    _themeColor = read('ThemeColor', 'Blue');
+    _useMaterial3Design = read('UseMaterial3Design', true);
+    _readerTheme = read('ReaderTheme', ReaderTheme.app.name);
+    _aggregateSubscribeBadges = read(SubscribeBadgeState.configKey, false);
+    _aggregateReadingProgress = read(ComicReadingProgress.configKey, false);
+    // Retain the persisted key for already-unlocked installations.
+    _advancedSettingsUnlocked = read('ExperimentalFeaturesUnlocked', false);
+    _autoMapMissingComics = read('AutoMapMissingComics', false);
+    _autoMapIntervalSeconds = read('AutoMapIntervalSeconds', 1);
+    _autoMapRetryEveryLaunch = read('AutoMapRetryEveryLaunch', true);
+    _autoMapMaxAttempts = read('AutoMapMaxAttempts', 3);
     notifyListeners();
+  }
+
+  void _persistSetting(ConfigEntity setting) {
+    final key = setting.key;
+    final value = setting.value;
+    DatabaseInstance.instance.then(
+      (database) => database.configDao.setConfigByKey(key, value),
+    );
   }
 
   ThemeMode get themeMode {
@@ -98,9 +73,7 @@ class ConfigProvider extends BaseProvider {
   set themeMode(ThemeMode? value) {
     if (_themeMode != null && value != null) {
       _themeMode?.set(value);
-      DatabaseInstance.instance.then(
-        (value) => value.configDao.updateConfig(_themeMode!),
-      );
+      _persistSetting(_themeMode!);
     }
     notifyListeners();
   }
@@ -115,9 +88,7 @@ class ConfigProvider extends BaseProvider {
   set readDirection(ReadDirectionType value) {
     if (_readDirection != null) {
       _readDirection?.set(value);
-      DatabaseInstance.instance.then(
-        (value) => value.configDao.updateConfig(_readDirection!),
-      );
+      _persistSetting(_readDirection!);
     }
     notifyListeners();
   }
@@ -133,9 +104,7 @@ class ConfigProvider extends BaseProvider {
   set readerTheme(ReaderTheme value) {
     if (_readerTheme != null) {
       _readerTheme!.set(value.name);
-      DatabaseInstance.instance.then(
-        (database) => database.configDao.updateConfig(_readerTheme!),
-      );
+      _persistSetting(_readerTheme!);
     }
     notifyListeners();
   }
@@ -157,9 +126,7 @@ class ConfigProvider extends BaseProvider {
   set horizontalClickAreaSize(double value) {
     if (_horizontalClickAreaSize != null) {
       _horizontalClickAreaSize?.set(value);
-      DatabaseInstance.instance.then(
-        (value) => value.configDao.updateConfig(_horizontalClickAreaSize!),
-      );
+      _persistSetting(_horizontalClickAreaSize!);
     }
     notifyListeners();
   }
@@ -174,9 +141,7 @@ class ConfigProvider extends BaseProvider {
   set verticalClickAreaSize(double value) {
     if (_verticalClickAreaSize != null) {
       _verticalClickAreaSize?.set(value);
-      DatabaseInstance.instance.then(
-        (value) => value.configDao.updateConfig(_verticalClickAreaSize!),
-      );
+      _persistSetting(_verticalClickAreaSize!);
     }
     notifyListeners();
   }
@@ -191,9 +156,7 @@ class ConfigProvider extends BaseProvider {
   set themeColor(ThemeModel value) {
     if (_themeColor != null) {
       _themeColor?.set(value.name);
-      DatabaseInstance.instance.then(
-        (value) => value.configDao.updateConfig(_themeColor!),
-      );
+      _persistSetting(_themeColor!);
     }
     notifyListeners();
   }
@@ -208,9 +171,7 @@ class ConfigProvider extends BaseProvider {
   set useMaterial3Design(bool value) {
     if (_useMaterial3Design != null) {
       _useMaterial3Design?.set(value);
-      DatabaseInstance.instance.then(
-        (value) => value.configDao.updateConfig(_useMaterial3Design!),
-      );
+      _persistSetting(_useMaterial3Design!);
     }
     notifyListeners();
   }
@@ -228,7 +189,7 @@ class ConfigProvider extends BaseProvider {
     await database.configDao.updateConfig(setting);
     _aggregateSubscribeBadges = setting;
     notifyListeners();
-    SubscribeBadgeState.changes.notifyListeners();
+    SubscribeBadgeState.changes.value++;
   }
 
   bool get aggregateReadingProgress =>

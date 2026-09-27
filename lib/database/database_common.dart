@@ -36,6 +36,21 @@ part 'database_common.g.dart';
   ImageTypeNullableConverter,
 ])
 abstract class DComicDatabase extends FloorDatabase {
+  sqflite.Database? _syncDatabaseOverride;
+
+  @override
+  sqflite.DatabaseExecutor get database =>
+      _syncDatabaseOverride ?? super.database;
+
+  /// Installed once, before DAOs capture their executor. Floor's transaction
+  /// instances still receive their own transaction executor through the setter.
+  void installDatabaseProxy(sqflite.Database value) {
+    if (_syncDatabaseOverride != null) {
+      throw StateError('The database executor is already installed');
+    }
+    _syncDatabaseOverride = value;
+  }
+
   ConfigDao get configDao;
 
   ComicHistoryDao get comicHistoryDao;

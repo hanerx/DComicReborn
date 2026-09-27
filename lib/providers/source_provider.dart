@@ -19,21 +19,34 @@ class ComicSourceProvider extends BaseProvider {
 
   @override
   Future<void> init() async {
-    final database = await DatabaseInstance.instance;
-    _sortOrderEntity = await database.configDao
-        .getOrCreateConfigByKey('sourceModelSortOrder', value: sortOrder);
-    sortOrder = _sortOrderEntity?.get<Map>();
-    int idx = 0;
+    await reloadStoredSettings();
     for (var sourceModel in sources) {
       logger.i('init source model: ${sourceModel.type}');
       sourceModel.initModel();
-      sortOrder.putIfAbsent(sourceModel.type.sourceId, () => idx);
-      idx++;
     }
-    _activeHomeModelIndexEntity = await database.configDao
-        .getOrCreateConfigByKey('activeHomeModelIndex', value: 0);
-    activeHomeModelIndex = _activeHomeModelIndexEntity?.get<int>();
     isLoading = false;
+    notifyListeners();
+  }
+
+  /// Refresh persisted selection without invoking setters that write it back.
+  Future<void> reloadStoredSettings() async {
+    final database = await DatabaseInstance.instance;
+    _sortOrderEntity =
+        await database.configDao.getConfigByKey('sourceModelSortOrder') ??
+        ConfigEntity.createConfigEntity('sourceModelSortOrder', {});
+    sortOrder = _sortOrderEntity!.get<Map>();
+    for (var i = 0; i < sources.length; i++) {
+      sortOrder.putIfAbsent(sources[i].type.sourceId, () => i);
+    }
+    _activeHomeModelIndexEntity =
+        await database.configDao.getConfigByKey('activeHomeModelIndex') ??
+        ConfigEntity.createConfigEntity('activeHomeModelIndex', 0);
+    final selected = _activeHomeModelIndexEntity?.get<int>() ?? 0;
+    final homeSources = hasHomepageSources;
+    if (homeSources.isNotEmpty) {
+      _activeHomeModelIndex = selected.clamp(0, homeSources.length - 1);
+      _activeHomeModel = homeSources[_activeHomeModelIndex!];
+    }
     notifyListeners();
   }
 
@@ -92,8 +105,9 @@ class ComicSourceProvider extends BaseProvider {
     sortOrder[newSource.type.sourceId] = oldIndex;
     if (_sortOrderEntity != null) {
       _sortOrderEntity!.set(sortOrder);
-      DatabaseInstance.instance
-          .then((value) => value.configDao.updateConfig(_sortOrderEntity!));
+      final encodedOrder = _sortOrderEntity!.value;
+      DatabaseInstance.instance.then((database) =>
+          database.configDao.setConfigByKey('sourceModelSortOrder', encodedOrder));
     }
     activeHomeModel = newActiveHomeModel;
     activeModel = newActiveModel;
@@ -109,8 +123,8 @@ class ComicSourceProvider extends BaseProvider {
       _activeHomeModelIndex = index;
       if (_activeHomeModelIndexEntity != null) {
         _activeHomeModelIndexEntity!.set(index);
-        DatabaseInstance.instance.then((value) =>
-            value.configDao.updateConfig(_activeHomeModelIndexEntity!));
+        DatabaseInstance.instance.then((database) =>
+            database.configDao.setConfigByKey('activeHomeModelIndex', '$index'));
       }
       notifyListeners();
     }
@@ -125,8 +139,9 @@ class ComicSourceProvider extends BaseProvider {
       _activeHomeModelIndex = hasHomepageSources.indexOf(baseComicSourceModel);
       if (_activeHomeModelIndexEntity != null) {
         _activeHomeModelIndexEntity!.set(_activeHomeModelIndex);
-        DatabaseInstance.instance.then((value) =>
-            value.configDao.updateConfig(_activeHomeModelIndexEntity!));
+        final selected = _activeHomeModelIndex;
+        DatabaseInstance.instance.then((database) =>
+            database.configDao.setConfigByKey('activeHomeModelIndex', '$selected'));
       }
       notifyListeners();
     }

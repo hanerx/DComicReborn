@@ -260,7 +260,7 @@ class AutomaticMappingQueue extends ChangeNotifier {
           targetComicId,
         );
     if (result == targetComicId) {
-      SubscribeBadgeState.changes.notifyListeners();
+      SubscribeBadgeState.changes.value++;
     }
   }
 

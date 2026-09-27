@@ -6,6 +6,7 @@ import 'package:dcomic/providers/base_provider.dart';
 import 'package:dcomic/providers/download_provider.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher_string.dart' as url_string_launcher;
@@ -283,8 +284,20 @@ class VersionProvider extends BaseProvider {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
+            scrollable: true,
             title: Text(S.of(context).ReleaseInfoTitle(releaseInfo.version)),
-            content: Text(releaseInfo.desc),
+            content: SizedBox(
+              width: 560,
+              child: MarkdownBody(
+                data: releaseInfo.desc,
+                onTapLink: (text, href, title) async {
+                  if (href != null &&
+                      await url_string_launcher.canLaunchUrlString(href)) {
+                    await url_string_launcher.launchUrlString(href);
+                  }
+                },
+              ),
+            ),
             actions: [
               TextButton(
                 onPressed: () async {

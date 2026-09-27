@@ -43,6 +43,16 @@ abstract class ConfigDao {
   @Update(onConflict: OnConflictStrategy.replace)
   Future<void> updateConfig(ConfigEntity configEntity);
 
+  @transaction
+  Future<void> setConfigByKey(String key, String? value) async {
+    final existing = await getConfigByKey(key);
+    if (existing == null) {
+      await insertConfig(ConfigEntity(null, key, value));
+    } else {
+      await updateConfig(ConfigEntity(existing.id, key, value));
+    }
+  }
+
   Future<ConfigEntity> getOrCreateConfigByKey(String key,
       {dynamic value = ''}) async {
     var result = await getConfigByKey(key);

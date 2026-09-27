@@ -65,8 +65,14 @@ void main() {
       config.addListener(changed);
       try {
         await tester.tap(find.text('Save'));
-        await tester.pump();
-        await saved.future.timeout(const Duration(seconds: 5));
+        final deadline = DateTime.now().add(const Duration(seconds: 5));
+        // Real SQLite transactions can complete between fake-async frames.
+        // Keep both zones moving until the provider publishes the saved value.
+        while (!saved.isCompleted && DateTime.now().isBefore(deadline)) {
+          await tester.pump();
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        await saved.future.timeout(const Duration(milliseconds: 1));
       } finally {
         config.removeListener(changed);
       }

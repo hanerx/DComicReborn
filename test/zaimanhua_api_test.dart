@@ -80,6 +80,15 @@ void main() {
     await temporaryDirectory.delete(recursive: true);
   });
 
+  test('account reload does not recreate deleted credentials or settings', () async {
+    await source.accountModel!.initAccount();
+    final dao = (await DatabaseInstance.instance).modelConfigDao;
+    for (final key in ['isLogin', 'token', 'autoSignInEnabled']) {
+      expect(await dao.getConfigByKeyAndModel(key, 'zaimanhua'), isNull);
+    }
+    expect(source.accountModel!.isLogin, isFalse);
+  });
+
   Future<void> signInForHistory() async {
     final dao = (await DatabaseInstance.instance).modelConfigDao;
     await dao.getOrCreateConfigByKey('isLogin', 'zaimanhua', value: true);

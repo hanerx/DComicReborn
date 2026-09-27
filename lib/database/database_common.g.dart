@@ -268,6 +268,21 @@ class _$ConfigDao extends ConfigDao {
       OnConflictStrategy.replace,
     );
   }
+
+  @override
+  Future<void> setConfigByKey(String key, String? value) async {
+    if (database is sqflite.Transaction) {
+      await super.setConfigByKey(key, value);
+    } else {
+      await (database as sqflite.Database).transaction<void>((
+        transaction,
+      ) async {
+        final transactionDatabase = _$DComicDatabase(changeListener)
+          ..database = transaction;
+        await transactionDatabase.configDao.setConfigByKey(key, value);
+      });
+    }
+  }
 }
 
 class _$ComicHistoryDao extends ComicHistoryDao {

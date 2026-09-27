@@ -1,0 +1,86 @@
+name: Server Docker Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+      - master
+    tags:
+      - '*'
+    paths:
+      - 'server/**'
+      - '.github/workflows/server-docker.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: server-docker-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Generate image tags and labels
+        id: metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: docker.io/hanerx/dcomic_server
+          flavor: latest=false
+          tags: |
+            type=ref,event=branch,enable=${{ github.ref_name != 'latest' }}
+            type=ref,event=tag,enable=${{ github.ref_name != 'latest' }}
+            type=sha,format=long
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+
+      - name: Build and push server image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          cache-from: type=gha,scope=dcomic-server
+          cache-to: type=gha,mode=max,scope=dcomic-server
+
+      - name: Summarize published image
+        env:
+          IMAGE: docker.io/hanerx/dcomic_server
+          TAGS: ${{ steps.metadata.outputs.tags }}
+        shell: bash
+        run: |
+          {
+            echo '## Server Docker image'
+            echo
+            echo "Image: \`$IMAGE\`"
+            echo
+            echo 'Platforms: linux/amd64, linux/arm64'
+            echo
+            echo 'Published tags:'
+            echo '```text'
+            printf '%s\n' "$TAGS"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

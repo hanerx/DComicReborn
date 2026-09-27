@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 /// copies viewing records between sources.
 class SubscribeBadgeState {
   static const configKey = 'AggregateSubscribeBadges';
-  static final changes = ChangeNotifier();
+  static final changes = ValueNotifier<int>(0);
 
   static Future<Map<String, DateTime>> viewingTimes(String sourceId) async {
     final database = await DatabaseInstance.instance;

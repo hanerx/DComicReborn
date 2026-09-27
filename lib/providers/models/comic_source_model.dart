@@ -164,7 +164,7 @@ abstract class BaseComicSourceModel extends BaseModel {
           matchedComicId,
         );
     if (result == matchedComicId) {
-      SubscribeBadgeState.changes.notifyListeners();
+      SubscribeBadgeState.changes.value++;
     }
     return result.isEmpty ? null : result;
   }
@@ -181,7 +181,7 @@ abstract class BaseComicSourceModel extends BaseModel {
       type.sourceId,
       targetComicId,
     );
-    SubscribeBadgeState.changes.notifyListeners();
+    SubscribeBadgeState.changes.value++;
   }
 
   Widget getSourceSettingWidget(BuildContext context) {
@@ -452,7 +452,7 @@ abstract class BaseComicAccountModel extends BaseModel {
     await databaseInstance.comicSubscribeStateDao.updateComicSubscribeState(
       comicSubscribeState,
     );
-    SubscribeBadgeState.changes.notifyListeners();
+    SubscribeBadgeState.changes.value++;
   }
 }
 

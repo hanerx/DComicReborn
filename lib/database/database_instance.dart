@@ -1,5 +1,6 @@
 import 'package:dcomic/database/database_common.dart';
 import 'package:dcomic/database/entity/chapter_rule.dart';
+import 'package:dcomic/database/sync/sync_store.dart';
 import 'package:floor_community/floor.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
@@ -25,17 +26,33 @@ class DatabaseInstance {
   /// 新装数据库建表完成后写入默认章节匹配分组；升级场景由 5 -> 6 迁移负责。
   static final Callback databaseCallback = Callback(
     onCreate: (database, _) => seedChapterRuleDefaults(database),
+    onOpen: SyncStore.installSchema,
   );
 
-  static DComicDatabase? _database;
+  static Future<DComicDatabase>? _databaseFuture;
+  static SyncStore? _syncStore;
 
-  static Future<DComicDatabase> get instance async {
-    _database ??= await $FloorDComicDatabase
+  static Future<DComicDatabase> get instance =>
+      _databaseFuture ??= _initialize();
+
+  static SyncStore get syncStore => _syncStore ??
+      (throw StateError(
+        'DatabaseInstance.instance must be awaited before accessing syncStore',
+      ));
+
+  static Future<DComicDatabase> _initialize() async {
+    final database = await $FloorDComicDatabase
         .databaseBuilder('dcomic.db')
         .addMigrations(migrations)
         .addCallback(databaseCallback)
         .build();
-    return _database!;
+    try {
+      _syncStore = await SyncStore.attach(database);
+      return database;
+    } on Object {
+      await database.close();
+      rethrow;
+    }
   }
 }
 

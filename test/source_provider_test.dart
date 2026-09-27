@@ -56,6 +56,22 @@ void main() {
     await dao.getOrCreateConfigByKey('activeHomeModelIndex', value: index);
   }
 
+  test('startup preserves absent selection until an explicit change', () async {
+    final provider = _RestorableSourceProvider();
+    addTearDown(provider.dispose);
+    await provider.restore();
+    final dao = (await DatabaseInstance.instance).configDao;
+    expect(await dao.getConfigByKey('sourceModelSortOrder'), isNull);
+    expect(await dao.getConfigByKey('activeHomeModelIndex'), isNull);
+    provider.activeHomeModelIndex = 1;
+    final deadline = DateTime.now().add(const Duration(seconds: 5));
+    while ((await dao.getConfigByKey('activeHomeModelIndex'))?.value != '1' &&
+        DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    expect((await dao.getConfigByKey('activeHomeModelIndex'))?.value, '1');
+  });
+
   test('legacy source ordering restores Copy for both homepage and selector',
       () async {
     await saveSelection({'dmzj': 0, 'copymanga': 1, 'zaimanhua': 2}, 0);
@@ -107,6 +123,34 @@ void main() {
     expect(
       restored.hasHomepageSources[restored.activeHomeModelIndex].type.sourceId,
       'copymanga',
+    );
+  });
+
+  test('external settings refresh changes source order without writing it back',
+      () async {
+    await saveSelection({'copymanga': 0, 'zaimanhua': 1}, 0);
+    final provider = _RestorableSourceProvider();
+    addTearDown(provider.dispose);
+    await provider.restore();
+    final database = await DatabaseInstance.instance;
+    await database.database.update(
+      'ConfigEntity',
+      {'value': '{"copymanga":1,"zaimanhua":0}'},
+      where: '`key` = ?',
+      whereArgs: ['sourceModelSortOrder'],
+    );
+    await database.database.update(
+      'ConfigEntity',
+      {'value': '0'},
+      where: '`key` = ?',
+      whereArgs: ['activeHomeModelIndex'],
+    );
+    await provider.reloadStoredSettings();
+    expect(provider.activeHomeModel.type.sourceId, 'zaimanhua');
+    expect(provider.orderedSources.first.type.sourceId, 'zaimanhua');
+    expect(
+      (await database.configDao.getConfigByKey('activeHomeModelIndex'))?.value,
+      '0',
     );
   });
 }

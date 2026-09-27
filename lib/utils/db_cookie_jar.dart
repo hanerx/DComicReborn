@@ -6,14 +6,14 @@ class DatabaseCookieJarStorage extends Storage {
   @override
   Future<void> delete(String key) async {
     DComicDatabase database = await DatabaseInstance.instance;
-    database.cookieDao.deleteCookie(key);
+    await database.cookieDao.deleteCookie(key);
   }
 
   @override
   Future<void> deleteAll(List<String> keys) async {
     DComicDatabase database = await DatabaseInstance.instance;
     for (var key in keys) {
-      database.cookieDao.deleteCookie(key);
+      await database.cookieDao.deleteCookie(key);
     }
   }
 
@@ -29,6 +29,6 @@ class DatabaseCookieJarStorage extends Storage {
   @override
   Future<void> write(String key, String value) async {
     DComicDatabase database = await DatabaseInstance.instance;
-    database.cookieDao.setCookie(key, value);
+    await database.cookieDao.setCookie(key, value);
   }
 }

@@ -6,6 +6,7 @@ import 'package:dcomic/view/components/settings_widgets.dart';
 import 'package:dcomic/view/settings/about_page.dart';
 import 'package:dcomic/view/settings/account_manage_page.dart';
 import 'package:dcomic/view/settings/debug_page.dart';
+import 'package:dcomic/view/settings/database_sync_page.dart';
 import 'package:dcomic/view/settings/experimental_features_page.dart';
 import 'package:dcomic/view/settings/source_manage_page.dart';
 import 'package:dcomic/view/settings/viewer_setting_page.dart';
@@ -72,6 +73,17 @@ class _MainSettingPageState extends State<MainSettingPage> {
                     subtitle: S.of(context).AccountSettingsDescription,
                     routeName: 'AccountManagePage',
                     builder: (context) => const AccountManagePage(),
+                  ),
+                  _settingTile(
+                    icon: Icons.cloud_sync_outlined,
+                    title: _locale(context, '数据库同步与备份', 'Database Sync & Backup'),
+                    subtitle: _locale(
+                      context,
+                      '连接自托管账户，在设备间同步或导入导出加密备份',
+                      'Connect a self-hosted account, sync devices, or import and export encrypted backups',
+                    ),
+                    routeName: 'DatabaseSyncPage',
+                    builder: (context) => const DatabaseSyncPage(),
                   ),
                 ],
               ),

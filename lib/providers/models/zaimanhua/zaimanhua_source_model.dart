@@ -343,155 +343,7 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
 
   @override
   Widget buildLoginWidget(BuildContext context) {
-    GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    TextEditingController usernameController = TextEditingController();
-    TextEditingController passwordController = TextEditingController();
-    TextEditingController tokenController = TextEditingController();
-    final theme = Theme.of(context);
-    final strings = S.of(context);
-    final inputDecoration = InputDecoration(
-      filled: true,
-      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
-        alpha: 0.45,
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(
-          color: theme.colorScheme.primary.withValues(alpha: 0.6),
-          width: 1.4,
-        ),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      isDense: true,
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(8, 20, 8, 14),
-          child: Center(
-            child: Text(
-              strings.ZaiManHuaTitle,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-        SettingsCard(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: formKey,
-            child: Column(
-              children: [
-                TextFormField(
-                  controller: usernameController,
-                  decoration: inputDecoration.copyWith(
-                    labelText: strings.CommonLoginUsername,
-                    prefixIcon: const Icon(Icons.account_circle),
-                    hintText: strings.CommonLoginUsernameHint,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: passwordController,
-                  obscureText: true,
-                  decoration: inputDecoration.copyWith(
-                    labelText: strings.CommonLoginPassword,
-                    prefixIcon: const Icon(Icons.lock),
-                    hintText: strings.ZaiManHuaLoginPasswordHint,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: tokenController,
-                  obscureText: true,
-                  decoration: inputDecoration.copyWith(
-                    labelText: strings.CopyMangaToken,
-                    prefixIcon: const Icon(Icons.token_outlined),
-                    hintText: strings.CopyMangaTokenHint,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        FilledButton.icon(
-          onPressed: () async {
-            try {
-              if (formKey.currentState!.validate()) {
-                if (await login(
-                  usernameController.text,
-                  passwordController.text,
-                )) {
-                  if (!context.mounted) {
-                    return;
-                  }
-                  Provider.of<NavigatorProvider>(context, listen: false)
-                      .getNavigator(context, NavigatorType.defaultNavigator)
-                      ?.pop();
-                }
-              }
-            } catch (e, s) {
-              logger.e(e, error: e, stackTrace: s);
-              if (!context.mounted) {
-                return;
-              }
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(strings.CommonLoginLoginFailed(e))),
-              );
-            }
-          },
-          icon: const Icon(Icons.arrow_forward_rounded),
-          label: Text(strings.CommonLoginLogin),
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(48),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-          ),
-        ),
-        const SizedBox(height: 12),
-        FilledButton.tonalIcon(
-          onPressed: () async {
-            try {
-              if (formKey.currentState!.validate()) {
-                if (await loginWithToken(tokenController.text)) {
-                  if (!context.mounted) {
-                    return;
-                  }
-                  Provider.of<NavigatorProvider>(context, listen: false)
-                      .getNavigator(context, NavigatorType.defaultNavigator)
-                      ?.pop();
-                }
-              }
-            } catch (e, s) {
-              logger.e(e, error: e, stackTrace: s);
-              if (!context.mounted) {
-                return;
-              }
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(strings.CommonLoginLoginFailed(e))),
-              );
-            }
-          },
-          icon: const Icon(Icons.generating_tokens_outlined),
-          label: Text(strings.TokenLogin),
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(48),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-          ),
-        ),
-        const SizedBox(height: 4),
-      ],
-    );
+    return _ZaiManHuaLoginForm(account: this);
   }
 
   @override
@@ -680,19 +532,18 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
     notifyListeners();
     try {
       final dao = (await DatabaseInstance.instance).modelConfigDao;
-      final enabled = (await dao.getOrCreateConfigByKey(
+      final enabled = (await dao.getConfigByKeyAndModel(
         'autoSignInEnabled',
         parent!.type.sourceId,
-        value: true,
-      )).get<bool>();
-      final loggedIn = (await dao.getOrCreateConfigByKey(
+      ))?.get<bool>() ?? true;
+      final loggedIn = (await dao.getConfigByKeyAndModel(
         'isLogin',
         parent!.type.sourceId,
-      )).get<bool>();
-      final token = (await dao.getOrCreateConfigByKey(
+      ))?.get<bool>() ?? false;
+      final token = (await dao.getConfigByKeyAndModel(
         'token',
         parent!.type.sourceId,
-      )).get<String>();
+      ))?.get<String>() ?? '';
       if (generation != _accountGeneration) return;
       _autoSignInEnabled = enabled;
       _token = token;
@@ -1348,4 +1199,177 @@ class ZaiManHuaComicChapterDetailModel extends BaseComicChapterDetailModel {
 
   @override
   String get title => rawData['title'];
+}
+
+class _ZaiManHuaLoginForm extends StatefulWidget {
+  const _ZaiManHuaLoginForm({required this.account});
+
+  final ZaiManHuaAccountModel account;
+
+  @override
+  State<_ZaiManHuaLoginForm> createState() => _ZaiManHuaLoginFormState();
+}
+
+class _ZaiManHuaLoginFormState extends State<_ZaiManHuaLoginForm> {
+  final formKey = GlobalKey<FormState>();
+  final usernameController = TextEditingController();
+  final passwordController = TextEditingController();
+  final tokenController = TextEditingController();
+
+  @override
+  void dispose() {
+    usernameController.dispose();
+    passwordController.dispose();
+    tokenController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final strings = S.of(context);
+    final inputDecoration = InputDecoration(
+      filled: true,
+      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
+        alpha: 0.45,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: theme.colorScheme.primary.withValues(alpha: 0.6),
+          width: 1.4,
+        ),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      isDense: true,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 20, 8, 14),
+          child: Center(
+            child: Text(
+              strings.ZaiManHuaTitle,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+        SettingsCard(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: usernameController,
+                  decoration: inputDecoration.copyWith(
+                    labelText: strings.CommonLoginUsername,
+                    prefixIcon: const Icon(Icons.account_circle),
+                    hintText: strings.CommonLoginUsernameHint,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: inputDecoration.copyWith(
+                    labelText: strings.CommonLoginPassword,
+                    prefixIcon: const Icon(Icons.lock),
+                    hintText: strings.ZaiManHuaLoginPasswordHint,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: tokenController,
+                  obscureText: true,
+                  decoration: inputDecoration.copyWith(
+                    labelText: strings.CopyMangaToken,
+                    prefixIcon: const Icon(Icons.token_outlined),
+                    hintText: strings.CopyMangaTokenHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        FilledButton.icon(
+          onPressed: () async {
+            try {
+              if (formKey.currentState!.validate()) {
+                if (await widget.account.login(
+                  usernameController.text,
+                  passwordController.text,
+                )) {
+                  if (!context.mounted) {
+                    return;
+                  }
+                  Provider.of<NavigatorProvider>(context, listen: false)
+                      .getNavigator(context, NavigatorType.defaultNavigator)
+                      ?.pop();
+                }
+              }
+            } catch (e, s) {
+              widget.account.logger.e(e, error: e, stackTrace: s);
+              if (!context.mounted) {
+                return;
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(strings.CommonLoginLoginFailed(e))),
+              );
+            }
+          },
+          icon: const Icon(Icons.arrow_forward_rounded),
+          label: Text(strings.CommonLoginLogin),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+        ),
+        const SizedBox(height: 12),
+        FilledButton.tonalIcon(
+          onPressed: () async {
+            try {
+              if (formKey.currentState!.validate()) {
+                if (await widget.account.loginWithToken(tokenController.text)) {
+                  if (!context.mounted) {
+                    return;
+                  }
+                  Provider.of<NavigatorProvider>(context, listen: false)
+                      .getNavigator(context, NavigatorType.defaultNavigator)
+                      ?.pop();
+                }
+              }
+            } catch (e, s) {
+              widget.account.logger.e(e, error: e, stackTrace: s);
+              if (!context.mounted) {
+                return;
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(strings.CommonLoginLoginFailed(e))),
+              );
+            }
+          },
+          icon: const Icon(Icons.generating_tokens_outlined),
+          label: Text(strings.TokenLogin),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+        ),
+        const SizedBox(height: 4),
+      ],
+    );
+  }
 }

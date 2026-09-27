@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:dcomic/providers/comic_reading_progress.dart';
 import 'package:dcomic/providers/base_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 
@@ -21,6 +24,33 @@ class ComicHistoryPageController extends BaseProvider {
     for (var sourceModel in sourceModels) {
       data[sourceModel] = ComicHistoryPageData();
     }
+    ComicReadingProgress.changes.addListener(_onDatabaseChanged);
+  }
+
+  bool _disposed = false;
+  Future<void> _localRefresh = Future.value();
+
+  void _onDatabaseChanged() {
+    _localRefresh = _localRefresh.then((_) async {
+      for (final source in sourceModels) {
+        if (_disposed) return;
+        final records =
+            await source.getComicHistory(ComicHistorySourceType.local);
+        if (_disposed) return;
+        data[source]?.data[ComicHistorySourceType.local] = records;
+      }
+      if (!_disposed) notifyListeners();
+    }).catchError((Object error, StackTrace stack) {
+      logger.e('Local history refresh failed', error: error, stackTrace: stack);
+    });
+    unawaited(_localRefresh);
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    ComicReadingProgress.changes.removeListener(_onDatabaseChanged);
+    super.dispose();
   }
 
   Future<void> refreshAll() async {

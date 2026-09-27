@@ -22,6 +22,7 @@ class _ChapterRulesPageState extends State<ChapterRulesPage> {
   bool _busy = false;
   bool _tryHasInput = false;
   ChapterRuleMatch? _tryMatch;
+  int _loadGeneration = 0;
 
   String _locale(String zh, String en) =>
       Localizations.localeOf(context).languageCode == 'zh' ? zh : en;
@@ -30,21 +31,28 @@ class _ChapterRulesPageState extends State<ChapterRulesPage> {
   void initState() {
     super.initState();
     _tryController.addListener(_updateTryMatch);
+    ChapterRuleStore.changes.addListener(_onRulesChanged);
     _reload(initial: true);
   }
 
   @override
   void dispose() {
+    ChapterRuleStore.changes.removeListener(_onRulesChanged);
     _tryController.removeListener(_updateTryMatch);
     _tryController.dispose();
     super.dispose();
   }
 
+  void _onRulesChanged() {
+    if (!_busy) _reload(initial: _loading || _loadFailed);
+  }
+
   Future<void> _reload({bool initial = false}) async {
+    final generation = ++_loadGeneration;
     try {
       final groups = await ChapterRuleStore.load();
       final matcher = ChapterRuleMatcher(groups);
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration) return;
       setState(() {
         _groups = groups;
         _matcher = matcher;
@@ -55,7 +63,7 @@ class _ChapterRulesPageState extends State<ChapterRulesPage> {
       });
       _updateTryMatch();
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration) return;
       if (initial) {
         setState(() {
           _loading = false;
