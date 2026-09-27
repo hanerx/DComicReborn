@@ -43,8 +43,9 @@ class DComicImage extends StatelessWidget {
         return CachedNetworkImage(
           fit: fit,
           imageUrl: imageEntity.imageUrl,
-          progressIndicatorBuilder: (context, url, downloadProgress) =>
-              _buildPlaceholder(context),
+          // The loading UI does not display byte progress, so avoid rebuilding
+          // the image subtree for every download chunk.
+          placeholder: (context, url) => _buildPlaceholder(context),
           httpHeaders: imageEntity.imageHeaders,
           errorWidget: (context, url, error) => _buildLoadErrorWidget(context),
           cacheManager: DefaultCacheManager(),
@@ -82,10 +83,12 @@ class DComicImage extends StatelessWidget {
       child: ColoredBox(
         color: Theme.of(context).colorScheme.surfaceContainerLow,
         child: const Center(
-          child: SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
+          child: RepaintBoundary(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
           ),
         ),
       ),

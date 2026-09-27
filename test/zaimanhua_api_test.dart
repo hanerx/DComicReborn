@@ -192,7 +192,9 @@ void main() {
     await detail.init();
     final chapter =
         DefaultComicChapterEntityModel('第 2 话', '186872', DateTime(2026));
-    final viewer = ComicViewerPageController(detail, [chapter], '186872');
+    final viewer = ComicViewerPageController(
+      detail, [chapter], '186872', precacheCount: 0,
+    );
     viewer.chapterDetailModel = ZaiManHuaComicChapterDetailModel({
       'chapter_id': 186872,
       'page_url_hd': List.filled(5, 'https://example.com/page.jpg'),

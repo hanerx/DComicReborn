@@ -280,13 +280,16 @@ class _ComicViewerPageState extends State<ComicViewerPage>
         Theme.of(context),
         seedColor: config.themeColor.color,
       ),
-      child: ChangeNotifierProvider<ComicViewerPageController>(
+      child: ChangeNotifierProxyProvider<ConfigProvider, ComicViewerPageController>(
         lazy: false,
         create: (_) => _viewerController = ComicViewerPageController(
           widget.detailModel,
           widget.chapters,
           widget.chapterId,
+          precacheCount: config.readerPrecacheCount,
         ),
+        update: (_, config, controller) =>
+            controller!..precacheCount = config.readerPrecacheCount,
         builder: (context, child) => ListenableBuilder(
           listenable: widget.detailModel.parent,
           builder: (context, _) => Scaffold(

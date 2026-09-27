@@ -7,6 +7,7 @@ import 'package:dcomic/view/settings/about_page.dart';
 import 'package:dcomic/view/settings/account_manage_page.dart';
 import 'package:dcomic/view/settings/debug_page.dart';
 import 'package:dcomic/view/settings/database_sync_page.dart';
+import 'package:dcomic/view/settings/download_setting_page.dart';
 import 'package:dcomic/view/settings/experimental_features_page.dart';
 import 'package:dcomic/view/settings/source_manage_page.dart';
 import 'package:dcomic/view/settings/viewer_setting_page.dart';
@@ -47,6 +48,17 @@ class _MainSettingPageState extends State<MainSettingPage> {
                     subtitle: S.of(context).ReaderSettingsDescription,
                     routeName: 'ViewerSettingPage',
                     builder: (context) => const ViewerSettingPage(),
+                  ),
+                  _settingTile(
+                    icon: Icons.download_for_offline_outlined,
+                    title: _locale(context, '下载设置', 'Download Settings'),
+                    subtitle: _locale(
+                      context,
+                      '设置阅读时预缓存到磁盘的页面数量',
+                      'Choose how many reading pages are precached to disk',
+                    ),
+                    routeName: 'DownloadSettingPage',
+                    builder: (context) => const DownloadSettingPage(),
                   ),
                 ],
               ),

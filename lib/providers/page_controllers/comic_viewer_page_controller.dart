@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:dcomic/providers/base_provider.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
+import 'package:dcomic/utils/image_utils.dart';
+import 'package:dcomic/utils/reader_image_precache.dart';
 
 class ComicViewerPageController extends BaseProvider {
   final BaseComicDetailModel detailModel;
@@ -10,6 +12,14 @@ class ComicViewerPageController extends BaseProvider {
   final String initChapterId;
   BaseComicChapterEntityModel? currentChapter;
   BaseComicChapterDetailModel? chapterDetailModel;
+  late final ReaderImagePrecache _precache = ReaderImagePrecache(
+    onError: (error, stack) =>
+        logger.w('Reader prefetch failed', error: error, stackTrace: stack),
+  );
+  List<ImageEntity> _precachePages = const [];
+  int _precacheCount;
+  int _chapterLoad = 0;
+  bool _disposed = false;
 
   // viewer参数
   int _currentPage = 0;
@@ -40,8 +50,9 @@ class ComicViewerPageController extends BaseProvider {
   ComicViewerPageController(
     this.detailModel,
     this.chapters,
-    this.initChapterId,
-  ) {
+    this.initChapterId, {
+    required this._precacheCount,
+  }) {
     if (chapters.indexWhere((element) => element.chapterId == initChapterId) >=
         0) {
       currentChapter =
@@ -49,6 +60,31 @@ class ComicViewerPageController extends BaseProvider {
             (element) => element.chapterId == initChapterId,
           )];
     }
+  }
+
+  set precacheCount(int value) {
+    if (_precacheCount == value) return;
+    _precacheCount = value;
+    _updatePrecache();
+  }
+
+  void _updatePrecache() {
+    if (_disposed || _precachePages.isEmpty) return;
+    unawaited(
+      _precache.update(
+        pages: _precachePages,
+        currentPage: _currentPage,
+        count: _precacheCount,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _chapterLoad++;
+    _precache.clear();
+    super.dispose();
   }
 
   BaseComicChapterEntityModel? get preChapter =>
@@ -62,51 +98,44 @@ class ComicViewerPageController extends BaseProvider {
       ? chapters[chapters.indexOf(currentChapter!) + 1]
       : null;
 
-  Future<void> refresh() async {
-    if (chapterDetailModel != null && preChapter != null) {
-      currentChapter = preChapter;
-    }
-    chapterDetailModel = await detailModel.getChapter(
-      currentChapter!.chapterId,
-    );
-    chapterDetailModel?.downloadPages();
-    _currentPage = 0;
-    await loadComment();
-    unawaited(addComicHistory());
-    notifyListeners();
-  }
+  Future<void> refresh() => loadChapter(
+    chapterDetailModel != null
+        ? preChapter ?? currentChapter!
+        : currentChapter!,
+  );
 
-  Future<void> load() async {
-    if (chapterDetailModel != null && nextChapter != null) {
-      currentChapter = nextChapter;
-    }
-    chapterDetailModel = await detailModel.getChapter(
-      currentChapter!.chapterId,
-    );
-    chapterDetailModel?.downloadPages();
-    _currentPage = 0;
-    await loadComment();
-    unawaited(addComicHistory());
-    notifyListeners();
-  }
+  Future<void> load() => loadChapter(
+    chapterDetailModel != null
+        ? nextChapter ?? currentChapter!
+        : currentChapter!,
+  );
 
   Future<void> loadChapter(BaseComicChapterEntityModel chapter) async {
+    final load = ++_chapterLoad;
+    _precache.clear();
+    _precachePages = const [];
     currentChapter = chapter;
-    chapterDetailModel = await detailModel.getChapter(
-      currentChapter!.chapterId,
-    );
-    chapterDetailModel?.downloadPages();
+    final detail = await detailModel.getChapter(chapter.chapterId);
+    if (_disposed || load != _chapterLoad) return;
+    chapterDetailModel = detail;
+    _precachePages = detail?.pages ?? const [];
     _currentPage = 0;
+    _updatePrecache();
     await loadComment();
+    if (_disposed || load != _chapterLoad) return;
     unawaited(addComicHistory());
     notifyListeners();
   }
 
   Future<void> loadComment() async {
-    if (chapterDetailModel != null) {
-      _comments = await chapterDetailModel!.getChapterComments();
+    final chapter = chapterDetailModel;
+    final load = _chapterLoad;
+    if (chapter != null) {
+      final comments = await chapter.getChapterComments();
+      if (_disposed || load != _chapterLoad) return;
+      _comments = comments;
     }
-    notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
   Future<void> addComicHistory() async {
@@ -128,6 +157,7 @@ class ComicViewerPageController extends BaseProvider {
   set currentPage(int value) {
     if (value == _currentPage || value < 0) return;
     _currentPage = value;
+    _updatePrecache();
     unawaited(addComicHistory());
     notifyListeners();
   }

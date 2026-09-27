@@ -17,6 +17,7 @@ const _settingsAllowlist = <String>{
   'ThemeColor',
   'UseMaterial3Design',
   'ReaderTheme',
+  'ReaderPrecacheCount',
   'AggregateSubscribeBadges',
   'AggregateReadingProgress',
   'AutoMapMissingComics',

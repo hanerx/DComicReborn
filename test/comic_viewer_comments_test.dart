@@ -78,8 +78,6 @@ class _ChapterDetail extends Fake implements BaseComicChapterDetailModel {
   );
   @override
   Future<List<ChapterCommentEntity>> getChapterComments() async => comments;
-  @override
-  Future<List<FileInfo>> downloadPages() async => [];
 }
 
 class _Source extends BaseComicSourceModel {

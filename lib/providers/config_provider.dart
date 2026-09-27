@@ -24,6 +24,7 @@ class ConfigProvider extends BaseProvider {
   ConfigEntity? _autoMapIntervalSeconds;
   ConfigEntity? _autoMapRetryEveryLaunch;
   ConfigEntity? _autoMapMaxAttempts;
+  ConfigEntity? _readerPrecacheCount;
 
   @override
   Future<void> init() async {
@@ -52,6 +53,7 @@ class ConfigProvider extends BaseProvider {
     _autoMapIntervalSeconds = read('AutoMapIntervalSeconds', 1);
     _autoMapRetryEveryLaunch = read('AutoMapRetryEveryLaunch', true);
     _autoMapMaxAttempts = read('AutoMapMaxAttempts', 3);
+    _readerPrecacheCount = read('ReaderPrecacheCount', 3);
     notifyListeners();
   }
 
@@ -106,6 +108,30 @@ class ConfigProvider extends BaseProvider {
       _readerTheme!.set(value.name);
       _persistSetting(_readerTheme!);
     }
+    notifyListeners();
+  }
+
+  int get readerPrecacheCount {
+    final value = _readerPrecacheCount?.get<int>() as int?;
+    if (value == null || value < 0 || value > 9) {
+      return 3;
+    }
+    return value;
+  }
+
+  Future<void> setReaderPrecacheCount(int value) async {
+    if (value < 0 || value > 9) {
+      throw RangeError.range(value, 0, 9, 'value');
+    }
+    if (_readerPrecacheCount?.get<int>() == value) return;
+    final database = await DatabaseInstance.instance;
+    final setting = await database.configDao.getOrCreateConfigByKey(
+      'ReaderPrecacheCount',
+      value: 3,
+    );
+    setting.set(value);
+    await database.configDao.updateConfig(setting);
+    _readerPrecacheCount = setting;
     notifyListeners();
   }
 
