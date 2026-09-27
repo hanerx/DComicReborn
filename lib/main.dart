@@ -19,6 +19,8 @@ import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/source_provider.dart';
 import 'package:dcomic/utils/theme_utils.dart';
+import 'package:dcomic/utils/performance_monitor.dart';
+import 'package:dcomic/utils/navigation_performance.dart';
 import 'package:dcomic/view/comic_pages/comic_browser_shell.dart';
 import 'package:dcomic/view/components/app_keyboard_shortcuts.dart';
 import 'package:dcomic/view/components/dcomic_mark.dart';
@@ -39,6 +41,7 @@ Future<void> main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+      await PerformanceMonitor.instance.initialize();
       // The following lines are the same as previously explained in "Handling uncaught errors"
       FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
 
@@ -113,7 +116,17 @@ class App extends StatelessWidget {
       ],
       builder: (context, child) => MaterialApp(
         title: 'DComic',
-        builder: (context, child) => AppKeyboardShortcuts(child: child!),
+        navigatorObservers: [
+          context.read<NavigatorProvider>().rootPerformanceObserver,
+        ],
+        builder: (context, child) {
+          final navigation = context.read<NavigatorProvider>();
+          return RouteFramePerformanceListener(
+            rootObserver: navigation.rootPerformanceObserver,
+            navigationObservers: navigation.performanceObservers,
+            child: AppKeyboardShortcuts(child: child!),
+          );
+        },
         theme: ThemeModel.buildTheme(
           brightness: Brightness.light,
           useMaterial3: Provider.of<ConfigProvider>(context).useMaterial3Design,

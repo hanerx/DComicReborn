@@ -1,5 +1,6 @@
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/utils/layout_utils.dart';
+import 'package:dcomic/utils/navigation_performance.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -16,6 +17,14 @@ class ComicBrowserShell extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final split = constraints.maxWidth >= AppLayout.expandedBreakpoint;
+        navigation.browsePerformanceObserver.setCovered(
+          NavigationCoverageSource.browserShell,
+          !split && navigation.hasDetail,
+        );
+        navigation.detailPerformanceObserver.setCovered(
+          NavigationCoverageSource.browserShell,
+          !split && !navigation.hasDetail,
+        );
         final browseWidth = split
             ? constraints.maxWidth * 0.4
             : constraints.maxWidth;
@@ -62,6 +71,9 @@ class ComicBrowserShell extends StatelessWidget {
                             },
                             child: Navigator(
                               key: navigation.browseNavigator,
+                              observers: [
+                                navigation.browsePerformanceObserver,
+                              ],
                               onGenerateRoute: (_) => MaterialPageRoute<void>(
                                 builder: (_) => child,
                                 settings: const RouteSettings(
@@ -100,6 +112,9 @@ class ComicBrowserShell extends StatelessWidget {
                           removeRight: false,
                           child: Navigator(
                             key: navigation.detailNavigator,
+                            observers: [
+                              navigation.detailPerformanceObserver,
+                            ],
                             pages: [
                               const MaterialPage<void>(
                                 key: ValueKey('no-comic'),

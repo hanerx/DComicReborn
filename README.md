@@ -319,6 +319,31 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .github/scripts/package_wind
 
 </details>
 
+### 性能监控
+
+Android / iOS 接入 Firebase Performance，沿用现有 Firebase 项目。应用在 profile/release 模式启用自定义采集；debug 默认关闭，可用 `flutter run --dart-define=DCOMIC_PERFORMANCE=true` 验证事件链路。Windows 等不支持的平台不会调用 Performance 原生插件。正式性能评估请使用真机 profile/release，不能把 debug 或模拟器数值作为用户体验基准。
+
+采集仅位于公共导航、请求和帧采样基础设施，页面、控制器与图片组件不接触监控 API。在 Firebase 控制台 **Performance → Custom traces** 查看：
+
+| Trace / 指标 | 统计口径 |
+| :--- | :--- |
+| `navigation_next_route_frame` | 根导航及浏览／详情嵌套导航 push 或 replace 到下一次 Flutter post-frame；不是数据就绪、图片可见或硬件呈现时间。 |
+| `navigation_forward_transition` | 同一导航变更到路由前进动画完成；不等待 `Navigator.push` 返回，不计页面停留时间。无可观察动画的自定义路由不记录此项。 |
+| `request_response` | 公共 `RequestHandler` 的非流式 Dio 请求到最终响应／异常，包含拦截器、缓存命中、错误恢复和解码；不是纯网络传输时间。附 `method`、可用时的 `status_code`。独立 Dio 实例和流式下载不在此采集范围。 |
+| `route_active_frames` | 根导航顶层为 `ComicViewerPage` 且应用在前台时，由公共指针／滚动 hook 驱动的活动帧聚合，附 `screen`、`refresh_rate_bucket`；不逐帧上传。 |
+
+导航的 `screen` 直接使用已有 `RouteSettings.name`，不维护页面名映射、不反射或额外构建页面，无名路由跳过。路由名应保持静态，不放入搜索词、账号或其他业务数据。返回、替换、遮挡、分栏隐藏或进入后台时取消未完成采样，不将重新露出旧页面当作一次新打开。标签切换、数据就绪、首图、切章和其他业务操作完成时间无法由这些 hook 可靠判断，因此不记录。
+
+耗时读取自定义 `elapsed_us`（微秒），它在 Dart 端观测边界冻结，不包含后续异步原生 Trace 停止等待；不要用 SDK Trace duration 替代该值。按 `outcome` 区分 `success`、`error`、`http_error`、`cancelled`；请求结果指 Dio 最终结果，不代表响应中的业务状态码成功。
+
+活动帧记录 `frame_count`、`over_budget_frames`、`max_build_us`、`max_raster_us`、`active_duration_us`、`fps_milli`。FPS = `fps_milli / 1000`，以活动窗口内不同 vsync 时间戳的帧数减一，除以首末时间戳间隔计算；不足两个不同时间戳的帧不产生 FPS。600 ms 输入尾窗只用于帧归属，FPS 分母不包含首尾无帧空闲。每段最多 15 秒，保留 1.5 秒接收迟到批次；后台、路由遮挡及刷新率变化时分段，销毁后无法补收尚未到达的批次。
+
+此指标是阅读器**路由内全部 UI 活动**，包括内部抽屉、设置和评论等，不能解释为漫画图片独占帧率，也不区分阅读模式。`route_active_frames` 的 Trace duration 和 `elapsed_us` 包含迟到批次等待，不是连续绘制时间；帧率只使用 `active_duration_us` 对应的采样区间。
+
+超预算帧指 Build **或** Raster 单阶段超过 `1 秒 / 当前刷新率`，不把两个流水线阶段相加；未知刷新率标记 `unknown` 并按 60 Hz 判断。`over_budget_frames / frame_count` 可用于比较卡顿比例，但不是屏幕精确丢帧数。Firebase 不自动提供每个 Flutter 页面的慢帧统计，具体定位仍使用 DevTools。
+
+自定义采集不读取搜索词、漫画名、账号、Token、请求 URL 或响应内容；Firebase SDK 的自动采集仍遵循其自身数据规则。Android debug 可在 Logcat 的 `FirebasePerformance` 标签确认 `Logging trace metric` 和各指标；本地日志表示 SDK 已记录，不等于已确认控制台入库，网络可达性和控制台展示延迟需另行核对。iOS 原生依赖与运行须在 macOS 验证。
+
 ### 开发同步服务器
 
 <details>

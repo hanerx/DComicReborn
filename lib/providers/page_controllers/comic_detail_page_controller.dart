@@ -64,10 +64,14 @@ class ComicDetailPageController extends BaseProvider {
 
   void _onReadingProgressChanged() {
     _progressSettingsRevision++;
-    _historyRefresh = _historyRefresh
+    unawaited(refreshReadingProgress());
+  }
+
+  Future<void> refreshReadingProgress() {
+    final model = detailModel;
+    return _historyRefresh = _historyRefresh
         .then((_) async {
-          final model = detailModel;
-          if (_disposed || model == null) return;
+          if (_disposed || model == null || detailModel != model) return;
           final previous = model.latestChapterId;
           await model.loadComicHistory();
           if (!_disposed &&
@@ -83,7 +87,6 @@ class ComicDetailPageController extends BaseProvider {
             stackTrace: stack,
           );
         });
-    unawaited(_historyRefresh);
   }
 
   @override

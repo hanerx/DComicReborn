@@ -57,6 +57,19 @@ class _AboutPageState extends State<AboutPage> {
     }
   }
 
+  Future<void> _checkForUpdate() async {
+    final version = context.read<VersionProvider>();
+    final available = await version.checkUpdate();
+    if (!mounted) return;
+    if (available) {
+      await version.showReleaseInfo(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(S.of(context).CheckUpdateUpToDate)),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -110,27 +123,7 @@ class _AboutPageState extends State<AboutPage> {
                     subtitle: Text(
                       Provider.of<VersionProvider>(context).currentVersion,
                     ),
-                    onTap: () async {
-                      if (await Provider.of<VersionProvider>(
-                        context,
-                        listen: false,
-                      ).checkUpdate()) {
-                        if (context.mounted) {
-                          await Provider.of<VersionProvider>(
-                            context,
-                            listen: false,
-                          ).showReleaseInfo(context);
-                        }
-                      } else {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(S.of(context).CheckUpdateUpToDate),
-                            ),
-                          );
-                        }
-                      }
-                    },
+                    onTap: _checkForUpdate,
                   ),
                   SettingsTile(
                     leading: const Icon(FontAwesome5.git_alt),

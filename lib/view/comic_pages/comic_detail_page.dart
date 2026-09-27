@@ -961,7 +961,6 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                     index,
                     data,
                     writeHistory: true,
-                    refreshOnReturn: true,
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.primary,
@@ -980,7 +979,6 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                     index,
                     data,
                     writeHistory: true,
-                    refreshOnReturn: true,
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colors.onSurface,
@@ -1054,7 +1052,6 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
     int index,
     List<BaseComicChapterEntityModel> data, {
     bool writeHistory = false,
-    bool refreshOnReturn = false,
   }) {
     var chapter = data[index];
     var controller = Provider.of<ComicDetailPageController>(
@@ -1079,13 +1076,8 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
           ),
         )
         .then((value) async {
-          if (!context.mounted) return;
-          if (refreshOnReturn) {
-            await Provider.of<ComicDetailPageController>(
-              context,
-              listen: false,
-            ).refresh(context, widget.comicId, widget.title);
-          }
+          if (!context.mounted || controller.detailModel != detailModel) return;
+          await controller.refreshReadingProgress();
         });
   }
 
@@ -1128,11 +1120,8 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
           ),
         )
         .then((value) async {
-          if (!context.mounted) return;
-          await Provider.of<ComicDetailPageController>(
-            context,
-            listen: false,
-          ).refresh(context, widget.comicId, widget.title);
+          if (!context.mounted || controller.detailModel != detailModel) return;
+          await controller.refreshReadingProgress();
         });
   }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/base_provider.dart';
+import 'package:dcomic/utils/navigation_performance.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 
@@ -11,6 +12,19 @@ enum ComicBrowserLayout { singlePane, splitPane }
 
 class NavigatorProvider extends BaseProvider {
   NavigatorProvider(BuildContext context);
+
+  late final NavigationPerformanceObserver rootPerformanceObserver =
+      NavigationPerformanceObserver(navigatorName: 'root');
+  late final NavigationPerformanceObserver browsePerformanceObserver =
+      NavigationPerformanceObserver(navigatorName: 'browse');
+  late final NavigationPerformanceObserver detailPerformanceObserver =
+      NavigationPerformanceObserver(navigatorName: 'detail');
+
+  late final List<NavigationPerformanceObserver> performanceObservers = [
+    rootPerformanceObserver,
+    browsePerformanceObserver,
+    detailPerformanceObserver,
+  ];
 
   final browseNavigator = GlobalKey<NavigatorState>();
   final detailNavigator = GlobalKey<NavigatorState>();
@@ -39,6 +53,11 @@ class NavigatorProvider extends BaseProvider {
     if (!hasDetail) return;
     _detailIdentity = null;
     _detailBuilder = null;
+    // Detail links push the browse stack synchronously, before the shell rebuilds.
+    browsePerformanceObserver.setCovered(
+      NavigationCoverageSource.browserShell,
+      false,
+    );
     _detailClosed?.complete();
     _detailClosed = null;
     notifyListeners();
@@ -47,6 +66,9 @@ class NavigatorProvider extends BaseProvider {
   @override
   void dispose() {
     _detailClosed?.complete();
+    for (final observer in performanceObservers) {
+      observer.dispose();
+    }
     super.dispose();
   }
 

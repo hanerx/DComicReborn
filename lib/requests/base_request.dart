@@ -5,6 +5,7 @@ import 'package:dcomic/requests/copymanga/copymanga_request.dart';
 import 'package:dcomic/requests/github/github_request.dart';
 import 'package:dcomic/requests/zaimanhua/zaimanhua_request.dart';
 import 'package:dcomic/utils/db_cookie_jar.dart';
+import 'package:dcomic/utils/request_performance.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
@@ -34,7 +35,7 @@ class RequestStatics {
 }
 
 class RequestHandler {
-  Dio dio = Dio();
+  Dio dio = RequestPerformanceDio();
   CookieManager cookieManager=CookieManager(PersistCookieJar(
       ignoreExpires: true, storage: DatabaseCookieJarStorage()));
 

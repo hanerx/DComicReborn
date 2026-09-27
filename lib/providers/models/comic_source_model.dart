@@ -256,6 +256,8 @@ abstract class BaseComicDetailModel extends BaseModel {
 
   Future<void> loadComicHistory() async {
     try {
+      // A reader can close while its last chapter/page write is still queued.
+      await _historyWrites;
       var databaseInstance = await DatabaseInstance.instance;
       var comicHistoryEntity = (await databaseInstance.comicHistoryDao
           .getComicHistoryByComicId(comicId, parent.type.sourceId));
