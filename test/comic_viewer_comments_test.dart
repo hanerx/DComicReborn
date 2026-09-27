@@ -5,13 +5,16 @@ import 'dart:ui' as ui;
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
+import 'package:dcomic/providers/page_controllers/comic_viewer_page_controller.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/utils/theme_utils.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:dcomic/view/components/viewer_setting_list.dart';
 import 'package:dcomic/view/comic_viewer/comic_viewer_page.dart';
+import 'package:dcomic/view/settings/viewer_setting_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -186,6 +189,108 @@ Future<void> _openReader(
 }
 
 void main() {
+  testWidgets(
+    'standalone reader settings stay at the top across window sizes',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.physicalSize = const Size(1024, 1392);
+      await tester.pumpWidget(
+        ChangeNotifierProvider<ConfigProvider>(
+          create: (_) => _Config(ReadDirectionType.left),
+          child: MaterialApp(
+            theme: ThemeModel.light,
+            locale: const Locale('zh'),
+            supportedLocales: S.delegate.supportedLocales,
+            localizationsDelegates: const [
+              S.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const ViewerSettingPage(),
+          ),
+        ),
+      );
+      for (final size in [
+        const Size(1024, 1392),
+        const Size(2560, 1392),
+        const Size(400, 500),
+      ]) {
+        tester.view.physicalSize = size;
+        await tester.pumpAndSettle();
+        final settings = find.byType(ViewerSettingList);
+        final rect = tester.getRect(settings);
+        expect(
+          rect.top,
+          closeTo(tester.getRect(find.byType(AppBar)).bottom, 1),
+        );
+        expect(rect.center.dx, closeTo(size.width / 2, 1));
+        expect(rect.width, lessThanOrEqualTo(640));
+      }
+      final label = S
+          .of(tester.element(find.byType(ViewerSettingList)))
+          .ViewerSettingUseMaterial3Design;
+      await tester.scrollUntilVisible(
+        find.text(label),
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(ViewerSettingList),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(label).hitTestable(), findsOneWidget);
+    },
+  );
+
+  for (final direction in ReadDirectionType.values) {
+    testWidgets('arrow keys follow $direction reading order', (tester) async {
+      await _openReader(tester, direction, [], pageCount: 4);
+      final context = tester.element(find.byType(DComicImage).first);
+      final controller = context.read<ComicViewerPageController>();
+      final forward = direction == ReadDirectionType.right
+          ? LogicalKeyboardKey.arrowLeft
+          : LogicalKeyboardKey.arrowRight;
+      final backward = direction == ReadDirectionType.right
+          ? LogicalKeyboardKey.arrowRight
+          : LogicalKeyboardKey.arrowLeft;
+      expect(controller.currentPage, 0);
+      await tester.sendKeyEvent(forward);
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 1);
+      await tester.sendKeyEvent(backward);
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 0);
+
+      unawaited(
+        showDialog<void>(
+          context: tester.element(find.byType(ComicViewerPage)),
+          builder: (_) =>
+              const AlertDialog(content: TextField(autofocus: true)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'abc');
+      await tester.sendKeyEvent(forward);
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 0);
+      Navigator.of(tester.element(find.byType(TextField))).pop();
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(forward);
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 1);
+      tester.state<ScaffoldState>(find.byType(Scaffold).first).openEndDrawer();
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(forward);
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 1);
+    });
+  }
+
   testWidgets('cold vertical pages reserve space only until images arrive', (
     tester,
   ) async {
@@ -430,6 +535,46 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.widget<Text>(pageLabel).data, before);
       await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'reader settings occupy the bottom half and resize with the window',
+    (tester) async {
+      await _openReader(tester, ReadDirectionType.left, []);
+      tester
+              .element(find.byType(DComicImage).first)
+              .read<ComicViewerPageController>()
+              .showToolBar =
+          true;
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.settings));
+      await tester.pumpAndSettle();
+      for (final size in [
+        const Size(400, 800),
+        const Size(1280, 800),
+        const Size(2560, 1392),
+        const Size(800, 400),
+      ]) {
+        tester.view.physicalSize = size;
+        await tester.pumpAndSettle();
+        final sheet = tester.getRect(find.byType(BottomSheet));
+        expect(sheet.height, closeTo(size.height / 2, 1));
+        expect(sheet.bottom, closeTo(size.height, 1));
+      }
+      final settings = find.byType(ViewerSettingList);
+      final label = S
+          .of(tester.element(settings))
+          .ViewerSettingUseMaterial3Design;
+      await tester.scrollUntilVisible(
+        find.text(label),
+        100,
+        scrollable: find
+            .descendant(of: settings, matching: find.byType(Scrollable))
+            .first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(label).hitTestable(), findsOneWidget);
     },
   );
 

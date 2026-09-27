@@ -21,6 +21,11 @@ on:
         required: false
         default: "true"
         type: boolean
+      run_windows:
+        description: "是否运行 Windows 打包（始终为 Release，含 portable 和安装版）"
+        required: false
+        default: "true"
+        type: boolean
   push:
     branches:
       - develop
@@ -194,6 +199,56 @@ jobs:
           name: ios-manual.ipa
           path: ios-manual.ipa
 
+  build_windows:
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_windows == 'true' }}
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+
+      - name: Enable plugin symlinks
+        run: |
+          New-Item -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock' -Force | Out-Null
+          Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock' -Name AllowDevelopmentWithoutDevLicense -Value 1 -Type DWord
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows Release
+        run: flutter build windows --release --no-pub
+
+      - name: Ensure Inno Setup 6 is available
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup --version=6.7.3 --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
+          }
+
+      - name: Package portable ZIP and installer EXE
+        run: |
+          $versionLine = Select-String -Path pubspec.yaml -Pattern '^version:\s*(\d+\.\d+\.\d+)'
+          if (-not $versionLine) { throw 'Missing numeric app version in pubspec.yaml.' }
+          $version = $versionLine.Matches[0].Groups[1].Value
+          .\.github\scripts\package_windows.ps1 -Version $version
+
+      - name: Upload Windows packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: |
+            build/windows/packages/*-windows-x64-portable.zip
+            build/windows/packages/*-windows-x64-setup.exe
+          if-no-files-found: error
+          compression-level: 0
+
   generate_release_note:
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
@@ -234,19 +289,40 @@ jobs:
           path: release-note.md
 
   publish_release:
-    needs: [build_android, build_ios, generate_release_note]
-    if: github.ref_type == 'tag'
+    needs: [build_android, build_ios, build_windows, generate_release_note]
+    if: >-
+      ${{
+        !cancelled() && github.ref_type == 'tag' &&
+        needs.generate_release_note.result == 'success' &&
+        !contains(needs.*.result, 'failure') &&
+        (needs.build_android.result == 'success' ||
+         needs.build_ios.result == 'success' ||
+         needs.build_windows.result == 'success')
+      }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download Android APK
+        if: needs.build_android.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: app-release.apk
+          path: release-assets
 
       - name: Download iOS IPA
+        if: needs.build_ios.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: ios-release.ipa
+          path: release-assets
+
+      - name: Download Windows packages
+        if: needs.build_windows.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release
+          path: release-assets
 
       - name: Download release-note
         uses: actions/download-artifact@v4
@@ -256,9 +332,8 @@ jobs:
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            app-release.apk
-            ios-release.ipa
+          files: release-assets/*
+          fail_on_unmatched_files: true
           name: ${{ needs.generate_release_note.outputs.release_title }}
           body_path: release-note.md
         env:

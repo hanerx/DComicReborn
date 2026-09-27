@@ -16,7 +16,8 @@ class _ViewerSettingState extends State<ViewerSettingPage> {
   Widget build(BuildContext context) {
     return SettingsPage(
       title: Text(S.of(context).ReaderSettings),
-      body: Center(
+      body: Align(
+        alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: AppLayout.formMaxWidth),
           child: const ViewerSettingList(),

@@ -17,7 +17,7 @@ class ComicBrowserShell extends StatelessWidget {
       builder: (context, constraints) {
         final split = constraints.maxWidth >= AppLayout.expandedBreakpoint;
         final browseWidth = split
-            ? (constraints.maxWidth * 0.4).clamp(320.0, 560.0)
+            ? constraints.maxWidth * 0.4
             : constraints.maxWidth;
         final detailWidth = split
             ? constraints.maxWidth - browseWidth - 1

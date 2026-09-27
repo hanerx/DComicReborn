@@ -31,6 +31,15 @@ void main() {
     final left = tester.getRect(find.text('Comic A'));
     final right = tester.getRect(find.text('Details A'));
     expect(right.left, greaterThan(left.right));
+    await tester.binding.setSurfaceSize(const Size(2560, 1440));
+    await tester.pumpAndSettle();
+    final browseSize = tester.getSize(find.byType(_Library));
+    final detailSize = tester.getSize(find.byType(_Details));
+    // Desktop browsing must grow with the window, not remain phone-width.
+    expect(browseSize.width, greaterThanOrEqualTo(2560 * 0.35));
+    expect(detailSize.width, greaterThan(browseSize.width));
+    expect(browseSize.width + detailSize.width + 1, 2560);
+    expect(find.text('retained'), findsOneWidget);
 
     await tester.binding.setSurfaceSize(const Size(500, 800));
     await tester.pumpAndSettle();

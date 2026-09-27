@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:dcomic/generated/l10n.dart';
@@ -11,6 +12,7 @@ import 'package:dcomic/view/components/viewer_setting_list.dart';
 import 'package:dcomic/view/comic_viewer/chapter_comments_page.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
@@ -54,6 +56,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
   bool _verticalCommentsVisible = false;
   Size? _verticalViewportSize;
   int? _resizePage;
+  bool _keyboardTurnInProgress = false;
 
   @override
   void initState() {
@@ -120,6 +123,53 @@ class _ComicViewerPageState extends State<ComicViewerPage>
       listen: listen,
     );
     return controller.effectiveReadDirection(config.readDirection);
+  }
+
+  KeyEventResult _handleReaderKey(BuildContext context, KeyEvent event) {
+    final key = event.logicalKey;
+    if (key != LogicalKeyboardKey.arrowLeft &&
+        key != LogicalKeyboardKey.arrowRight) {
+      return KeyEventResult.ignored;
+    }
+    final keyboard = HardwareKeyboard.instance;
+    final focusContext = FocusManager.instance.primaryFocus?.context;
+    if (keyboard.isAltPressed ||
+        keyboard.isControlPressed ||
+        keyboard.isMetaPressed ||
+        keyboard.isShiftPressed ||
+        ModalRoute.of(context)?.isCurrent != true ||
+        _scaffoldKey.currentState?.isEndDrawerOpen == true ||
+        focusContext?.widget is EditableText ||
+        focusContext?.findAncestorWidgetOfExactType<EditableText>() != null ||
+        _pageCount == 0) {
+      return KeyEventResult.ignored;
+    }
+    final direction = _readDirection(context, listen: false);
+    if (direction == ReadDirectionType.vertical
+        ? !_itemScrollController.isAttached
+        : !_pageController.hasClients) {
+      return KeyEventResult.ignored;
+    }
+    // One turn per press; key repeats must not queue animations or chapters.
+    if (event is KeyDownEvent && !_keyboardTurnInProgress) {
+      final forward =
+          (key == LogicalKeyboardKey.arrowRight) !=
+          (direction == ReadDirectionType.right);
+      unawaited(_turnPageFromKeyboard(context, forward: forward));
+    }
+    return KeyEventResult.handled;
+  }
+
+  Future<void> _turnPageFromKeyboard(
+    BuildContext context, {
+    required bool forward,
+  }) async {
+    _keyboardTurnInProgress = true;
+    try {
+      await _turnPage(context, forward: forward);
+    } finally {
+      _keyboardTurnInProgress = false;
+    }
   }
 
   Future<void> _turnPage(BuildContext context, {required bool forward}) async {
@@ -234,65 +284,69 @@ class _ComicViewerPageState extends State<ComicViewerPage>
           builder: (context, _) => Scaffold(
             key: _scaffoldKey,
             endDrawer: _buildDrawer(context),
-            body: Container(
-              color: Colors.black,
-              child: EasyRefresh(
-                controller: _easyRefreshController,
-                header: BezierHeader(
-                  triggerOffset: 50,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  showBalls: true,
-                  spinWidget: SpinKitDualRing(
-                    size: 32,
-                    color: Theme.of(context).colorScheme.onPrimary,
+            body: Focus(
+              autofocus: true,
+              onKeyEvent: (_, event) => _handleReaderKey(context, event),
+              child: Container(
+                color: Colors.black,
+                child: EasyRefresh(
+                  controller: _easyRefreshController,
+                  header: BezierHeader(
+                    triggerOffset: 50,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    showBalls: true,
+                    spinWidget: SpinKitDualRing(
+                      size: 32,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
                   ),
-                ),
-                footer: BezierFooter(
-                  triggerOffset: 50,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  showBalls: true,
-                  spinWidget: SpinKitDualRing(
-                    size: 32,
-                    color: Theme.of(context).colorScheme.onPrimary,
+                  footer: BezierFooter(
+                    triggerOffset: 50,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    showBalls: true,
+                    spinWidget: SpinKitDualRing(
+                      size: 32,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
                   ),
-                ),
-                refreshOnStart: true,
-                onRefresh: () async {
-                  await Provider.of<ComicViewerPageController>(
-                    context,
-                    listen: false,
-                  ).refresh();
-                  _resetPage();
-                },
-                onLoad: () async {
-                  await Provider.of<ComicViewerPageController>(
-                    context,
-                    listen: false,
-                  ).load();
-                  _resetPage();
-                },
-                child: SafeArea(
-                  child: Stack(
-                    key: _readerViewportKey,
-                    children: [
-                      _buildViewer(context),
-                      if (!(_readDirection(context) ==
-                              ReadDirectionType.vertical
-                          ? _verticalCommentsVisible
-                          : _pageCount > 0 &&
-                                context
-                                        .watch<ComicViewerPageController>()
-                                        .currentPage ==
-                                    _pageCount - 1)) ...[
-                        _buildPrePageButton(context),
-                        _buildShowButton(context),
-                        _buildNextPageButton(context),
+                  refreshOnStart: true,
+                  onRefresh: () async {
+                    await Provider.of<ComicViewerPageController>(
+                      context,
+                      listen: false,
+                    ).refresh();
+                    _resetPage();
+                  },
+                  onLoad: () async {
+                    await Provider.of<ComicViewerPageController>(
+                      context,
+                      listen: false,
+                    ).load();
+                    _resetPage();
+                  },
+                  child: SafeArea(
+                    child: Stack(
+                      key: _readerViewportKey,
+                      children: [
+                        _buildViewer(context),
+                        if (!(_readDirection(context) ==
+                                ReadDirectionType.vertical
+                            ? _verticalCommentsVisible
+                            : _pageCount > 0 &&
+                                  context
+                                          .watch<ComicViewerPageController>()
+                                          .currentPage ==
+                                      _pageCount - 1)) ...[
+                          _buildPrePageButton(context),
+                          _buildShowButton(context),
+                          _buildNextPageButton(context),
+                        ],
+                        _buildAppBar(context),
+                        _buildToolBar(context),
                       ],
-                      _buildAppBar(context),
-                      _buildToolBar(context),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -612,50 +666,53 @@ class _ComicViewerPageState extends State<ComicViewerPage>
             Theme.of(this.context),
             seedColor: config.themeColor.color,
           );
-          return Theme(
-            data: theme,
-            child: Material(
-              color: theme.colorScheme.surfaceContainerLow,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  Semantics(
-                    label: MaterialLocalizations.of(context)
-                        .modalBarrierDismissLabel,
-                    button: true,
-                    onTap: () => Navigator.of(context).pop(),
-                    child: SizedBox(
-                      height: 48,
-                      child: Center(
-                        child: Container(
-                          width: 32,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            borderRadius: BorderRadius.circular(2),
+          return FractionallySizedBox(
+            heightFactor: 0.5,
+            child: Theme(
+              data: theme,
+              child: Material(
+                color: theme.colorScheme.surfaceContainerLow,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: [
+                    Semantics(
+                      label: MaterialLocalizations.of(context)
+                          .modalBarrierDismissLabel,
+                      button: true,
+                      onTap: () => Navigator.of(context).pop(),
+                      child: SizedBox(
+                        height: 48,
+                        child: Center(
+                          child: Container(
+                            width: 32,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text(
-                        S.of(context).ReaderSettings,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: theme.colorScheme.onSurface,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(
+                          S.of(context).ReaderSettings,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: theme.colorScheme.onSurface,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Expanded(child: child!),
-                ],
+                    Expanded(child: child!),
+                  ],
+                ),
               ),
             ),
           );
