@@ -40,7 +40,7 @@
 <details>
 <summary><strong>Windows 下载与安装须知</strong></summary>
 
-Windows 打包已接入构建工作流，但 **2.5.4 Release 目前只有 APK 和 IPA**，请以发布页实际附件为准。没有 Windows 附件时，可在成功的 Actions 运行中查找 `windows-release`（需登录 GitHub），或按下文自行构建。
+Windows 正式发布提供 portable ZIP 和安装版 EXE，请以[发布页实际附件](https://github.com/hanerx/DComicReborn/releases/latest)为准。开发构建可在成功的 Actions 运行中查找 `windows-release`（需登录 GitHub），也可按下文自行构建。
 
 选择 `windows-x64-setup.exe` 安装版，或 `windows-x64-portable.zip` 免安装版；文件名前带应用名和版本号。
 
