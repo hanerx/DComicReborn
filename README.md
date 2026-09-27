@@ -23,6 +23,7 @@
   <a href="https://github.com/hanerx/DComicReborn/releases/latest/download/app-release.apk"><img src="https://img.shields.io/badge/Android-下载_APK-38658a?style=for-the-badge&amp;logo=android&amp;logoColor=white" alt="Android APK 下载"></a>
   <a href="https://github.com/hanerx/DComicReborn/releases/latest/download/ios-release.ipa"><img src="https://img.shields.io/badge/iOS-下载_IPA-455a70?style=for-the-badge&amp;logo=apple&amp;logoColor=white" alt="iOS IPA 下载"></a>
   <a href="https://github.com/hanerx/DComicReborn/releases/latest"><img src="https://img.shields.io/badge/Windows-查看发布-586779?style=for-the-badge" alt="Windows 发布附件"></a>
+  <a href="https://hub.docker.com/r/hanerx/dcomic_server"><img src="https://img.shields.io/docker/pulls/hanerx/dcomic_server?style=for-the-badge" alt="Docker"></a>
 </p>
 
 <p align="center">
