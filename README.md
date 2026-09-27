@@ -6,6 +6,7 @@
   <p>
     <a href="https://github.com/hanerx/DComicReborn/releases/latest"><img src="https://img.shields.io/github/v/release/hanerx/DComicReborn?style=flat-square&amp;color=38658a&amp;label=release" alt="最新版本"></a>
     <a href="https://github.com/hanerx/DComicReborn/releases"><img src="https://img.shields.io/github/downloads/hanerx/DComicReborn/total?style=flat-square&amp;color=38658a&amp;label=downloads" alt="累计下载"></a>
+    <a href="https://github.com/hanerx/DComicReborn/releases"><img src="https://img.shields.io/github/release-date/hanerx/DComicReborn?style=flat-square" alt="最近更新"></a>
   </p>
   <p>
     <a href="#下载">下载</a> &nbsp; / &nbsp;
