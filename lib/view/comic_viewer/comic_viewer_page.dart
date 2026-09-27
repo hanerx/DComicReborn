@@ -127,8 +127,11 @@ class _ComicViewerPageState extends State<ComicViewerPage>
 
   KeyEventResult _handleReaderKey(BuildContext context, KeyEvent event) {
     final key = event.logicalKey;
+    final verticalArrow =
+        key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.arrowDown;
     if (key != LogicalKeyboardKey.arrowLeft &&
-        key != LogicalKeyboardKey.arrowRight) {
+        key != LogicalKeyboardKey.arrowRight &&
+        !verticalArrow) {
       return KeyEventResult.ignored;
     }
     final keyboard = HardwareKeyboard.instance;
@@ -145,6 +148,10 @@ class _ComicViewerPageState extends State<ComicViewerPage>
       return KeyEventResult.ignored;
     }
     final direction = _readDirection(context, listen: false);
+    if (verticalArrow && direction != ReadDirectionType.vertical) {
+      // Do not let Flutter's default ScrollAction turn a horizontal PageView.
+      return KeyEventResult.handled;
+    }
     if (direction == ReadDirectionType.vertical
         ? !_itemScrollController.isAttached
         : !_pageController.hasClients) {
@@ -152,9 +159,10 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     }
     // One turn per press; key repeats must not queue animations or chapters.
     if (event is KeyDownEvent && !_keyboardTurnInProgress) {
-      final forward =
-          (key == LogicalKeyboardKey.arrowRight) !=
-          (direction == ReadDirectionType.right);
+      final forward = verticalArrow
+          ? key == LogicalKeyboardKey.arrowDown
+          : (key == LogicalKeyboardKey.arrowRight) !=
+                (direction == ReadDirectionType.right);
       unawaited(_turnPageFromKeyboard(context, forward: forward));
     }
     return KeyEventResult.handled;

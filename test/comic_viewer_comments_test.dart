@@ -291,6 +291,56 @@ void main() {
     });
   }
 
+  testWidgets('up and down turn vertical pages without repeating or crossing overlays', (
+    tester,
+  ) async {
+    await _openReader(tester, ReadDirectionType.vertical, [], pageCount: 4);
+    final controller = tester
+        .element(find.byType(DComicImage).first)
+        .read<ComicViewerPageController>();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    expect(controller.currentPage, 1);
+    await tester.sendKeyRepeatEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    expect(controller.currentPage, 1);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(controller.currentPage, 0);
+    unawaited(showDialog<void>(
+      context: tester.element(find.byType(ComicViewerPage)),
+      builder: (_) => const AlertDialog(content: TextField(autofocus: true)),
+    ));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'typing');
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    expect(controller.currentPage, 0);
+    Navigator.of(tester.element(find.byType(TextField))).pop();
+    await tester.pumpAndSettle();
+    tester.state<ScaffoldState>(find.byType(Scaffold).first).openEndDrawer();
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    expect(controller.currentPage, 0);
+  });
+
+  for (final direction in [ReadDirectionType.left, ReadDirectionType.right]) {
+    testWidgets('up and down do not turn $direction pages', (tester) async {
+      await _openReader(tester, direction, [], pageCount: 4);
+      final controller = tester
+          .element(find.byType(DComicImage).first)
+          .read<ComicViewerPageController>();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 0);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 0);
+    });
+  }
+
   testWidgets('cold vertical pages reserve space only until images arrive', (
     tester,
   ) async {

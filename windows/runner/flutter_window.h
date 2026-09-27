@@ -8,7 +8,7 @@
 
 #include "win32_window.h"
 
-// A window that does nothing but host a Flutter view.
+// A Flutter host window that remembers its size for the current user.
 class FlutterWindow : public Win32Window {
  public:
   // Creates a new FlutterWindow hosting a Flutter view running |project|.
@@ -23,6 +23,8 @@ class FlutterWindow : public Win32Window {
                          LPARAM const lparam) noexcept override;
 
  private:
+  bool start_maximized_ = false;
+
   // The project to run.
   flutter::DartProject project_;
 

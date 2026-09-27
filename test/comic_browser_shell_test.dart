@@ -1,6 +1,8 @@
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/view/comic_pages/comic_browser_shell.dart';
+import 'package:dcomic/view/components/app_keyboard_shortcuts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -108,6 +110,88 @@ void main() {
     },
   );
 
+  for (final width in [500.0, 1100.0]) {
+    testWidgets('Escape unwinds overlays and nested routes at width $width', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(Size(width, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        Builder(
+          builder: (context) => ChangeNotifierProvider(
+            create: (_) => NavigatorProvider(context),
+            child: MaterialApp(
+              builder: (_, child) => AppKeyboardShortcuts(child: child!),
+              home: const ComicBrowserShell(child: _Library()),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Comic A'));
+      await tester.pumpAndSettle();
+      showDialog<void>(
+        context: tester.element(find.text('Details A')),
+        useRootNavigator: false,
+        builder: (_) => const AlertDialog(content: Text('Nested popup')),
+      );
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('Nested popup'), findsNothing);
+      expect(find.text('Details A'), findsOneWidget);
+      await tester.tap(find.text('Read'));
+      await tester.pumpAndSettle();
+      final readerContext = tester.element(find.byKey(const ValueKey('reader')));
+      showDialog<void>(
+        context: readerContext,
+        builder: (_) => const AlertDialog(content: TextField(autofocus: true)),
+      );
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('Reader'), findsOneWidget);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('Reader'), findsNothing);
+      expect(find.text('Details A'), findsOneWidget);
+      await tester.sendKeyRepeatEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('Details A'), findsOneWidget);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.escape);
+      await tester.tap(find.byType(TextField));
+      await tester.enterText(find.byType(TextField), 'focused input');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('Details A'), findsNothing);
+      expect(find.text('Search results'), findsOneWidget);
+      final scaffold = Scaffold.of(tester.element(find.text('Search results')));
+      scaffold.openDrawer();
+      await tester.pumpAndSettle();
+      expect(scaffold.isDrawerOpen, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(scaffold.isDrawerOpen, isFalse);
+      expect(find.text('Search results'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('Library'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('Library'), findsOneWidget);
+      final homeScaffold = Scaffold.of(tester.element(find.text('Library')));
+      homeScaffold.openDrawer();
+      await tester.pumpAndSettle();
+      expect(homeScaffold.isDrawerOpen, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(homeScaffold.isDrawerOpen, isFalse);
+      expect(find.text('Library'), findsOneWidget);
+    });
+  }
+
   testWidgets('detail links browse beside the book on wide windows', (
     tester,
   ) async {
@@ -147,6 +231,7 @@ class _Library extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(search ? 'Search results' : 'Library')),
+    drawer: const Drawer(child: Text('Library drawer')),
     body: Column(
       children: [
         if (!search)
