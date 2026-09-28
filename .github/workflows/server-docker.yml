@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 concurrency:
   group: server-docker-${{ github.ref }}
@@ -42,17 +43,28 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Generate image tags and labels
         id: metadata
         uses: docker/metadata-action@v5
         with:
-          images: docker.io/hanerx/dcomic_server
+          images: |
+            docker.io/hanerx/dcomic_server
+            ghcr.io/hanerx/dcomic_server
           flavor: latest=false
           tags: |
             type=ref,event=branch,enable=${{ github.ref_name != 'latest' }}
             type=ref,event=tag,enable=${{ github.ref_name != 'latest' }}
             type=sha,format=long
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
       - name: Build and push server image
         uses: docker/build-push-action@v6
@@ -68,14 +80,19 @@ jobs:
 
       - name: Summarize published image
         env:
-          IMAGE: docker.io/hanerx/dcomic_server
+          IMAGES: |
+            docker.io/hanerx/dcomic_server
+            ghcr.io/hanerx/dcomic_server
           TAGS: ${{ steps.metadata.outputs.tags }}
         shell: bash
         run: |
           {
             echo '## Server Docker image'
             echo
-            echo "Image: \`$IMAGE\`"
+            echo 'Images:'
+            echo '```text'
+            printf '%s\n' "$IMAGES"
+            echo '```'
             echo
             echo 'Platforms: linux/amd64, linux/arm64'
             echo

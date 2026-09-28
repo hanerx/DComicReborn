@@ -4,7 +4,7 @@ DComic Sync Server 是 DComic Reborn 的多用户 SQLite 同步服务，镜像�
 
 ## 使用单个 Docker 镜像部署
 
-镜像地址是 `docker.io/hanerx/dcomic_server`（Docker CLI 中可简写为 `hanerx/dcomic_server`），不是 Docker Hub 网页地址。镜像支持 `linux/amd64` 和 `linux/arm64`。
+镜像同时发布到 Docker Hub：`docker.io/hanerx/dcomic_server`（Docker CLI 中可简写为 `hanerx/dcomic_server`）和 GitHub Container Registry：`ghcr.io/hanerx/dcomic_server`，两者使用相同的标签策略，支持 `linux/amd64` 和 `linux/arm64`。这些是镜像地址，不是网页地址。
 
 将 `TAG` 替换为要部署的标签，然后启动：
 
@@ -13,6 +13,8 @@ docker run -d --name dcomic-server --restart unless-stopped -p 8080:8080 -v dcom
 ```
 
 `TAG` 可以填写 `latest`（即镜像参数 `hanerx/dcomic_server:latest`），也可以填写下文所述的版本、分支或完整 SHA 标签。
+
+使用 GHCR 时，将命令中的 `hanerx/dcomic_server:TAG` 替换为 `ghcr.io/hanerx/dcomic_server:TAG`。公开包可匿名拉取；私有包需要先执行 `docker login ghcr.io -u <GitHub 用户名>`，使用具有该包读取权限及 `read:packages` scope 的 personal access token (classic) 登录。
 
 直接 HTTP 部署不需要设置任何环境变量。镜像默认监听 `0.0.0.0:8080`，数据库保存在 `/data/dcomic.db`；容器内服务默认以 root（`0:0`）运行，便于第三方 Docker 面板挂载由 root 创建的专用数据目录。首次启动会自动创建数据库文件，无需手工创建。
 
@@ -98,7 +100,7 @@ docker run -d --name dcomic-server --restart unless-stopped \
 - 推送任意 Git tag；
 - 从 GitHub Actions 页面手动运行。
 
-工作流固定发布到 `docker.io/hanerx/dcomic_server`，并构建 `linux/amd64`、`linux/arm64` 双架构镜像。GitHub 仓库需要配置两个 Actions secrets：
+工作流一次构建 `linux/amd64`、`linux/arm64` 双架构镜像，同时推送到 `docker.io/hanerx/dcomic_server` 和 `ghcr.io/hanerx/dcomic_server`。Docker Hub 发布需要配置两个 Actions secrets：
 
 1. 在 Docker Hub 的账户设置中创建 Personal Access Token，授予 **Read & Write**，不要授予删除权限。
 2. 在 GitHub 仓库打开 **Settings → Secrets and variables → Actions → New repository secret**。
@@ -106,3 +108,10 @@ docker run -d --name dcomic-server --restart unless-stopped \
 4. 新建 `DOCKER_HUB_TOKEN`，值填写上一步生成的令牌。
 
 两个 secret 都不要写入仓库、镜像或部署命令。首次发布前应确认 Docker Hub 中已存在 `hanerx/dcomic_server`，并按需要设置为公开或私有。
+
+GHCR 使用 GitHub 自动提供的 `GITHUB_TOKEN`，工作流已声明 `packages: write`，无需额外配置 Secret。镜像的 `org.opencontainers.image.source` 标签指向当前 GitHub 仓库，配合仓库令牌发布以关联仓库的 **Packages**。
+
+首次发布：提交并推送工作流后，在 **Actions → Server Docker Image → Run workflow** 选择 `master` 发布 `latest`，或选择 `develop` 发布开发标签。成功后检查仓库右侧的 **Packages**：
+
+- 新建 GHCR 包默认是 Private；若需公开分发，在包的 **Package settings → Change visibility** 中改为 **Public**。源码仓库公开不代表包自动公开。
+- 如果同名包之前已存在但未关联仓库，在包页面使用 **Connect repository** 关联当前仓库，并在 **Package settings → Manage Actions access** 中确认当前仓库具有写入权限，再重新运行工作流。
