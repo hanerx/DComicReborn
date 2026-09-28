@@ -72,6 +72,7 @@ dependencies:
   flutter_cache_manager: ^3.4.2
   flutter_downloader: ^1.12.1
   flutter_markdown_plus: ^1.0.12
+  battery_plus: ^7.1.1
 
 dev_dependencies:
   flutter_test:

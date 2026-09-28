@@ -4,6 +4,7 @@ import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/page_controllers/comic_viewer_page_controller.dart';
 import 'package:dcomic/utils/reader_image_fit.dart';
+import 'package:dcomic/utils/reader_info_settings.dart';
 import 'package:dcomic/utils/theme_utils.dart';
 import 'package:dcomic/view/components/settings_widgets.dart';
 import 'package:flutter/gestures.dart';
@@ -222,6 +223,110 @@ class ViewerSettingList extends StatelessWidget {
           ),
         ],
       ),
+      SettingsSection(title: isChinese ? '阅读信息' : 'Reading information'),
+      SettingsGroup(
+        children: [
+          SettingsTile(
+            leading: const Icon(Icons.info_outline),
+            title: Text(isChinese ? '显示阅读信息' : 'Show reading information'),
+            trailing: Switch(
+              value: config.readerInfoEnabled,
+              onChanged: (value) => config.readerInfoEnabled = value,
+            ),
+          ),
+          SettingsTile(
+            enabled: config.readerInfoEnabled,
+            leading: const Icon(Icons.picture_in_picture_alt_outlined),
+            title: Text(isChinese ? '位置' : 'Position'),
+            subtitle: _HorizontalSettingsStrip(
+              child: SegmentedButton<ReaderInfoPosition>(
+                showSelectedIcon: false,
+                segments: [
+                  for (final position in ReaderInfoPosition.values)
+                    ButtonSegment(
+                      value: position,
+                      label: Text(_positionLabel(position, isChinese)),
+                    ),
+                ],
+                selected: {config.readerInfoPosition},
+                onSelectionChanged: config.readerInfoEnabled
+                    ? (selection) {
+                        config.readerInfoPosition = selection.first;
+                      }
+                    : null,
+              ),
+            ),
+          ),
+          SettingsTile(
+            enabled: config.readerInfoEnabled,
+            leading: const Icon(Icons.battery_std),
+            title: Text(isChinese ? '电池显示' : 'Battery display'),
+            subtitle: _HorizontalSettingsStrip(
+              child: SegmentedButton<ReaderBatteryFormat>(
+                showSelectedIcon: false,
+                segments: [
+                  for (final format in ReaderBatteryFormat.values)
+                    ButtonSegment(
+                      value: format,
+                      label: Text(_batteryFormatLabel(format, isChinese)),
+                    ),
+                ],
+                selected: {config.readerBatteryFormat},
+                onSelectionChanged: config.readerInfoEnabled
+                    ? (selection) {
+                        config.readerBatteryFormat = selection.first;
+                      }
+                    : null,
+              ),
+            ),
+          ),
+          SettingsTile(
+            enabled: config.readerInfoEnabled,
+            leading: const Icon(Icons.menu_book_outlined),
+            title: Text(isChinese ? '页码显示' : 'Page display'),
+            subtitle: _HorizontalSettingsStrip(
+              child: SegmentedButton<ReaderPageFormat>(
+                showSelectedIcon: false,
+                segments: [
+                  for (final format in ReaderPageFormat.values)
+                    ButtonSegment(
+                      value: format,
+                      label: Text(_pageFormatLabel(format, isChinese)),
+                    ),
+                ],
+                selected: {config.readerPageFormat},
+                onSelectionChanged: config.readerInfoEnabled
+                    ? (selection) {
+                        config.readerPageFormat = selection.first;
+                      }
+                    : null,
+              ),
+            ),
+          ),
+          SettingsTile(
+            enabled: config.readerInfoEnabled,
+            leading: const Icon(Icons.title),
+            title: Text(isChinese ? '章节标题' : 'Chapter title'),
+            trailing: Switch(
+              value: config.readerInfoChapter,
+              onChanged: config.readerInfoEnabled
+                  ? (value) => config.readerInfoChapter = value
+                  : null,
+            ),
+          ),
+          SettingsTile(
+            enabled: config.readerInfoEnabled,
+            leading: const Icon(Icons.schedule),
+            title: Text(isChinese ? '时间' : 'Time'),
+            trailing: Switch(
+              value: config.readerInfoTime,
+              onChanged: config.readerInfoEnabled
+                  ? (value) => config.readerInfoTime = value
+                  : null,
+            ),
+          ),
+        ],
+      ),
       SettingsSection(title: isChinese ? '外观' : 'Appearance'),
       SettingsGroup(
         children: [
@@ -364,6 +469,35 @@ class ViewerSettingList extends StatelessWidget {
       ReaderImageFit.stretch => isChinese ? '拉伸填充' : 'Stretch',
       ReaderImageFit.fitWidth => isChinese ? '填充宽度' : 'Fit width',
       ReaderImageFit.fitHeight => isChinese ? '填充高度' : 'Fit height',
+    };
+  }
+
+  String _positionLabel(ReaderInfoPosition position, bool isChinese) {
+    return switch (position) {
+      ReaderInfoPosition.bottomLeft => isChinese ? '左下' : 'Bottom left',
+      ReaderInfoPosition.bottomRight => isChinese ? '右下' : 'Bottom right',
+      ReaderInfoPosition.topLeft => isChinese ? '左上' : 'Top left',
+      ReaderInfoPosition.topRight => isChinese ? '右上' : 'Top right',
+    };
+  }
+
+  String _batteryFormatLabel(ReaderBatteryFormat format, bool isChinese) {
+    return switch (format) {
+      ReaderBatteryFormat.hidden => isChinese ? '隐藏' : 'Hidden',
+      ReaderBatteryFormat.icon => isChinese ? '图标' : 'Icon',
+      ReaderBatteryFormat.number => isChinese ? '数字' : 'Number',
+      ReaderBatteryFormat.iconAndNumber =>
+        isChinese ? '图标和数字' : 'Icon and number',
+    };
+  }
+
+  String _pageFormatLabel(ReaderPageFormat format, bool isChinese) {
+    return switch (format) {
+      ReaderPageFormat.hidden => isChinese ? '隐藏' : 'Hidden',
+      ReaderPageFormat.current => isChinese ? '当前页' : 'Current',
+      ReaderPageFormat.currentAndTotal =>
+        isChinese ? '当前页 / 总页数' : 'Current / total',
+      ReaderPageFormat.percentage => isChinese ? '百分比' : 'Percentage',
     };
   }
 }

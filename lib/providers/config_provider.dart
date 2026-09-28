@@ -4,6 +4,7 @@ import 'package:dcomic/providers/comic_reading_progress.dart';
 import 'package:dcomic/providers/base_provider.dart';
 import 'package:dcomic/providers/subscribe_badge_state.dart';
 import 'package:dcomic/utils/reader_image_fit.dart';
+import 'package:dcomic/utils/reader_info_settings.dart';
 import 'package:dcomic/utils/theme_utils.dart';
 import 'package:flutter/material.dart';
 
@@ -32,6 +33,12 @@ class ConfigProvider extends BaseProvider {
   ConfigEntity? _readerEndAction;
   ConfigEntity? _horizontalImageFit;
   ConfigEntity? _verticalImageFit;
+  ConfigEntity? _readerInfoEnabled;
+  ConfigEntity? _readerInfoPosition;
+  ConfigEntity? _readerBatteryFormat;
+  ConfigEntity? _readerPageFormat;
+  ConfigEntity? _readerInfoChapter;
+  ConfigEntity? _readerInfoTime;
 
   @override
   Future<void> init() async {
@@ -68,6 +75,21 @@ class ConfigProvider extends BaseProvider {
       ReaderImageFit.original.name,
     );
     _verticalImageFit = read('VerticalImageFit', ReaderImageFit.original.name);
+    _readerInfoEnabled = read('ReaderInfoEnabled', false);
+    _readerInfoPosition = read(
+      'ReaderInfoPosition',
+      ReaderInfoPosition.bottomRight.name,
+    );
+    _readerBatteryFormat = read(
+      'ReaderBatteryFormat',
+      ReaderBatteryFormat.iconAndNumber.name,
+    );
+    _readerPageFormat = read(
+      'ReaderPageFormat',
+      ReaderPageFormat.currentAndTotal.name,
+    );
+    _readerInfoChapter = read('ReaderInfoChapter', true);
+    _readerInfoTime = read('ReaderInfoTime', true);
     notifyListeners();
   }
 
@@ -184,6 +206,84 @@ class ConfigProvider extends BaseProvider {
       return ReaderImageFit.original;
     }
     return fit;
+  }
+
+  bool get readerInfoEnabled => _readerInfoEnabled?.get<bool>() == true;
+
+  set readerInfoEnabled(bool value) {
+    if (_readerInfoEnabled != null) {
+      _readerInfoEnabled!.set(value);
+      _persistSetting(_readerInfoEnabled!);
+    }
+    notifyListeners();
+  }
+
+  ReaderInfoPosition get readerInfoPosition {
+    final name = _readerInfoPosition?.get<String>();
+    return ReaderInfoPosition.values.firstWhere(
+      (position) => position.name == name,
+      orElse: () => ReaderInfoPosition.bottomRight,
+    );
+  }
+
+  set readerInfoPosition(ReaderInfoPosition value) {
+    if (_readerInfoPosition != null) {
+      _readerInfoPosition!.set(value.name);
+      _persistSetting(_readerInfoPosition!);
+    }
+    notifyListeners();
+  }
+
+  ReaderBatteryFormat get readerBatteryFormat {
+    final name = _readerBatteryFormat?.get<String>();
+    return ReaderBatteryFormat.values.firstWhere(
+      (format) => format.name == name,
+      orElse: () => ReaderBatteryFormat.iconAndNumber,
+    );
+  }
+
+  set readerBatteryFormat(ReaderBatteryFormat value) {
+    if (_readerBatteryFormat != null) {
+      _readerBatteryFormat!.set(value.name);
+      _persistSetting(_readerBatteryFormat!);
+    }
+    notifyListeners();
+  }
+
+  ReaderPageFormat get readerPageFormat {
+    final name = _readerPageFormat?.get<String>();
+    return ReaderPageFormat.values.firstWhere(
+      (format) => format.name == name,
+      orElse: () => ReaderPageFormat.currentAndTotal,
+    );
+  }
+
+  set readerPageFormat(ReaderPageFormat value) {
+    if (_readerPageFormat != null) {
+      _readerPageFormat!.set(value.name);
+      _persistSetting(_readerPageFormat!);
+    }
+    notifyListeners();
+  }
+
+  bool get readerInfoChapter => _readerInfoChapter?.get<bool>() != false;
+
+  set readerInfoChapter(bool value) {
+    if (_readerInfoChapter != null) {
+      _readerInfoChapter!.set(value);
+      _persistSetting(_readerInfoChapter!);
+    }
+    notifyListeners();
+  }
+
+  bool get readerInfoTime => _readerInfoTime?.get<bool>() != false;
+
+  set readerInfoTime(bool value) {
+    if (_readerInfoTime != null) {
+      _readerInfoTime!.set(value);
+      _persistSetting(_readerInfoTime!);
+    }
+    notifyListeners();
   }
 
   int get readerPrecacheCount {

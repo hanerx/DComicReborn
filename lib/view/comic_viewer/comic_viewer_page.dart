@@ -10,6 +10,7 @@ import 'package:dcomic/utils/reader_image_fit.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:dcomic/view/components/expand_card_button.dart';
 import 'package:dcomic/view/components/reader_page_image.dart';
+import 'package:dcomic/view/components/reader_info_overlay.dart';
 import 'package:dcomic/view/components/viewer_setting_list.dart';
 import 'package:dcomic/view/comic_viewer/chapter_comments_page.dart';
 import 'package:easy_refresh/easy_refresh.dart';
@@ -357,6 +358,26 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                               _buildShowButton(context),
                               _buildNextPageButton(context),
                             ],
+                            if (config.readerInfoEnabled)
+                              Consumer<ComicViewerPageController>(
+                                builder: (context, viewer, _) =>
+                                    ReaderInfoOverlay(
+                                      position: config.readerInfoPosition,
+                                      batteryFormat: config.readerBatteryFormat,
+                                      pageFormat: config.readerPageFormat,
+                                      showChapter: config.readerInfoChapter,
+                                      showTime: config.readerInfoTime,
+                                      currentPage: viewer.currentPage,
+                                      totalPages:
+                                          viewer
+                                              .chapterDetailModel
+                                              ?.pages
+                                              .length ??
+                                          0,
+                                      chapterName:
+                                          viewer.currentChapter?.title ?? '',
+                                    ),
+                              ),
                             _buildAppBar(context),
                             _buildToolBar(context),
                           ],
