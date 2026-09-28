@@ -19,20 +19,24 @@ class ComicHistoryEntity extends EntityBase {
 
   String lastChapterId = '';
 
+  int lastPage = 1;
+
   DateTime? timestamp;
 
   String providerName = 'Unknown';
 
   ComicHistoryEntity(
-      this.id,
-      this.comicId,
-      this.title,
-      this.cover,
-      this.coverType,
-      this.lastChapterTitle,
-      this.lastChapterId,
-      this.timestamp,
-      this.providerName);
+    this.id,
+    this.comicId,
+    this.title,
+    this.cover,
+    this.coverType,
+    this.lastChapterTitle,
+    this.lastChapterId,
+    this.lastPage,
+    this.timestamp,
+    this.providerName,
+  );
 
   ComicHistoryEntity.createComicHistoryEntity(
     this.comicId, {
@@ -41,6 +45,7 @@ class ComicHistoryEntity extends EntityBase {
     this.coverType = ImageType.unknown,
     this.lastChapterTitle = '',
     this.lastChapterId = '',
+    this.lastPage = 1,
     this.timestamp,
     this.providerName = 'Unknown',
     this.id,
@@ -48,7 +53,7 @@ class ComicHistoryEntity extends EntityBase {
 
   @override
   String toString() {
-    return 'ComicHistoryEntity{id: $id, comicId: $comicId, title: $title, cover: $cover, coverType: $coverType, lastChapterTitle: $lastChapterTitle, lastChapterId: $lastChapterId, timestamp: $timestamp, providerName: $providerName}';
+    return 'ComicHistoryEntity{id: $id, comicId: $comicId, title: $title, cover: $cover, coverType: $coverType, lastChapterTitle: $lastChapterTitle, lastChapterId: $lastChapterId, lastPage: $lastPage, timestamp: $timestamp, providerName: $providerName}';
   }
 }
 

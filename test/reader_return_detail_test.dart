@@ -20,6 +20,9 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 class _Config extends ConfigProvider {
   @override
   Future<void> init() async {}
+
+  @override
+  bool get resumeLastReadPage => true;
 }
 
 class _Sources extends ComicSourceProvider {
@@ -61,7 +64,10 @@ class _Chapter extends BaseComicChapterDetailModel {
   @override
   String get title => chapterId;
   @override
-  final pages = [ImageEntity(ImageType.asset, 'assets/sources/copymanga.png')];
+  final pages = List.generate(
+    12,
+    (_) => ImageEntity(ImageType.asset, 'assets/sources/copymanga.png'),
+  );
   @override
   Future<List<ChapterCommentEntity>> getChapterComments() async => [];
 }
@@ -148,8 +154,8 @@ void main() {
           addTearDown(detail.dispose);
           addTearDown(source.dispose);
           await detail.init();
-          if (entry == 'continue') {
-            await detail.addComicHistory('8', '第 9 话');
+          if (entry != 'start') {
+            await detail.addComicHistory('8', '第 9 话', page: 6);
             await detail.loadComicHistory();
           }
         });
@@ -215,12 +221,23 @@ void main() {
                 : '第 9 话',
           ),
         );
-        await tester.pumpAndSettle();
+        await _waitFor(
+          tester,
+          () => find.byType(ComicViewerPage).evaluate().isNotEmpty,
+        );
         expect(find.byType(ComicViewerPage), findsOneWidget);
         final reader = tester
             .element(find.byType(PageView))
             .read<ComicViewerPageController>();
         await _waitFor(tester, () => reader.chapterDetailModel != null);
+        await tester.pumpAndSettle();
+        if (entry != 'start') {
+          expect(reader.currentPage, 5);
+          expect(
+            tester.widget<PageView>(find.byType(PageView)).controller!.page,
+            5,
+          );
+        }
         var saved = false;
         reader
             .loadChapter(detail.chapters.values.single[10])

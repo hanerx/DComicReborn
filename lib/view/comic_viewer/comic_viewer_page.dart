@@ -6,8 +6,10 @@ import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/page_controllers/comic_viewer_page_controller.dart';
 import 'package:dcomic/utils/layout_utils.dart';
+import 'package:dcomic/utils/reader_image_fit.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:dcomic/view/components/expand_card_button.dart';
+import 'package:dcomic/view/components/reader_page_image.dart';
 import 'package:dcomic/view/components/viewer_setting_list.dart';
 import 'package:dcomic/view/comic_viewer/chapter_comments_page.dart';
 import 'package:easy_refresh/easy_refresh.dart';
@@ -15,7 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:photo_view/photo_view.dart';
-import 'package:photo_view/photo_view_gallery.dart';
 import 'package:provider/provider.dart';
 import 'package:date_format/date_format.dart' as formatdate;
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -44,8 +45,9 @@ class _ComicViewerPageState extends State<ComicViewerPage>
   static const double _appBarHeight = 70;
   static const double _toolBarHeight = 96;
 
-  final PageController _pageController = PageController();
-  final EasyRefreshController _easyRefreshController = EasyRefreshController();
+  PageController _pageController = PageController();
+  int? _displayedChapterRevision;
+  ReadDirectionType? _displayedDirection;
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
   final ItemScrollController _itemScrollController = ItemScrollController();
@@ -55,6 +57,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
   late ComicViewerPageController _viewerController;
   bool _verticalCommentsVisible = false;
   Size? _verticalViewportSize;
+  ReaderImageFit? _verticalImageFit;
   int? _resizePage;
   bool _keyboardTurnInProgress = false;
 
@@ -70,12 +73,16 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     _itemPositionsListener.itemPositions.removeListener(_updateVisibleItems);
     _drawerTabController.dispose();
     _pageController.dispose();
-    _easyRefreshController.dispose();
     super.dispose();
   }
 
   void _updateVisibleItems() {
-    if (!mounted || _resizePage != null) return;
+    if (!mounted ||
+        _resizePage != null ||
+        _pageCount == 0 ||
+        _displayedChapterRevision != _viewerController.chapterRevision) {
+      return;
+    }
     final items = _itemPositionsListener.itemPositions.value.where(
       (position) =>
           position.itemTrailingEdge > 0 && position.itemLeadingEdge < 1,
@@ -103,19 +110,6 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     _scaffoldKey.currentState?.openEndDrawer();
   }
 
-  void _resetPage() {
-    // The lists must receive the new chapter's item count before jumping.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (_pageController.hasClients) {
-        _pageController.jumpToPage(0);
-      }
-      if (_itemScrollController.isAttached) {
-        _itemScrollController.jumpTo(index: 0);
-      }
-    });
-  }
-
   ReadDirectionType _readDirection(BuildContext context, {bool listen = true}) {
     final config = Provider.of<ConfigProvider>(context, listen: listen);
     final controller = Provider.of<ComicViewerPageController>(
@@ -128,7 +122,8 @@ class _ComicViewerPageState extends State<ComicViewerPage>
   KeyEventResult _handleReaderKey(BuildContext context, KeyEvent event) {
     final key = event.logicalKey;
     final verticalArrow =
-        key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.arrowDown;
+        key == LogicalKeyboardKey.arrowUp ||
+        key == LogicalKeyboardKey.arrowDown;
     if (key != LogicalKeyboardKey.arrowLeft &&
         key != LogicalKeyboardKey.arrowRight &&
         !verticalArrow) {
@@ -215,9 +210,9 @@ class _ComicViewerPageState extends State<ComicViewerPage>
       }
     }
     if (forward) {
-      await _easyRefreshController.callLoad();
+      await controller.load();
     } else {
-      await _easyRefreshController.callRefresh();
+      await controller.refresh();
     }
   }
 
@@ -280,125 +275,229 @@ class _ComicViewerPageState extends State<ComicViewerPage>
         Theme.of(context),
         seedColor: config.themeColor.color,
       ),
-      child: ChangeNotifierProxyProvider<ConfigProvider, ComicViewerPageController>(
-        lazy: false,
-        create: (_) => _viewerController = ComicViewerPageController(
-          widget.detailModel,
-          widget.chapters,
-          widget.chapterId,
-          precacheCount: config.readerPrecacheCount,
-        ),
-        update: (_, config, controller) =>
-            controller!..precacheCount = config.readerPrecacheCount,
-        builder: (context, child) => ListenableBuilder(
-          listenable: widget.detailModel.parent,
-          builder: (context, _) => Scaffold(
-            key: _scaffoldKey,
-            endDrawer: _buildDrawer(context),
-            body: Focus(
-              autofocus: true,
-              onKeyEvent: (_, event) => _handleReaderKey(context, event),
-              child: Container(
-                color: Colors.black,
-                child: EasyRefresh(
-                  controller: _easyRefreshController,
-                  header: BezierHeader(
-                    triggerOffset: 50,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    showBalls: true,
-                    spinWidget: SpinKitDualRing(
-                      size: 32,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                  ),
-                  footer: BezierFooter(
-                    triggerOffset: 50,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    showBalls: true,
-                    spinWidget: SpinKitDualRing(
-                      size: 32,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                  ),
-                  refreshOnStart: true,
-                  onRefresh: () async {
-                    await Provider.of<ComicViewerPageController>(
-                      context,
-                      listen: false,
-                    ).refresh();
-                    _resetPage();
-                  },
-                  onLoad: () async {
-                    await Provider.of<ComicViewerPageController>(
-                      context,
-                      listen: false,
-                    ).load();
-                    _resetPage();
-                  },
-                  child: SafeArea(
-                    child: Stack(
-                      key: _readerViewportKey,
-                      children: [
-                        _buildViewer(context),
-                        if (!(_readDirection(context) ==
-                                ReadDirectionType.vertical
-                            ? _verticalCommentsVisible
-                            : _pageCount > 0 &&
-                                  context
-                                          .watch<ComicViewerPageController>()
-                                          .currentPage ==
-                                      _pageCount - 1)) ...[
-                          _buildPrePageButton(context),
-                          _buildShowButton(context),
-                          _buildNextPageButton(context),
-                        ],
-                        _buildAppBar(context),
-                        _buildToolBar(context),
-                      ],
+      child:
+          ChangeNotifierProxyProvider<
+            ConfigProvider,
+            ComicViewerPageController
+          >(
+            lazy: false,
+            create: (_) => _viewerController = ComicViewerPageController(
+              widget.detailModel,
+              widget.chapters,
+              widget.chapterId,
+              precacheCount: config.readerPrecacheCount,
+              resumeLastReadPage: config.resumeLastReadPage,
+            ),
+            update: (_, config, controller) =>
+                controller!..precacheCount = config.readerPrecacheCount,
+            builder: (context, child) => ListenableBuilder(
+              listenable: widget.detailModel.parent,
+              builder: (context, _) => Scaffold(
+                key: _scaffoldKey,
+                endDrawer: _buildDrawer(context),
+                body: Focus(
+                  autofocus: true,
+                  onKeyEvent: (_, event) => _handleReaderKey(context, event),
+                  child: Container(
+                    color: Colors.black,
+                    child: EasyRefresh(
+                      header: BezierHeader(
+                        triggerOffset: 50,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context)
+                            .colorScheme
+                            .onPrimary,
+                        showBalls: true,
+                        spinWidget: SpinKitDualRing(
+                          size: 32,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      ),
+                      footer: BezierFooter(
+                        triggerOffset: 50,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context)
+                            .colorScheme
+                            .onPrimary,
+                        showBalls: true,
+                        spinWidget: SpinKitDualRing(
+                          size: 32,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      ),
+                      refreshOnStart: true,
+                      onRefresh: () async {
+                        await Provider.of<ComicViewerPageController>(
+                          context,
+                          listen: false,
+                        ).refresh();
+                      },
+                      onLoad: () async {
+                        await Provider.of<ComicViewerPageController>(
+                          context,
+                          listen: false,
+                        ).load();
+                      },
+                      child: SafeArea(
+                        child: Stack(
+                          key: _readerViewportKey,
+                          children: [
+                            _buildViewer(context),
+                            if (!(_readDirection(context) ==
+                                    ReadDirectionType.vertical
+                                ? _verticalCommentsVisible
+                                : _pageCount > 0 &&
+                                      context
+                                              .watch<
+                                                ComicViewerPageController
+                                              >()
+                                              .currentPage ==
+                                          _pageCount - 1)) ...[
+                              _buildPrePageButton(context),
+                              _buildShowButton(context),
+                              _buildNextPageButton(context),
+                            ],
+                            _buildAppBar(context),
+                            _buildToolBar(context),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
     );
   }
 
   Widget _buildViewer(BuildContext context) {
-    if (_readDirection(context) == ReadDirectionType.vertical) {
+    final direction = _readDirection(context);
+    final revision = _viewerController.chapterRevision;
+    if (_displayedChapterRevision != revision ||
+        _displayedDirection != direction) {
+      _displayedChapterRevision = revision;
+      _resizePage = null;
+      _displayedDirection = direction;
+      final previous = _pageController;
+      _pageController = PageController(
+        initialPage: _viewerController.currentPage,
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) => previous.dispose());
+      _verticalCommentsVisible = false;
+    }
+    if (direction == ReadDirectionType.vertical) {
       return _buildVerticalViewer(context);
     }
     return _buildHorizontalViewer(context);
   }
 
   Widget _buildHorizontalViewer(BuildContext context) {
-    return PhotoViewGallery.builder(
-      onPageChanged: (index) {
-        Provider.of<ComicViewerPageController>(
-          context,
-          listen: false,
-        ).currentPage = index;
+    final fit = context.watch<ConfigProvider>().horizontalImageFit;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewportSize = constraints.biggest;
+        return PhotoViewGestureDetectorScope(
+          axis: Axis.horizontal,
+          child: PageView.builder(
+            key: ValueKey(_viewerController.chapterRevision),
+            onPageChanged: (index) {
+              Provider.of<ComicViewerPageController>(
+                context,
+                listen: false,
+              ).currentPage = index;
+            },
+            controller: _pageController,
+            reverse: _readDirection(context) == ReadDirectionType.right,
+            itemCount: _pageCount,
+            itemBuilder: (context, index) {
+              if (index == _pageCount - 1) {
+                return ClipRect(
+                  child: PhotoView.customChild(
+                    key: ObjectKey(index),
+                    disableGestures: true,
+                    child: _buildCommentsPage(context),
+                  ),
+                );
+              }
+              if (fit == ReaderImageFit.original) {
+                return _buildOriginalHorizontalImage(index);
+              }
+              return _buildHorizontalFitImage(
+                index,
+                fit: fit,
+                viewportSize: viewportSize,
+              );
+            },
+          ),
+        );
       },
-      pageController: _pageController,
-      reverse: _readDirection(context) == ReadDirectionType.right,
-      itemCount: _pageCount,
-      builder: (context, index) {
-        if (index == _pageCount - 1) {
-          return PhotoViewGalleryPageOptions.customChild(
-            disableGestures: true,
-            child: _buildCommentsPage(context),
+    );
+  }
+
+  Widget _buildOriginalHorizontalImage(int index) {
+    return ClipRect(
+      child: PhotoView.customChild(
+        key: ObjectKey(index),
+        initialScale: PhotoViewComputedScale.contained,
+        minScale: PhotoViewComputedScale.contained,
+        maxScale: PhotoViewComputedScale.covered * 4.1,
+        child: DComicImage(
+          _viewerController.chapterDetailModel!.pages[index],
+          placeholderColor: Colors.transparent,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHorizontalFitImage(
+    int index, {
+    required ReaderImageFit fit,
+    required Size viewportSize,
+  }) {
+    final image = _viewerController.chapterDetailModel!.pages[index];
+    return ReaderImageSizeBuilder(
+      key: ValueKey((fit, index, image.imageUrl)),
+      image: image,
+      builder: (context, imageSize) {
+        if (imageSize == null) {
+          return SizedBox.fromSize(
+            size: viewportSize,
+            child: ColoredBox(
+              color: Colors.black,
+              child: DComicImage(
+                image,
+                fit: BoxFit.contain,
+                width: viewportSize.width,
+                height: viewportSize.height,
+                placeholderHeight: viewportSize.height,
+                placeholderColor: Colors.black,
+              ),
+            ),
           );
         }
-        return PhotoViewGalleryPageOptions.customChild(
-          initialScale: PhotoViewComputedScale.contained,
-          minScale: PhotoViewComputedScale.contained,
-          maxScale: PhotoViewComputedScale.covered * 4.1,
-          child: DComicImage(
-            _viewerController.chapterDetailModel!.pages[index],
+        final displaySize = readerImageDisplaySize(
+          viewportSize: viewportSize,
+          imageSize: imageSize,
+          fit: fit,
+        );
+        final coverScale = max(
+          viewportSize.width / displaySize.width,
+          viewportSize.height / displaySize.height,
+        );
+        return ClipRect(
+          child: PhotoView.customChild(
+            key: ValueKey(fit),
+            childSize: displaySize,
+            initialScale: 1.0,
+            minScale: 1.0,
+            maxScale: max(4.1, coverScale * 4.1),
+            backgroundDecoration: const BoxDecoration(color: Colors.black),
+            child: DComicImage(
+              image,
+              fit: BoxFit.fill,
+              placeholderColor: Colors.black,
+            ),
           ),
         );
       },
@@ -416,15 +515,54 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     }
     // Reflow changes image heights; retain the page rather than a pixel offset.
     final page = _resizePage ??= _viewerController.currentPage;
-    final chapter = _viewerController.chapterDetailModel;
+    final revision = _viewerController.chapterRevision;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _verticalViewportSize != size) return;
-      if (_itemScrollController.isAttached &&
-          identical(chapter, _viewerController.chapterDetailModel)) {
+      if (!mounted ||
+          _verticalViewportSize != size ||
+          revision != _viewerController.chapterRevision) {
+        return;
+      }
+      if (_itemScrollController.isAttached) {
         _itemScrollController.jumpTo(index: page);
       }
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_verticalViewportSize != size) return;
+        if (!mounted ||
+            _verticalViewportSize != size ||
+            revision != _viewerController.chapterRevision) {
+          return;
+        }
+        _resizePage = null;
+        if (mounted && _itemScrollController.isAttached) _updateVisibleItems();
+      });
+    });
+  }
+
+  void _retainVerticalPageOnFitChange(ReaderImageFit fit) {
+    final previousFit = _verticalImageFit;
+    _verticalImageFit = fit;
+    if (previousFit == null ||
+        previousFit == fit ||
+        !_itemScrollController.isAttached ||
+        _pageCount == 0) {
+      return;
+    }
+    final page = _resizePage ??= _viewerController.currentPage;
+    final revision = _viewerController.chapterRevision;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          _verticalImageFit != fit ||
+          revision != _viewerController.chapterRevision) {
+        return;
+      }
+      if (_itemScrollController.isAttached) {
+        _itemScrollController.jumpTo(index: page);
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted ||
+            _verticalImageFit != fit ||
+            revision != _viewerController.chapterRevision) {
+          return;
+        }
         _resizePage = null;
         if (mounted && _itemScrollController.isAttached) _updateVisibleItems();
       });
@@ -432,29 +570,45 @@ class _ComicViewerPageState extends State<ComicViewerPage>
   }
 
   Widget _buildVerticalViewer(BuildContext context) {
+    final fit = context.watch<ConfigProvider>().verticalImageFit;
     return LayoutBuilder(
       builder: (context, constraints) {
         _retainVerticalPageOnResize(constraints.biggest);
+        _retainVerticalPageOnFitChange(fit);
         return ScrollablePositionedList.builder(
+          key: ValueKey(_viewerController.chapterRevision),
+          initialScrollIndex: _viewerController.currentPage,
           itemPositionsListener: _itemPositionsListener,
           itemScrollController: _itemScrollController,
           itemCount: _pageCount,
-          itemBuilder: (context, index) => index == _pageCount - 1
-              ? SizedBox(
-                  height: constraints.maxHeight,
-                  child: _buildCommentsPage(context),
-                )
+          itemBuilder: (context, index) {
+            if (index == _pageCount - 1) {
+              return SizedBox(
+                height: constraints.maxHeight,
+                child: _buildCommentsPage(context),
+              );
+            }
+            if (fit == ReaderImageFit.original) {
               // 平板上图片限宽居中，其余留黑；条目序数不变以保留阅读进度。
-              : Center(
-                  child: SizedBox(
-                    width: min(constraints.maxWidth, AppLayout.readerMaxWidth),
-                    child: DComicImage(
-                      _viewerController.chapterDetailModel!.pages[index],
-                      fit: BoxFit.fitWidth,
-                      placeholderHeight: constraints.maxHeight,
-                    ),
+              return Center(
+                child: SizedBox(
+                  width: min(constraints.maxWidth, AppLayout.readerMaxWidth),
+                  child: DComicImage(
+                    _viewerController.chapterDetailModel!.pages[index],
+                    fit: BoxFit.fitWidth,
+                    placeholderHeight: constraints.maxHeight,
+                    placeholderColor: Colors.transparent,
                   ),
                 ),
+              );
+            }
+            return VerticalReaderPageImage(
+              key: ValueKey((fit, index)),
+              image: _viewerController.chapterDetailModel!.pages[index],
+              viewportSize: constraints.biggest,
+              fit: fit,
+            );
+          },
         );
       },
     );
@@ -739,6 +893,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
   Widget _buildToolBar(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final controller = Provider.of<ComicViewerPageController>(context);
+    final endAction = context.watch<ConfigProvider>().readerEndAction;
     final imageCount = _pageCount - 1;
     final pageLabel = imageCount > 0
         ? '${min(controller.currentPage, imageCount - 1) + 1}/$imageCount'
@@ -789,9 +944,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                     child: Row(
                       children: [
                         ExpandCardButton(
-                          onTap: () {
-                            _easyRefreshController.callRefresh();
-                          },
+                          onTap: controller.refresh,
                           icon: Icons.keyboard_double_arrow_left,
                           tooltip: _localeText(
                             context,
@@ -821,11 +974,36 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                           tooltip: S.of(context).ReaderSettings,
                         ),
                         ExpandCardButton(
-                          onTap: () {
-                            _easyRefreshController.callLoad();
+                          onTap: () async {
+                            if (endAction == ReaderEndAction.nextChapter) {
+                              final next = controller.nextChapter;
+                              if (next == null) return;
+                              await controller.loadChapter(next);
+                            } else if (_pageCount > 0) {
+                              final index = _pageCount - 1;
+                              if (_readDirection(context, listen: false) ==
+                                  ReadDirectionType.vertical) {
+                                if (_itemScrollController.isAttached) {
+                                  await _itemScrollController.scrollTo(
+                                    index: index,
+                                    duration: const Duration(milliseconds: 200),
+                                  );
+                                }
+                              } else if (_pageController.hasClients) {
+                                await _pageController.animateToPage(
+                                  index,
+                                  duration: const Duration(milliseconds: 200),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                            }
                           },
-                          icon: Icons.keyboard_double_arrow_right,
-                          tooltip: _localeText(context, '下一章', 'Next chapter'),
+                          icon: endAction == ReaderEndAction.nextChapter
+                              ? Icons.keyboard_double_arrow_right
+                              : Icons.last_page,
+                          tooltip: endAction == ReaderEndAction.nextChapter
+                              ? _localeText(context, '下一章', 'Next chapter')
+                              : _localeText(context, '吐槽页', 'Comments page'),
                         ),
                       ],
                     ),
@@ -868,7 +1046,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                 type: MaterialType.transparency,
                 child: Row(
                   children: [
-                    BackButton(color: colors.onSurface),
+                    BackButton(color: colors.primary),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(left: 8, right: 16),
@@ -1017,10 +1195,9 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                                 chapters[index].chapterId,
                               ),
                         ),
-                        onTap: () {
-                          controller.loadChapter(chapters[index]);
-                          _easyRefreshController.callRefresh();
+                        onTap: () async {
                           Navigator.of(context).pop();
+                          await controller.loadChapter(chapters[index]);
                         },
                       ),
                     ),

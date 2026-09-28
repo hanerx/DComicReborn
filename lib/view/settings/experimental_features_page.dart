@@ -292,6 +292,28 @@ class _ExperimentalFeaturesPageState extends State<ExperimentalFeaturesPage> {
                 ),
               ),
               _panel(
+                child: _settingRow(
+                  icon: Icons.restore_rounded,
+                  accent: colors.tertiary,
+                  title: _locale(
+                    '恢复上次阅读页码',
+                    'Resume last-read page',
+                  ),
+                  description: _locale(
+                    '仅当漫画源、漫画和最后阅读章节均匹配时，自动恢复已记录的页码。关闭只停用自动恢复，仍会继续记录页码。',
+                    'Automatically resume the recorded page only when the source, comic, and last-read chapter all match. Turning this off only disables automatic resume; page recording continues.',
+                  ),
+                  trailing: Switch(
+                    value: config.resumeLastReadPage,
+                    onChanged: _saving
+                        ? null
+                        : (value) => _save(
+                            () => config.setResumeLastReadPage(value),
+                          ),
+                  ),
+                ),
+              ),
+              _panel(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

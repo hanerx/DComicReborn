@@ -152,14 +152,6 @@ class ComicDetailPageController extends BaseProvider {
     notifyListeners();
   }
 
-  Future<void> addComicHistory(String chapterId, String chapterName) async {
-    var model = detailModel;
-    if (_disposed || model == null) {
-      return;
-    }
-    await model.addComicHistory(chapterId, chapterName);
-  }
-
   String? get latestChapterId => detailModel?.latestChapterId;
 
   String get title =>

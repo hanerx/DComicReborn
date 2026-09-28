@@ -3,10 +3,13 @@ import 'package:dcomic/database/entity/config.dart';
 import 'package:dcomic/providers/comic_reading_progress.dart';
 import 'package:dcomic/providers/base_provider.dart';
 import 'package:dcomic/providers/subscribe_badge_state.dart';
+import 'package:dcomic/utils/reader_image_fit.dart';
 import 'package:dcomic/utils/theme_utils.dart';
 import 'package:flutter/material.dart';
 
 enum ReadDirectionType { left, right, vertical }
+
+enum ReaderEndAction { nextChapter, comments }
 
 class ConfigProvider extends BaseProvider {
   ConfigEntity? _themeMode;
@@ -19,12 +22,16 @@ class ConfigProvider extends BaseProvider {
   ConfigEntity? _readerTheme;
   ConfigEntity? _aggregateSubscribeBadges;
   ConfigEntity? _aggregateReadingProgress;
+  ConfigEntity? _resumeLastReadPage;
   ConfigEntity? _advancedSettingsUnlocked;
   ConfigEntity? _autoMapMissingComics;
   ConfigEntity? _autoMapIntervalSeconds;
   ConfigEntity? _autoMapRetryEveryLaunch;
   ConfigEntity? _autoMapMaxAttempts;
   ConfigEntity? _readerPrecacheCount;
+  ConfigEntity? _readerEndAction;
+  ConfigEntity? _horizontalImageFit;
+  ConfigEntity? _verticalImageFit;
 
   @override
   Future<void> init() async {
@@ -47,6 +54,7 @@ class ConfigProvider extends BaseProvider {
     _readerTheme = read('ReaderTheme', ReaderTheme.app.name);
     _aggregateSubscribeBadges = read(SubscribeBadgeState.configKey, false);
     _aggregateReadingProgress = read(ComicReadingProgress.configKey, false);
+    _resumeLastReadPage = read('ResumeLastReadPage', false);
     // Retain the persisted key for already-unlocked installations.
     _advancedSettingsUnlocked = read('ExperimentalFeaturesUnlocked', false);
     _autoMapMissingComics = read('AutoMapMissingComics', false);
@@ -54,6 +62,12 @@ class ConfigProvider extends BaseProvider {
     _autoMapRetryEveryLaunch = read('AutoMapRetryEveryLaunch', true);
     _autoMapMaxAttempts = read('AutoMapMaxAttempts', 3);
     _readerPrecacheCount = read('ReaderPrecacheCount', 3);
+    _readerEndAction = read('ReaderEndAction', ReaderEndAction.comments.name);
+    _horizontalImageFit = read(
+      'HorizontalImageFit',
+      ReaderImageFit.original.name,
+    );
+    _verticalImageFit = read('VerticalImageFit', ReaderImageFit.original.name);
     notifyListeners();
   }
 
@@ -109,6 +123,67 @@ class ConfigProvider extends BaseProvider {
       _persistSetting(_readerTheme!);
     }
     notifyListeners();
+  }
+
+  ReaderEndAction get readerEndAction {
+    final name = _readerEndAction?.get<String>();
+    return ReaderEndAction.values.firstWhere(
+      (action) => action.name == name,
+      orElse: () => ReaderEndAction.comments,
+    );
+  }
+
+  set readerEndAction(ReaderEndAction value) {
+    if (_readerEndAction != null) {
+      _readerEndAction!.set(value.name);
+      _persistSetting(_readerEndAction!);
+    }
+    notifyListeners();
+  }
+
+  ReaderImageFit get horizontalImageFit =>
+      _imageFit(_horizontalImageFit, vertical: false);
+
+  set horizontalImageFit(ReaderImageFit value) {
+    final fit = value == ReaderImageFit.fitWidth
+        ? ReaderImageFit.original
+        : value;
+    if (_horizontalImageFit != null) {
+      _horizontalImageFit!.set(fit.name);
+      _persistSetting(_horizontalImageFit!);
+    }
+    notifyListeners();
+  }
+
+  ReaderImageFit get verticalImageFit =>
+      _imageFit(_verticalImageFit, vertical: true);
+
+  set verticalImageFit(ReaderImageFit value) {
+    final fit = value == ReaderImageFit.fitHeight
+        ? ReaderImageFit.original
+        : value;
+    if (_verticalImageFit != null) {
+      _verticalImageFit!.set(fit.name);
+      _persistSetting(_verticalImageFit!);
+    }
+    notifyListeners();
+  }
+
+  ReaderImageFit _imageFit(ConfigEntity? setting, {required bool vertical}) {
+    final fit = switch (setting?.get<String>()) {
+      'actualSize' => ReaderImageFit.actualSize,
+      'contain' => ReaderImageFit.contain,
+      'cover' => ReaderImageFit.cover,
+      'stretch' => ReaderImageFit.stretch,
+      'fitWidth' => ReaderImageFit.fitWidth,
+      'fitHeight' => ReaderImageFit.fitHeight,
+      _ => ReaderImageFit.original,
+    };
+    if (vertical && fit == ReaderImageFit.fitHeight ||
+        !vertical && fit == ReaderImageFit.fitWidth) {
+      return ReaderImageFit.original;
+    }
+    return fit;
   }
 
   int get readerPrecacheCount {
@@ -232,6 +307,21 @@ class ConfigProvider extends BaseProvider {
     _aggregateReadingProgress = setting;
     notifyListeners();
     ComicReadingProgress.changes.value++;
+  }
+
+  bool get resumeLastReadPage => _resumeLastReadPage?.get<bool>() == true;
+
+  Future<void> setResumeLastReadPage(bool value) async {
+    if (resumeLastReadPage == value) return;
+    final database = await DatabaseInstance.instance;
+    final setting = await database.configDao.getOrCreateConfigByKey(
+      'ResumeLastReadPage',
+      value: false,
+    );
+    setting.set(value);
+    await database.configDao.updateConfig(setting);
+    _resumeLastReadPage = setting;
+    notifyListeners();
   }
 
   bool get advancedSettingsUnlocked =>

@@ -19,7 +19,12 @@ class ComicViewerPageController extends BaseProvider {
   List<ImageEntity> _precachePages = const [];
   int _precacheCount;
   int _chapterLoad = 0;
+  int _chapterRevision = 0;
+
+  /// Identifies an accepted chapter load, including reused cached objects.
+  int get chapterRevision => _chapterRevision;
   bool _disposed = false;
+  final bool resumeLastReadPage;
 
   // viewer参数
   int _currentPage = 0;
@@ -52,6 +57,7 @@ class ComicViewerPageController extends BaseProvider {
     this.chapters,
     this.initChapterId, {
     required this._precacheCount,
+    this.resumeLastReadPage = false,
   }) {
     if (chapters.indexWhere((element) => element.chapterId == initChapterId) >=
         0) {
@@ -115,11 +121,21 @@ class ComicViewerPageController extends BaseProvider {
     _precache.clear();
     _precachePages = const [];
     currentChapter = chapter;
+    // Read before chapter-entry history can replace the previous position.
+    final position = resumeLastReadPage && chapterDetailModel == null
+        ? await detailModel.loadLocalReadingPosition()
+        : null;
+    if (_disposed || load != _chapterLoad) return;
     final detail = await detailModel.getChapter(chapter.chapterId);
     if (_disposed || load != _chapterLoad) return;
     chapterDetailModel = detail;
+    _chapterRevision = load;
     _precachePages = detail?.pages ?? const [];
-    _currentPage = 0;
+    _currentPage = position?.chapterId == chapter.chapterId &&
+            detail != null &&
+            detail.pages.isNotEmpty
+        ? (position!.page - 1).clamp(0, detail.pages.length - 1)
+        : 0;
     _updatePrecache();
     await loadComment();
     if (_disposed || load != _chapterLoad) return;

@@ -3,8 +3,10 @@ import 'dart:math';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/page_controllers/comic_viewer_page_controller.dart';
+import 'package:dcomic/utils/reader_image_fit.dart';
 import 'package:dcomic/utils/theme_utils.dart';
 import 'package:dcomic/view/components/settings_widgets.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +22,24 @@ class ViewerSettingList extends StatelessWidget {
     (ReadDirectionType.left, Icons.align_horizontal_left),
     (ReadDirectionType.right, Icons.align_horizontal_right),
     (ReadDirectionType.vertical, Icons.align_vertical_top),
+  ];
+
+  static const horizontalImageFitOptions = <ReaderImageFit>[
+    ReaderImageFit.original,
+    ReaderImageFit.actualSize,
+    ReaderImageFit.contain,
+    ReaderImageFit.cover,
+    ReaderImageFit.stretch,
+    ReaderImageFit.fitHeight,
+  ];
+
+  static const verticalImageFitOptions = <ReaderImageFit>[
+    ReaderImageFit.original,
+    ReaderImageFit.actualSize,
+    ReaderImageFit.contain,
+    ReaderImageFit.cover,
+    ReaderImageFit.stretch,
+    ReaderImageFit.fitWidth,
   ];
 
   @override
@@ -55,8 +75,7 @@ class ViewerSettingList extends StatelessWidget {
           SettingsTile(
             leading: const Icon(Icons.align_horizontal_left),
             title: Text(S.of(context).ViewerSettingAlign),
-            subtitle: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+            subtitle: _HorizontalSettingsStrip(
               child: SegmentedButton<ReadDirectionType>(
                 segments: readDirectionOptions
                     .map<ButtonSegment<ReadDirectionType>>((
@@ -80,6 +99,28 @@ class ViewerSettingList extends StatelessWidget {
             ),
           ),
           SettingsTile(
+            leading: const Icon(Icons.last_page),
+            title: Text(isChinese ? '末尾按钮行为' : 'End button action'),
+            subtitle: _HorizontalSettingsStrip(
+              child: SegmentedButton<ReaderEndAction>(
+                segments: [
+                  ButtonSegment(
+                    value: ReaderEndAction.nextChapter,
+                    label: Text(isChinese ? '下一章' : 'Next chapter'),
+                  ),
+                  ButtonSegment(
+                    value: ReaderEndAction.comments,
+                    label: Text(isChinese ? '吐槽页' : 'Comments page'),
+                  ),
+                ],
+                selected: {config.readerEndAction},
+                onSelectionChanged: (selection) {
+                  config.readerEndAction = selection.first;
+                },
+              ),
+            ),
+          ),
+          SettingsTile(
             leading: const Icon(Icons.bug_report_outlined),
             title: Text(S.of(context).ViewerSettingDebugView),
             trailing: Switch(
@@ -90,6 +131,36 @@ class ViewerSettingList extends StatelessWidget {
                   listen: false,
                 ).drawDebugWidget = value;
               },
+            ),
+          ),
+          SettingsTile(
+            enabled: direction != ReadDirectionType.vertical,
+            leading: const Icon(Icons.fit_screen),
+            title: Text(isChinese ? '横向图片填充' : 'Horizontal image fill'),
+            subtitle: _imageFitSelector(
+              isChinese: isChinese,
+              enabled: direction != ReadDirectionType.vertical,
+              disabledMessage: isChinese
+                  ? '仅在横向阅读时可调整'
+                  : 'Available only while reading horizontally',
+              value: config.horizontalImageFit,
+              options: horizontalImageFitOptions,
+              onChanged: (value) => config.horizontalImageFit = value,
+            ),
+          ),
+          SettingsTile(
+            enabled: direction == ReadDirectionType.vertical,
+            leading: const Icon(Icons.fit_screen_outlined),
+            title: Text(isChinese ? '纵向图片填充' : 'Vertical image fill'),
+            subtitle: _imageFitSelector(
+              isChinese: isChinese,
+              enabled: direction == ReadDirectionType.vertical,
+              disabledMessage: isChinese
+                  ? '仅在纵向阅读时可调整'
+                  : 'Available only while reading vertically',
+              value: config.verticalImageFit,
+              options: verticalImageFitOptions,
+              onChanged: (value) => config.verticalImageFit = value,
             ),
           ),
           SettingsTile(
@@ -157,8 +228,7 @@ class ViewerSettingList extends StatelessWidget {
           SettingsTile(
             leading: const Icon(Icons.contrast),
             title: Text(isChinese ? '阅读面板配色' : 'Reader panel theme'),
-            subtitle: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+            subtitle: _HorizontalSettingsStrip(
               child: SegmentedButton<ReaderTheme>(
                 showSelectedIcon: false,
                 segments: [
@@ -197,8 +267,7 @@ class ViewerSettingList extends StatelessWidget {
           SettingsTile(
             leading: const Icon(Icons.color_lens),
             title: Text(S.of(context).ViewerSettingThemeColor),
-            subtitle: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+            subtitle: _HorizontalSettingsStrip(
               child: SegmentedButton<ThemeModel>(
                 showSelectedIcon: false,
                 segments: ThemeModel.themes.values
@@ -238,5 +307,84 @@ class ViewerSettingList extends StatelessWidget {
         ],
       ),
     ];
+  }
+
+  Widget _imageFitSelector({
+    required bool isChinese,
+    required bool enabled,
+    required String disabledMessage,
+    required ReaderImageFit value,
+    required List<ReaderImageFit> options,
+    required ValueChanged<ReaderImageFit> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!enabled) ...[Text(disabledMessage), const SizedBox(height: 4)],
+        _HorizontalSettingsStrip(
+          child: SegmentedButton<ReaderImageFit>(
+            showSelectedIcon: false,
+            segments: [
+              for (final option in options)
+                ButtonSegment(
+                  value: option,
+                  tooltip: _imageFitLabel(option, isChinese),
+                  icon: Icon(switch (option) {
+                    ReaderImageFit.original => Icons.image_outlined,
+                    ReaderImageFit.actualSize => Icons.photo_size_select_actual,
+                    ReaderImageFit.contain => Icons.fit_screen,
+                    ReaderImageFit.cover => Icons.crop,
+                    ReaderImageFit.stretch => Icons.open_in_full,
+                    ReaderImageFit.fitWidth => Icons.swap_horiz,
+                    ReaderImageFit.fitHeight => Icons.swap_vert,
+                  }),
+                ),
+            ],
+            selected: {value},
+            onSelectionChanged: enabled
+                ? (selection) => onChanged(selection.first)
+                : null,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(_imageFitLabel(value, isChinese)),
+      ],
+    );
+  }
+
+  String _imageFitLabel(ReaderImageFit fit, bool isChinese) {
+    return switch (fit) {
+      ReaderImageFit.original =>
+        isChinese ? '原始大小（保持现有行为）' : 'Original (legacy behavior)',
+      ReaderImageFit.actualSize =>
+        isChinese ? '实际大小（不缩放）' : 'Actual size (no scaling)',
+      ReaderImageFit.contain =>
+        isChinese ? '适应屏幕（等比缩放）' : 'Fit screen (keep aspect ratio)',
+      ReaderImageFit.cover => isChinese ? '铺满屏幕（等比裁切）' : 'Cover',
+      ReaderImageFit.stretch => isChinese ? '拉伸填充' : 'Stretch',
+      ReaderImageFit.fitWidth => isChinese ? '填充宽度' : 'Fit width',
+      ReaderImageFit.fitHeight => isChinese ? '填充高度' : 'Fit height',
+    };
+  }
+}
+
+/// Enables mouse dragging only inside horizontal reader-setting options.
+class _HorizontalSettingsStrip extends StatelessWidget {
+  const _HorizontalSettingsStrip({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final behavior = ScrollConfiguration.of(context);
+    return ScrollConfiguration(
+      behavior: behavior.copyWith(
+        dragDevices: {...behavior.dragDevices, PointerDeviceKind.mouse},
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: child,
+      ),
+    );
   }
 }

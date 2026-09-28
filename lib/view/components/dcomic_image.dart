@@ -14,9 +14,13 @@ class DComicImage extends StatelessWidget {
   final bool showErrorMessage;
   final double errorLogoSize;
   final double? width;
+  final double? height;
 
   /// Reserves vertical reading space only while a network page is unavailable.
   final double? placeholderHeight;
+
+  /// Background for loading and error states; transparent on reading canvases.
+  final Color? placeholderColor;
 
   const DComicImage(
     this.imageEntity, {
@@ -27,7 +31,9 @@ class DComicImage extends StatelessWidget {
     this.showErrorMessage = true,
     this.errorLogoSize = 60,
     this.width,
+    this.height,
     this.placeholderHeight,
+    this.placeholderColor,
   });
 
   @override
@@ -50,6 +56,7 @@ class DComicImage extends StatelessWidget {
           errorWidget: (context, url, error) => _buildLoadErrorWidget(context),
           cacheManager: DefaultCacheManager(),
           width: width,
+          height: height,
           // A fading placeholder would keep short pages artificially tall.
           fadeOutDuration: placeholderHeight == null
               ? const Duration(milliseconds: 1000)
@@ -65,6 +72,7 @@ class DComicImage extends StatelessWidget {
           errorBuilder: (context, object, error) =>
               _buildLoadErrorWidget(context),
           width: width,
+          height: height,
         );
       case ImageType.asset:
         return Image.asset(
@@ -73,6 +81,7 @@ class DComicImage extends StatelessWidget {
           errorBuilder: (context, object, error) =>
               _buildLoadErrorWidget(context),
           width: width,
+          height: height,
         );
     }
   }
@@ -81,7 +90,9 @@ class DComicImage extends StatelessWidget {
     return SizedBox(
       height: placeholderHeight,
       child: ColoredBox(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        color:
+            placeholderColor ??
+            Theme.of(context).colorScheme.surfaceContainerLow,
         child: const Center(
           child: RepaintBoundary(
             child: SizedBox(
@@ -111,7 +122,8 @@ class DComicImage extends StatelessWidget {
     var color =
         customErrorMessageColor ?? Theme.of(context).colorScheme.outline;
     return ColoredBox(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      color:
+          placeholderColor ?? Theme.of(context).colorScheme.surfaceContainerLow,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

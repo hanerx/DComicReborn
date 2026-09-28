@@ -429,6 +429,7 @@ Future<Map<String, dynamic>?> _loadValue(
           'coverType': row['coverType'],
           'lastChapterTitle': row['lastChapterTitle'],
           'lastChapterId': row['lastChapterId'],
+          'lastPage': row['lastPage'],
           'timestamp': row['timestamp'],
           'providerName': row['providerName'],
         };
@@ -604,17 +605,21 @@ Map<String, dynamic> _validateHistoryValue(
   Map<String, dynamic> value,
   _KeyParts key,
 ) {
-  _requireExactKeys(value, const {
+  final checked = Map<String, dynamic>.from(value);
+  checked.putIfAbsent('lastPage', () => 1);
+  _requireExactKeys(checked, const {
     'comicId',
     'title',
     'cover',
     'coverType',
     'lastChapterTitle',
     'lastChapterId',
+    'lastPage',
     'timestamp',
     'providerName',
   });
-  if (value['comicId'] != key.key3 || value['providerName'] != key.key2) {
+  if (checked['comicId'] != key.key3 ||
+      checked['providerName'] != key.key2) {
     throw const FormatException('history payload does not match its key');
   }
   for (final field in const [
@@ -625,16 +630,20 @@ Map<String, dynamic> _validateHistoryValue(
     'lastChapterId',
     'providerName',
   ]) {
-    if (value[field] is! String) {
+    if (checked[field] is! String) {
       throw FormatException('history.$field must be a string');
     }
   }
-  final coverType = value['coverType'];
+  final coverType = checked['coverType'];
   if (coverType is! int || coverType < 0 || coverType > 3) {
     throw const FormatException('history.coverType is invalid');
   }
-  _validateNullableTimestamp(value['timestamp'], 'history.timestamp');
-  return Map<String, dynamic>.from(value);
+  final lastPage = checked['lastPage'];
+  if (lastPage is! int || lastPage < 1) {
+    throw const FormatException('history.lastPage must be a positive integer');
+  }
+  _validateNullableTimestamp(checked['timestamp'], 'history.timestamp');
+  return checked;
 }
 
 Map<String, dynamic> _validateSubscribeValue(
@@ -675,6 +684,7 @@ Map<String, dynamic> _validateSettingValue(
     case 'UseMaterial3Design':
     case 'AggregateSubscribeBadges':
     case 'AggregateReadingProgress':
+    case 'ResumeLastReadPage':
     case 'AutoMapMissingComics':
     case 'AutoMapRetryEveryLaunch':
       _validateStoredBool(raw, key);
@@ -689,6 +699,35 @@ Map<String, dynamic> _validateSettingValue(
       break;
     case 'ReaderTheme':
       if (!const {'app', 'white', 'light', 'dark', 'black'}.contains(raw)) {
+        throw FormatException('invalid $key');
+      }
+      break;
+    case 'ReaderEndAction':
+      if (!const {'nextChapter', 'comments'}.contains(raw)) {
+        throw FormatException('invalid $key');
+      }
+      break;
+    case 'HorizontalImageFit':
+      if (!const {
+        'original',
+        'actualSize',
+        'contain',
+        'cover',
+        'stretch',
+        'fitHeight',
+      }.contains(raw)) {
+        throw FormatException('invalid $key');
+      }
+      break;
+    case 'VerticalImageFit':
+      if (!const {
+        'original',
+        'actualSize',
+        'contain',
+        'cover',
+        'stretch',
+        'fitWidth',
+      }.contains(raw)) {
         throw FormatException('invalid $key');
       }
       break;

@@ -16,7 +16,7 @@ class ExpandCardButton extends StatelessWidget {
         height: double.infinity,
         child: Icon(
           icon,
-          color: Theme.of(context).colorScheme.onSurface,
+          color: Theme.of(context).colorScheme.primary,
         ),
       ),
     );

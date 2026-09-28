@@ -103,6 +103,7 @@ void main() {
         );
         expect(history?.title, '保留阅读记录');
         expect(history?.lastChapterId, 'chapter-10');
+        expect(history?.lastPage, 1);
         expect(history?.timestamp?.millisecondsSinceEpoch, 1700000000000);
         expect(
           await database.comicMappingDao.lookupComicId(

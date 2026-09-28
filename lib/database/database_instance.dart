@@ -21,6 +21,11 @@ class DatabaseInstance {
       await seedChapterRuleDefaults(database);
     }),
     Migration(6, 7, _migrateComicMappingsToV7),
+    Migration(7, 8, (database) async {
+      await database.execute(
+        'ALTER TABLE `ComicHistoryEntity` ADD COLUMN `lastPage` INTEGER NOT NULL DEFAULT 1',
+      );
+    }),
   ];
 
   /// 新装数据库建表完成后写入默认章节匹配分组；升级场景由 5 -> 6 迁移负责。

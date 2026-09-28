@@ -88,7 +88,7 @@ class _$DComicDatabase extends DComicDatabase {
     Callback? callback,
   ]) async {
     final databaseOptions = sqflite.OpenDatabaseOptions(
-      version: 7,
+      version: 8,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
         await callback?.onConfigure?.call(database);
@@ -111,7 +111,7 @@ class _$DComicDatabase extends DComicDatabase {
           'CREATE TABLE IF NOT EXISTS `ConfigEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT)',
         );
         await database.execute(
-          'CREATE TABLE IF NOT EXISTS `ComicHistoryEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `title` TEXT NOT NULL, `cover` TEXT NOT NULL, `coverType` INTEGER NOT NULL, `lastChapterTitle` TEXT NOT NULL, `lastChapterId` TEXT NOT NULL, `timestamp` INTEGER, `providerName` TEXT NOT NULL)',
+          'CREATE TABLE IF NOT EXISTS `ComicHistoryEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `comicId` TEXT NOT NULL, `title` TEXT NOT NULL, `cover` TEXT NOT NULL, `coverType` INTEGER NOT NULL, `lastChapterTitle` TEXT NOT NULL, `lastChapterId` TEXT NOT NULL, `lastPage` INTEGER NOT NULL, `timestamp` INTEGER, `providerName` TEXT NOT NULL)',
         );
         await database.execute(
           'CREATE TABLE IF NOT EXISTS `CookieEntity` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `key` TEXT NOT NULL, `value` TEXT NOT NULL)',
@@ -299,6 +299,7 @@ class _$ComicHistoryDao extends ComicHistoryDao {
           'coverType': _imageTypeConverter.encode(item.coverType),
           'lastChapterTitle': item.lastChapterTitle,
           'lastChapterId': item.lastChapterId,
+          'lastPage': item.lastPage,
           'timestamp': _dateTimeNullableConverter.encode(item.timestamp),
           'providerName': item.providerName,
         },
@@ -315,6 +316,7 @@ class _$ComicHistoryDao extends ComicHistoryDao {
           'coverType': _imageTypeConverter.encode(item.coverType),
           'lastChapterTitle': item.lastChapterTitle,
           'lastChapterId': item.lastChapterId,
+          'lastPage': item.lastPage,
           'timestamp': _dateTimeNullableConverter.encode(item.timestamp),
           'providerName': item.providerName,
         },
@@ -343,6 +345,7 @@ class _$ComicHistoryDao extends ComicHistoryDao {
         _imageTypeConverter.decode(row['coverType'] as int),
         row['lastChapterTitle'] as String,
         row['lastChapterId'] as String,
+        row['lastPage'] as int,
         _dateTimeNullableConverter.decode(row['timestamp'] as int?),
         row['providerName'] as String,
       ),
@@ -364,6 +367,7 @@ class _$ComicHistoryDao extends ComicHistoryDao {
         _imageTypeConverter.decode(row['coverType'] as int),
         row['lastChapterTitle'] as String,
         row['lastChapterId'] as String,
+        row['lastPage'] as int,
         _dateTimeNullableConverter.decode(row['timestamp'] as int?),
         row['providerName'] as String,
       ),
@@ -385,6 +389,7 @@ class _$ComicHistoryDao extends ComicHistoryDao {
         _imageTypeConverter.decode(row['coverType'] as int),
         row['lastChapterTitle'] as String,
         row['lastChapterId'] as String,
+        row['lastPage'] as int,
         _dateTimeNullableConverter.decode(row['timestamp'] as int?),
         row['providerName'] as String,
       ),

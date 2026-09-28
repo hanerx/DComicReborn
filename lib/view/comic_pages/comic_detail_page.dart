@@ -960,7 +960,6 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                     context,
                     index,
                     data,
-                    writeHistory: true,
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.primary,
@@ -978,7 +977,6 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                     context,
                     index,
                     data,
-                    writeHistory: true,
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colors.onSurface,
@@ -1050,9 +1048,8 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
   void _openChapter(
     BuildContext context,
     int index,
-    List<BaseComicChapterEntityModel> data, {
-    bool writeHistory = false,
-  }) {
+    List<BaseComicChapterEntityModel> data,
+  ) {
     var chapter = data[index];
     var controller = Provider.of<ComicDetailPageController>(
       context,
@@ -1060,9 +1057,6 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
     );
     var detailModel = controller.detailModel!;
     var chapters = controller.reverse ? data.reversed.toList() : data;
-    if (writeHistory) {
-      controller.addComicHistory(chapter.chapterId, chapter.rawTitle);
-    }
     Provider.of<NavigatorProvider>(context, listen: false)
         .getNavigator(context, NavigatorType.root)
         ?.push(
@@ -1106,7 +1100,6 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
     var chapters = controller.reverse
         ? resultChapters.reversed.toList()
         : resultChapters;
-    controller.addComicHistory(resultChapter.chapterId, resultChapter.rawTitle);
     Provider.of<NavigatorProvider>(context, listen: false)
         .getNavigator(context, NavigatorType.root)
         ?.push(

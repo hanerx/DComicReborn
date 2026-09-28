@@ -305,6 +305,26 @@ void main() {
   );
 
   test(
+    'local resume position ignores aggregate history and waits for page writes',
+    () async {
+      await enable(true);
+      final model = await detail();
+      expect(model.latestChapterId, 'a-10');
+      expect(
+        await model.loadLocalReadingPosition(),
+        (chapterId: 'a-20', page: 1),
+      );
+
+      final write = model.addComicHistory('a-10', '第10话', page: 6);
+      expect(
+        await model.loadLocalReadingPosition(),
+        (chapterId: 'a-10', page: 6),
+      );
+      await write;
+    },
+  );
+
+  test(
     'a uniquely matched foreign record can resume a source never read locally',
     () async {
       await enable(true);

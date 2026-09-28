@@ -75,6 +75,7 @@ void main() {
         coverType: ImageType.network,
         lastChapterTitle: 'Chapter',
         lastChapterId: 'chapter-1',
+        lastPage: 7,
         timestamp: DateTime.fromMillisecondsSinceEpoch(1234),
         providerName: 'source',
       ),
@@ -87,6 +88,89 @@ void main() {
     expect(record.uncertain, isFalse);
     expect(record.deleted, isFalse);
     expect(record.value, containsPair('lastChapterId', 'chapter-1'));
+    expect(record.value, containsPair('lastPage', 7));
+
+    final persisted = await database.comicHistoryDao
+        .getComicHistoryByComicId('comic', 'source');
+    expect(persisted?.lastPage, 7);
+  });
+
+  test('legacy sync history defaults its absent last page to one', () async {
+    final legacy = SyncRecord(
+      category: SyncCategory.history,
+      key: jsonEncode(['history', 'legacy-source', 'legacy-comic']),
+      value: const {
+        'comicId': 'legacy-comic',
+        'title': 'Legacy',
+        'cover': '',
+        'coverType': 0,
+        'lastChapterTitle': 'Chapter',
+        'lastChapterId': 'chapter-1',
+        'timestamp': null,
+        'providerName': 'legacy-source',
+      },
+      deleted: false,
+      version: const SyncVersion(wall: 1, logical: 0, device: 'legacy'),
+      uncertain: false,
+    );
+
+    await store.receive([legacy]);
+
+    final persisted = await database.comicHistoryDao
+        .getComicHistoryByComicId('legacy-comic', 'legacy-source');
+    expect(persisted?.lastPage, 1);
+    final exported = (await store.snapshot({SyncCategory.history})).single;
+    expect(exported.value, containsPair('lastPage', 1));
+  });
+
+  test('sync history preserves a present last page on import', () async {
+    final incoming = SyncRecord(
+      category: SyncCategory.history,
+      key: jsonEncode(['history', 'source', 'comic']),
+      value: const {
+        'comicId': 'comic',
+        'title': 'Title',
+        'cover': '',
+        'coverType': 0,
+        'lastChapterTitle': 'Chapter',
+        'lastChapterId': 'chapter-1',
+        'lastPage': 6,
+        'timestamp': null,
+        'providerName': 'source',
+      },
+      deleted: false,
+      version: const SyncVersion(wall: 1, logical: 0, device: 'remote'),
+      uncertain: false,
+    );
+
+    await store.receive([incoming]);
+
+    final persisted = await database.comicHistoryDao
+        .getComicHistoryByComicId('comic', 'source');
+    expect(persisted?.lastPage, 6);
+  });
+
+  test('sync history rejects an invalid present last page', () {
+    final invalid = SyncRecord(
+      category: SyncCategory.history,
+      key: jsonEncode(['history', 'source', 'comic']),
+      value: const {
+        'comicId': 'comic',
+        'title': 'Title',
+        'cover': '',
+        'coverType': 0,
+        'lastChapterTitle': 'Chapter',
+        'lastChapterId': 'chapter-1',
+        'lastPage': 0,
+        'timestamp': null,
+        'providerName': 'source',
+      },
+      deleted: false,
+      version: const SyncVersion(wall: 1, logical: 0, device: 'remote'),
+      uncertain: false,
+    );
+
+    expect(() => store.validateRecords([invalid]), throwsFormatException);
   });
 
   test('raw deletes create durable tombstones', () async {

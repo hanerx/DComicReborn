@@ -7,6 +7,7 @@ import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/page_controllers/comic_viewer_page_controller.dart';
 import 'package:dcomic/utils/image_utils.dart';
+import 'package:dcomic/utils/reader_image_fit.dart';
 import 'package:dcomic/utils/theme_utils.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:dcomic/view/components/viewer_setting_list.dart';
@@ -21,6 +22,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class _CachePaths extends PathProviderPlatform {
   _CachePaths(this.path);
@@ -34,7 +36,32 @@ class _CachePaths extends PathProviderPlatform {
 }
 
 class _Config extends ConfigProvider {
-  _Config(this.direction);
+  _Config(
+    this.direction, {
+    this.horizontalFit = ReaderImageFit.original,
+    this.verticalFit = ReaderImageFit.original,
+  });
+  bool resumeEnabled = false;
+  @override
+  bool get resumeLastReadPage => resumeEnabled;
+  ReaderImageFit horizontalFit;
+  ReaderImageFit verticalFit;
+  @override
+  ReaderImageFit get horizontalImageFit => horizontalFit;
+  @override
+  set horizontalImageFit(ReaderImageFit value) {
+    horizontalFit = value;
+    notifyListeners();
+  }
+
+  @override
+  ReaderImageFit get verticalImageFit => verticalFit;
+  @override
+  set verticalImageFit(ReaderImageFit value) {
+    verticalFit = value;
+    notifyListeners();
+  }
+
   final ReadDirectionType direction;
   @override
   Future<void> init() async {}
@@ -46,6 +73,15 @@ class _Config extends ConfigProvider {
   @override
   set readerTheme(ReaderTheme value) {
     _readerTheme = value;
+    notifyListeners();
+  }
+
+  ReaderEndAction _readerEndAction = ReaderEndAction.comments;
+  @override
+  ReaderEndAction get readerEndAction => _readerEndAction;
+  @override
+  set readerEndAction(ReaderEndAction value) {
+    _readerEndAction = value;
     notifyListeners();
   }
 }
@@ -103,6 +139,10 @@ class _Detail extends Fake implements BaseComicDetailModel {
   final bool isLongComic;
   final _ChapterDetail chapter;
   final List<ChapterCommentEntity>? nextComments;
+  ({String chapterId, int page})? savedPosition;
+  @override
+  Future<({String chapterId, int page})?> loadLocalReadingPosition() async =>
+      savedPosition;
   @override
   final BaseComicSourceModel parent = _Source();
   @override
@@ -123,10 +163,14 @@ Future<void> _openReader(
   List<ChapterCommentEntity>? nextComments,
   ThemeData? theme,
   int pageCount = 1,
+  ReaderImageFit horizontalFit = ReaderImageFit.original,
+  ReaderImageFit verticalFit = ReaderImageFit.original,
   bool isLongComic = false,
   ImageEntity? pageImage,
   bool waitForImages = true,
   Size size = const Size(400, 800),
+  ({String chapterId, int page})? savedPosition,
+  bool resumeEnabled = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -134,7 +178,11 @@ Future<void> _openReader(
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(
     ChangeNotifierProvider<ConfigProvider>(
-      create: (_) => _Config(direction),
+      create: (_) => _Config(
+        direction,
+        horizontalFit: horizontalFit,
+        verticalFit: verticalFit,
+      )..resumeEnabled = resumeEnabled,
       child: MaterialApp(
         theme: theme,
         locale: const Locale('zh'),
@@ -156,7 +204,7 @@ Future<void> _openReader(
               ),
               nextComments,
               isLongComic: isLongComic,
-            ),
+            )..savedPosition = savedPosition,
             chapterId: 'chapter',
             chapters: [_Chapter(), if (nextComments != null) _Chapter('next')],
           ),
@@ -187,6 +235,161 @@ Future<void> _openReader(
 }
 
 void main() {
+  for (final direction in ReadDirectionType.values) {
+    testWidgets('${direction.name}: cached chapter reload resets the viewport', (
+      tester,
+    ) async {
+      await _openReader(
+        tester,
+        direction,
+        [],
+        pageCount: 12,
+        savedPosition: (chapterId: 'chapter', page: 6),
+        resumeEnabled: true,
+      );
+      final controller = tester
+          .element(find.byType(DComicImage).first)
+          .read<ComicViewerPageController>();
+      final cachedChapter = controller.chapterDetailModel;
+      expect(controller.currentPage, 5);
+
+      controller.showToolBar = true;
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 5);
+
+      // At the first chapter, refresh reloads it; this source reuses its object.
+      await tester.tap(find.byTooltip('上一章').hitTestable());
+      await tester.pumpAndSettle();
+      expect(controller.chapterDetailModel, same(cachedChapter));
+      if (direction == ReadDirectionType.vertical) {
+        final positions = tester
+            .widget<ScrollablePositionedList>(find.byType(ScrollablePositionedList))
+            .itemPositionsNotifier!
+            .itemPositions
+            .value
+            .where((item) => item.itemTrailingEdge > 0 && item.itemLeadingEdge < 1);
+        final first = positions.reduce((a, b) => a.index < b.index ? a : b);
+        expect(first.index, 0);
+        expect(first.itemLeadingEdge, closeTo(0, 0.001));
+      } else {
+        expect(
+          tester.widget<PageView>(find.byType(PageView)).controller!.page,
+          0,
+        );
+      }
+      expect(controller.currentPage, 0);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    for (final scenario in [
+      (enabled: true, chapter: 'chapter', page: 6, expected: 5),
+      (enabled: false, chapter: 'chapter', page: 6, expected: 0),
+      (enabled: true, chapter: 'other', page: 6, expected: 0),
+      (enabled: true, chapter: 'chapter', page: 100, expected: 11),
+    ]) {
+      testWidgets('resume $direction $scenario', (tester) async {
+        await _openReader(
+          tester,
+          direction,
+          [],
+          pageCount: 12,
+          savedPosition: (chapterId: scenario.chapter, page: scenario.page),
+          resumeEnabled: scenario.enabled,
+        );
+        final controller = tester
+            .element(find.byType(DComicImage).first)
+            .read<ComicViewerPageController>();
+        expect(controller.currentPage, scenario.expected);
+        if (direction != ReadDirectionType.vertical) {
+          expect(
+            tester.widget<PageView>(find.byType(PageView)).controller!.page,
+            scenario.expected,
+          );
+        }
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
+  }
+
+  testWidgets('horizontal actual size pans oversized pages before turning', (
+    tester,
+  ) async {
+    final directory = Directory.systemTemp.createTempSync('reader_native_');
+    addTearDown(() => directory.deleteSync(recursive: true));
+    final file = File('${directory.path}/page.png');
+    await tester.runAsync(() async {
+      final recorder = ui.PictureRecorder();
+      Canvas(recorder).drawColor(Colors.red, BlendMode.src);
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(1400, 1000);
+      final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      await file.writeAsBytes(bytes.buffer.asUint8List());
+      image.dispose();
+      picture.dispose();
+    });
+    await _openReader(
+      tester,
+      ReadDirectionType.left,
+      [],
+      pageCount: 2,
+      horizontalFit: ReaderImageFit.actualSize,
+      pageImage: ImageEntity(ImageType.local, file.path),
+    );
+    final page = find.byType(DComicImage).first;
+    final controller = tester.element(page).read<ComicViewerPageController>();
+    expect(tester.getSize(page), const Size(1400, 1000));
+    final before = tester.getTopLeft(page);
+    await tester.dragFrom(const Offset(200, 400), const Offset(-150, -50));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(page).dx, lessThan(before.dx));
+    expect(controller.currentPage, 0);
+    expect(tester.takeException(), isNull);
+  });
+  for (final direction in ReadDirectionType.values) {
+    testWidgets(
+      '${direction.name}: changing image fill preserves page and comments navigation',
+      (tester) async {
+        await _openReader(tester, direction, [], pageCount: 4);
+        final context = tester.element(find.byType(DComicImage).first);
+        final controller = context.read<ComicViewerPageController>();
+        final config = context.read<ConfigProvider>();
+        final forward = direction == ReadDirectionType.right
+            ? LogicalKeyboardKey.arrowLeft
+            : LogicalKeyboardKey.arrowRight;
+        await tester.sendKeyEvent(forward);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(forward);
+        await tester.pumpAndSettle();
+        expect(controller.currentPage, 2);
+        for (final fit in [
+          ReaderImageFit.actualSize,
+          ReaderImageFit.contain,
+          ReaderImageFit.cover,
+          ReaderImageFit.stretch,
+          if (direction == ReadDirectionType.vertical)
+            ReaderImageFit.fitWidth
+          else
+            ReaderImageFit.fitHeight,
+          ReaderImageFit.original,
+        ]) {
+          if (direction == ReadDirectionType.vertical) {
+            config.verticalImageFit = fit;
+          } else {
+            config.horizontalImageFit = fit;
+          }
+          await tester.pumpAndSettle();
+          expect(controller.currentPage, 2, reason: fit.name);
+          expect(tester.takeException(), isNull);
+        }
+        await tester.sendKeyEvent(forward);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(forward);
+        await tester.pumpAndSettle();
+        expect(controller.currentPage, 4);
+        expect(find.text('本章吐槽').hitTestable(), findsOneWidget);
+      },
+    );
+  }
   testWidgets(
     'standalone reader settings stay at the top across window sizes',
     (tester) async {
@@ -289,40 +492,44 @@ void main() {
     });
   }
 
-  testWidgets('up and down turn vertical pages without repeating or crossing overlays', (
-    tester,
-  ) async {
-    await _openReader(tester, ReadDirectionType.vertical, [], pageCount: 4);
-    final controller = tester
-        .element(find.byType(DComicImage).first)
-        .read<ComicViewerPageController>();
-    await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowDown);
-    await tester.pumpAndSettle();
-    expect(controller.currentPage, 1);
-    await tester.sendKeyRepeatEvent(LogicalKeyboardKey.arrowDown);
-    await tester.pumpAndSettle();
-    expect(controller.currentPage, 1);
-    await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
-    await tester.pumpAndSettle();
-    expect(controller.currentPage, 0);
-    unawaited(showDialog<void>(
-      context: tester.element(find.byType(ComicViewerPage)),
-      builder: (_) => const AlertDialog(content: TextField(autofocus: true)),
-    ));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'typing');
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.pumpAndSettle();
-    expect(controller.currentPage, 0);
-    Navigator.of(tester.element(find.byType(TextField))).pop();
-    await tester.pumpAndSettle();
-    tester.state<ScaffoldState>(find.byType(Scaffold).first).openEndDrawer();
-    await tester.pumpAndSettle();
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.pumpAndSettle();
-    expect(controller.currentPage, 0);
-  });
+  testWidgets(
+    'up and down turn vertical pages without repeating or crossing overlays',
+    (tester) async {
+      await _openReader(tester, ReadDirectionType.vertical, [], pageCount: 4);
+      final controller = tester
+          .element(find.byType(DComicImage).first)
+          .read<ComicViewerPageController>();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 1);
+      await tester.sendKeyRepeatEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 1);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 0);
+      unawaited(
+        showDialog<void>(
+          context: tester.element(find.byType(ComicViewerPage)),
+          builder: (_) =>
+              const AlertDialog(content: TextField(autofocus: true)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'typing');
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 0);
+      Navigator.of(tester.element(find.byType(TextField))).pop();
+      await tester.pumpAndSettle();
+      tester.state<ScaffoldState>(find.byType(Scaffold).first).openEndDrawer();
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 0);
+    },
+  );
 
   for (final direction in [ReadDirectionType.left, ReadDirectionType.right]) {
     testWidgets('up and down do not turn $direction pages', (tester) async {
@@ -390,8 +597,14 @@ void main() {
       pageCount: 40,
       pageImage: ImageEntity(ImageType.network, url),
       waitForImages: false,
+      savedPosition: (chapterId: 'chapter', page: 21),
+      resumeEnabled: true,
     );
     final viewport = tester.getRect(find.byType(ComicViewerPage));
+    final reader = tester
+        .element(find.byType(DComicImage).first)
+        .read<ComicViewerPageController>();
+    expect(reader.currentPage, 20);
     final visibleSpinners = find
         .byType(CircularProgressIndicator)
         .evaluate()
@@ -410,6 +623,21 @@ void main() {
       findsNothing,
       reason: 'Unread pending pages must still occupy the reading list.',
     );
+    final loadingBoundary = tester.renderObject<RenderRepaintBoundary>(
+      find.byKey(const ValueKey('reader-capture')),
+    );
+    final loadingImage = (await tester.runAsync(
+      () => loadingBoundary.toImage(),
+    ))!;
+    final loadingPixels = (await tester.runAsync(
+      () => loadingImage.toByteData(format: ui.ImageByteFormat.rawRgba),
+    ))!;
+    expect(
+      loadingPixels.buffer.asUint8List((200 * loadingImage.width + 100) * 4, 4),
+      [0, 0, 0, 255],
+      reason: 'Loading pages must blend into the black reading canvas.',
+    );
+    loadingImage.dispose();
     releaseImage.complete();
     final decodedPages = find.descendant(
       of: find.byType(DComicImage),
@@ -429,6 +657,11 @@ void main() {
     }
     expect(decodedPages, findsWidgets);
     await tester.pumpAndSettle();
+    expect(
+      reader.currentPage,
+      20,
+      reason: 'Image height changes must preserve the restored page anchor.',
+    );
     final firstPage = find.byType(DComicImage).first;
     expect(
       tester.getSize(firstPage).height,
@@ -683,6 +916,125 @@ void main() {
   });
 
   for (final direction in ReadDirectionType.values) {
+    testWidgets('${direction.name}: end button follows the reading setting', (
+      tester,
+    ) async {
+      await _openReader(
+        tester,
+        direction,
+        [ChapterCommentEntity('original', '当前章吐槽', 1)],
+        pageCount: 4,
+        nextComments: [ChapterCommentEntity('next', '下一章吐槽', 1)],
+      );
+      final controller = tester
+          .element(find.byType(DComicImage).first)
+          .read<ComicViewerPageController>();
+      await tester.tapAt(const Offset(200, 400));
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('吐槽页').hitTestable());
+      await tester.pumpAndSettle();
+      expect(controller.currentChapter!.chapterId, 'chapter');
+      expect(controller.currentPage, 4);
+      expect(find.text('当前章吐槽').hitTestable(), findsOneWidget);
+      // Pressing again on the comments page must not advance the chapter.
+      await tester.tap(find.byTooltip('吐槽页').hitTestable());
+      await tester.pumpAndSettle();
+      expect(controller.currentChapter!.chapterId, 'chapter');
+
+      await tester.tap(find.byIcon(Icons.settings).hitTestable());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('下一章').hitTestable());
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.byType(ViewerSettingList))).pop();
+      await tester.pumpAndSettle();
+      final backward = switch (direction) {
+        ReadDirectionType.left => LogicalKeyboardKey.arrowLeft,
+        ReadDirectionType.right => LogicalKeyboardKey.arrowRight,
+        ReadDirectionType.vertical => LogicalKeyboardKey.arrowUp,
+      };
+      // Direct chapter navigation must skip the remaining images and comments.
+      await tester.sendKeyEvent(backward);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(backward);
+      await tester.pumpAndSettle();
+      expect(controller.currentPage, 2);
+      await tester.tap(find.byTooltip('下一章').hitTestable());
+      await tester.pumpAndSettle();
+      expect(controller.currentChapter!.chapterId, 'next');
+      expect(controller.currentPage, 0);
+      expect(find.byType(DComicImage).hitTestable(), findsWidgets);
+      // There is no chapter after this one.
+      await tester.tap(find.byTooltip('下一章').hitTestable());
+      await tester.pumpAndSettle();
+      expect(controller.currentChapter!.chapterId, 'next');
+      expect(controller.currentPage, 0);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets(
+      '${direction.name}: directory opens the selected chapter at page one',
+      (tester) async {
+        await _openReader(
+          tester,
+          direction,
+          [ChapterCommentEntity('original', '原章节吐槽', 1)],
+          pageCount: 4,
+          nextComments: [ChapterCommentEntity('next', '指定章节吐槽', 1)],
+        );
+        final controller = tester
+            .element(find.byType(DComicImage).first)
+            .read<ComicViewerPageController>();
+        final forward = switch (direction) {
+          ReadDirectionType.left => LogicalKeyboardKey.arrowRight,
+          ReadDirectionType.right => LogicalKeyboardKey.arrowLeft,
+          ReadDirectionType.vertical => LogicalKeyboardKey.arrowDown,
+        };
+        final backward = switch (direction) {
+          ReadDirectionType.left => LogicalKeyboardKey.arrowLeft,
+          ReadDirectionType.right => LogicalKeyboardKey.arrowRight,
+          ReadDirectionType.vertical => LogicalKeyboardKey.arrowUp,
+        };
+        await tester.sendKeyEvent(forward);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(forward);
+        await tester.pumpAndSettle();
+        expect(controller.currentPage, 2);
+
+        await tester.tapAt(const Offset(200, 400));
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.list_alt).hitTestable());
+        await tester.pumpAndSettle();
+        // Directory order is reversed: the next chapter is the first row.
+        await tester.tap(find.byType(ListTile).first);
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+        expect(controller.currentChapter!.chapterId, 'next');
+        expect(controller.comments.single.comment, '指定章节吐槽');
+        expect(controller.currentPage, 0);
+        expect(
+          tester.state<ScaffoldState>(find.byType(Scaffold)).isEndDrawerOpen,
+          isFalse,
+        );
+        if (direction == ReadDirectionType.vertical) {
+          expect(tester.getTopLeft(find.byType(DComicImage).first).dy, 0);
+        } else {
+          expect(find.text('本章吐槽').hitTestable(), findsNothing);
+        }
+        expect(find.byType(DComicImage).hitTestable(), findsWidgets);
+
+        // Explicit selection must not change the normal previous-chapter action.
+        await tester.sendKeyEvent(backward);
+        await tester.pumpAndSettle();
+        expect(controller.currentChapter!.chapterId, 'chapter');
+        expect(controller.comments.single.comment, '原章节吐槽');
+        expect(controller.currentPage, 0);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+
     testWidgets('${direction.name}: comments use reader page tap regions', (
       tester,
     ) async {

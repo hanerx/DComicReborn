@@ -211,6 +211,7 @@ void main() {
         .getComicHistoryByComicId('64556', 'zaimanhua');
     expect(local!.lastChapterId, '186872');
     expect(local.lastChapterTitle, '第 2 话');
+    expect(local.lastPage, 5);
     viewer.dispose();
 
     mobile.dio.httpClientAdapter =

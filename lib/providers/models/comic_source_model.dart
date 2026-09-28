@@ -275,6 +275,25 @@ abstract class BaseComicDetailModel extends BaseModel {
     }
   }
 
+  /// Returns this source/comic's saved position after earlier writes complete.
+  ///
+  /// This deliberately ignores cross-source reading-progress aggregation.
+  Future<({String chapterId, int page})?> loadLocalReadingPosition() async {
+    await _historyWrites;
+    try {
+      final database = await DatabaseInstance.instance;
+      final history = await database.comicHistoryDao.getComicHistoryByComicId(
+        comicId,
+        parent.type.sourceId,
+      );
+      if (history == null || history.lastChapterId.isEmpty) return null;
+      return (chapterId: history.lastChapterId, page: history.lastPage);
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+      return null;
+    }
+  }
+
   Future<bool> _historyWrites = Future.value(true);
 
   Future<bool> addComicHistory(
@@ -284,11 +303,15 @@ abstract class BaseComicDetailModel extends BaseModel {
   }) {
     // Chapter entry and page changes may arrive before the first insert ends.
     return _historyWrites = _historyWrites.then(
-      (_) => _saveComicHistory(chapterId, chapterName),
+      (_) => _saveComicHistory(chapterId, chapterName, page),
     );
   }
 
-  Future<bool> _saveComicHistory(String chapterId, String chapterName) async {
+  Future<bool> _saveComicHistory(
+    String chapterId,
+    String chapterName,
+    int page,
+  ) async {
     try {
       var databaseInstance = await DatabaseInstance.instance;
       var comicHistoryEntity = (await databaseInstance.comicHistoryDao
@@ -298,6 +321,7 @@ abstract class BaseComicDetailModel extends BaseModel {
       comicHistoryEntity.title = rawTitle;
       comicHistoryEntity.lastChapterId = chapterId;
       comicHistoryEntity.lastChapterTitle = chapterName;
+      comicHistoryEntity.lastPage = page < 1 ? 1 : page;
       comicHistoryEntity.timestamp = DateTime.now();
       await databaseInstance.comicHistoryDao.updateComicHistory(
         comicHistoryEntity,
