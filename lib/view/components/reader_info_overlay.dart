@@ -313,31 +313,34 @@ class _ReaderInfoOverlayState extends State<ReaderInfoOverlay>
   }
 
   Widget _buildBattery() {
-    final levelText = _batteryLevel == null ? '--%' : '$_batteryLevel%';
-    final isCharging = _batteryState == BatteryState.charging;
-    final icon = Semantics(
-      label: _batteryLevel == null
-          ? 'Battery level unavailable'
-          : 'Battery level $_batteryLevel percent',
-      child: _BatteryGraphic(level: _batteryLevel),
-    );
+    final level = _batteryLevel;
+    if (level == null) {
+      return const Icon(
+        Icons.power,
+        size: 14,
+        color: Colors.white,
+        semanticLabel: 'Battery level unavailable',
+      );
+    }
 
     final children = <Widget>[];
     if (widget.batteryFormat == ReaderBatteryFormat.icon ||
         widget.batteryFormat == ReaderBatteryFormat.iconAndNumber) {
-      children.add(icon);
-      if (isCharging) {
-        children.add(
-          const Icon(Icons.bolt, size: 10, color: Colors.amberAccent),
-        );
-      }
+      final isCharging = _batteryState == BatteryState.charging;
+      children.add(
+        Semantics(
+          label:
+              'Battery level $level percent${isCharging ? ', charging' : ''}',
+          child: _BatteryGraphic(level: level, isCharging: isCharging),
+        ),
+      );
     }
     if (widget.batteryFormat == ReaderBatteryFormat.iconAndNumber) {
       children.add(const SizedBox(width: 3));
     }
     if (widget.batteryFormat == ReaderBatteryFormat.number ||
         widget.batteryFormat == ReaderBatteryFormat.iconAndNumber) {
-      children.add(Text(levelText));
+      children.add(Text('$level%'));
     }
     return Row(mainAxisSize: MainAxisSize.min, children: children);
   }
@@ -362,9 +365,10 @@ class _ReaderInfoOverlayState extends State<ReaderInfoOverlay>
 }
 
 class _BatteryGraphic extends StatelessWidget {
-  const _BatteryGraphic({required this.level});
+  const _BatteryGraphic({required this.level, required this.isCharging});
 
-  final int? level;
+  final int level;
+  final bool isCharging;
 
   @override
   Widget build(BuildContext context) {
@@ -372,30 +376,38 @@ class _BatteryGraphic extends StatelessWidget {
       key: const ValueKey('reader-info-battery-icon'),
       width: 19,
       height: 10,
-      child: CustomPaint(
-        painter: _BatteryPainter(level),
-        child: level == null
-            ? const Center(
-                child: Text(
-                  '?',
-                  style: TextStyle(color: Colors.white, fontSize: 7, height: 1),
-                ),
-              )
-            : null,
-      ),
+      child: CustomPaint(painter: _BatteryPainter(level, isCharging)),
     );
   }
 }
 
 class _BatteryPainter extends CustomPainter {
-  const _BatteryPainter(this.level);
+  const _BatteryPainter(this.level, this.isCharging);
 
-  final int? level;
+  final int level;
+  final bool isCharging;
   static final Paint _fillPaint = Paint()..color = Colors.white;
   static final Paint _outlinePaint = Paint()
     ..color = Colors.white
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1;
+  static final Paint _boltOutlinePaint = Paint()
+    ..color = Colors.white
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 0.65
+    ..strokeJoin = StrokeJoin.round;
+  static final Path _boltPath = Path()
+    ..moveTo(9.5, 1.5)
+    ..lineTo(5.4, 5.5)
+    ..lineTo(7.5, 5.5)
+    ..lineTo(6.5, 8.5)
+    ..lineTo(10.6, 4.3)
+    ..lineTo(8.5, 4.3)
+    ..close();
+  static final Path _chargingFillClip = Path()
+    ..fillType = PathFillType.evenOdd
+    ..addRect(const Rect.fromLTWH(0, 0, 19, 10))
+    ..addPath(_boltPath, Offset.zero);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -412,22 +424,29 @@ class _BatteryPainter extends CustomPainter {
       _fillPaint,
     );
 
-    if (level case final level?) {
-      const horizontalInset = 2.0;
-      final fillWidth = 12 * level.clamp(0, 100) / 100;
-      if (fillWidth > 0) {
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromLTWH(horizontalInset, 2, fillWidth, size.height - 4),
-            const Radius.circular(1),
-          ),
-          _fillPaint,
-        );
+    final fillWidth = 12 * level / 100;
+    if (fillWidth > 0) {
+      if (isCharging) {
+        canvas.save();
+        canvas.clipPath(_chargingFillClip);
       }
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(2, 2, fillWidth, size.height - 4),
+          const Radius.circular(1),
+        ),
+        _fillPaint,
+      );
+      if (isCharging) canvas.restore();
+    }
+    if (isCharging) {
+      // The cutout reveals the panel itself. Its thin outline remains visible
+      // over the unfilled portion, including a completely empty battery.
+      canvas.drawPath(_boltPath, _boltOutlinePaint);
     }
   }
 
   @override
   bool shouldRepaint(covariant _BatteryPainter oldDelegate) =>
-      oldDelegate.level != level;
+      oldDelegate.level != level || oldDelegate.isCharging != isCharging;
 }

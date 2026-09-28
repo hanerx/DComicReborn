@@ -47,6 +47,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
   static const double _toolBarHeight = 96;
 
   PageController _pageController = PageController();
+  final EasyRefreshController _refreshController = EasyRefreshController();
   int? _displayedChapterRevision;
   ReadDirectionType? _displayedDirection;
   final ItemPositionsListener _itemPositionsListener =
@@ -73,6 +74,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
   void dispose() {
     _itemPositionsListener.itemPositions.removeListener(_updateVisibleItems);
     _drawerTabController.dispose();
+    _refreshController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -176,6 +178,35 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     }
   }
 
+  Future<void> _changeChapter(
+    BuildContext context, {
+    required bool forward,
+  }) async {
+    final direction = _readDirection(context, listen: false);
+    if (direction == ReadDirectionType.vertical &&
+        _itemScrollController.isAttached) {
+      // Positioned lists use a local scroll origin, not the chapter's first
+      // item. Move to the actual boundary before requesting overscroll.
+      _itemScrollController.jumpTo(index: forward ? _pageCount - 1 : 0);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+    }
+    // Chapter changes replace PageView's ScrollPosition. EasyRefresh may still
+    // hold the old position until the new viewport receives its first drag.
+    if (direction != ReadDirectionType.vertical &&
+        _pageController.hasClients) {
+      _refreshController.headerState?.notifier.position = _pageController.position;
+      _refreshController.footerState?.notifier.position = _pageController.position;
+    }
+    // Jump into overscroll directly; PageView's snapping can consume an
+    // animated scroll before it reaches the refresh/load trigger.
+    if (forward) {
+      await _refreshController.callLoad(duration: null);
+    } else {
+      await _refreshController.callRefresh(duration: null);
+    }
+  }
+
   Future<void> _turnPage(BuildContext context, {required bool forward}) async {
     final direction = _readDirection(context, listen: false);
     final controller = context.read<ComicViewerPageController>();
@@ -210,11 +241,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
         return;
       }
     }
-    if (forward) {
-      await controller.load();
-    } else {
-      await controller.refresh();
-    }
+    await _changeChapter(context, forward: forward);
   }
 
   void _handleCommentsTap(BuildContext context, TapUpDetails details) {
@@ -228,9 +255,9 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     final vertical = direction == ReadDirectionType.vertical;
     final extent = vertical ? viewport.size.height : viewport.size.width;
     final offset = vertical ? position.dy : position.dx;
-    final edgeSize = vertical
-        ? config.verticalClickAreaSize
-        : config.horizontalClickAreaSize;
+    final edgeSize = extent * (vertical
+        ? config.verticalClickAreaPercent
+        : config.horizontalClickAreaPercent) / 100;
     if (offset >= extent - edgeSize) {
       _turnPage(context, forward: direction != ReadDirectionType.right);
     } else if (offset < edgeSize) {
@@ -302,6 +329,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                   child: Container(
                     color: Colors.black,
                     child: EasyRefresh(
+                      controller: _refreshController,
                       header: BezierHeader(
                         triggerOffset: 50,
                         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -340,47 +368,45 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                         ).load();
                       },
                       child: SafeArea(
-                        child: Stack(
-                          key: _readerViewportKey,
-                          children: [
-                            _buildViewer(context),
-                            if (!(_readDirection(context) ==
-                                    ReadDirectionType.vertical
-                                ? _verticalCommentsVisible
-                                : _pageCount > 0 &&
-                                      context
-                                              .watch<
-                                                ComicViewerPageController
-                                              >()
-                                              .currentPage ==
-                                          _pageCount - 1)) ...[
-                              _buildPrePageButton(context),
-                              _buildShowButton(context),
-                              _buildNextPageButton(context),
-                            ],
-                            if (config.readerInfoEnabled)
-                              Consumer<ComicViewerPageController>(
-                                builder: (context, viewer, _) =>
-                                    ReaderInfoOverlay(
-                                      position: config.readerInfoPosition,
-                                      batteryFormat: config.readerBatteryFormat,
-                                      pageFormat: config.readerPageFormat,
-                                      showChapter: config.readerInfoChapter,
-                                      showTime: config.readerInfoTime,
-                                      currentPage: viewer.currentPage,
-                                      totalPages:
-                                          viewer
-                                              .chapterDetailModel
-                                              ?.pages
-                                              .length ??
-                                          0,
-                                      chapterName:
-                                          viewer.currentChapter?.title ?? '',
-                                    ),
-                              ),
-                            _buildAppBar(context),
-                            _buildToolBar(context),
-                          ],
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final vertical =
+                                _readDirection(context) == ReadDirectionType.vertical;
+                            final edgeSize = vertical
+                                ? constraints.maxHeight * config.verticalClickAreaPercent / 100
+                                : constraints.maxWidth * config.horizontalClickAreaPercent / 100;
+                            return Stack(
+                              key: _readerViewportKey,
+                              children: [
+                                _buildViewer(context),
+                                if (!(vertical
+                                    ? _verticalCommentsVisible
+                                    : _pageCount > 0 &&
+                                          context.watch<ComicViewerPageController>().currentPage ==
+                                              _pageCount - 1)) ...[
+                                  _buildPrePageButton(context, edgeSize),
+                                  _buildShowButton(context, edgeSize),
+                                  _buildNextPageButton(context, edgeSize),
+                                ],
+                                if (config.readerInfoEnabled)
+                                  Consumer<ComicViewerPageController>(
+                                    builder: (context, viewer, _) =>
+                                        ReaderInfoOverlay(
+                                          position: config.readerInfoPosition,
+                                          batteryFormat: config.readerBatteryFormat,
+                                          pageFormat: config.readerPageFormat,
+                                          showChapter: config.readerInfoChapter,
+                                          showTime: config.readerInfoTime,
+                                          currentPage: viewer.currentPage,
+                                          totalPages: viewer.chapterDetailModel?.pages.length ?? 0,
+                                          chapterName: viewer.currentChapter?.title ?? '',
+                                        ),
+                                  ),
+                                _buildAppBar(context),
+                                _buildToolBar(context),
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -664,7 +690,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     );
   }
 
-  Widget _buildPrePageButton(BuildContext context) {
+  Widget _buildPrePageButton(BuildContext context, double edgeSize) {
     if (_readDirection(context) == ReadDirectionType.vertical) {
       return Positioned(
         left: 0,
@@ -674,7 +700,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
           behavior: HitTestBehavior.translucent,
           onTap: () => _turnPage(context, forward: false),
           child: SizedBox(
-            height: Provider.of<ConfigProvider>(context).verticalClickAreaSize,
+            height: edgeSize,
             child: Provider.of<ConfigProvider>(context).drawDebugWidget
                 ? Container(
                     color: Color.lerp(
@@ -700,7 +726,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
               _readDirection(context, listen: false) == ReadDirectionType.right,
         ),
         child: SizedBox(
-          width: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
+          width: edgeSize,
           child: Provider.of<ConfigProvider>(context).drawDebugWidget
               ? Container(
                   color: Color.lerp(
@@ -715,7 +741,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     );
   }
 
-  Widget _buildNextPageButton(BuildContext context) {
+  Widget _buildNextPageButton(BuildContext context, double edgeSize) {
     if (_readDirection(context) == ReadDirectionType.vertical) {
       return Positioned(
         right: 0,
@@ -725,7 +751,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
           behavior: HitTestBehavior.translucent,
           onTap: () => _turnPage(context, forward: true),
           child: SizedBox(
-            height: Provider.of<ConfigProvider>(context).verticalClickAreaSize,
+            height: edgeSize,
             child: Provider.of<ConfigProvider>(context).drawDebugWidget
                 ? Container(
                     color: Color.lerp(
@@ -751,7 +777,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
               _readDirection(context, listen: false) != ReadDirectionType.right,
         ),
         child: SizedBox(
-          width: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
+          width: edgeSize,
           child: Provider.of<ConfigProvider>(context).drawDebugWidget
               ? Container(
                   color: Color.lerp(
@@ -766,14 +792,13 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     );
   }
 
-  Widget _buildShowButton(BuildContext context) {
-    if (Provider.of<ConfigProvider>(context).readDirection ==
-        ReadDirectionType.vertical) {
+  Widget _buildShowButton(BuildContext context, double edgeSize) {
+    if (_readDirection(context) == ReadDirectionType.vertical) {
       return Positioned(
         right: 0,
         left: 0,
-        top: Provider.of<ConfigProvider>(context).verticalClickAreaSize,
-        bottom: Provider.of<ConfigProvider>(context).verticalClickAreaSize,
+        top: edgeSize,
+        bottom: edgeSize,
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () {
@@ -800,8 +825,8 @@ class _ComicViewerPageState extends State<ComicViewerPage>
       );
     }
     return Positioned(
-      right: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
-      left: Provider.of<ConfigProvider>(context).horizontalClickAreaSize,
+      right: edgeSize,
+      left: edgeSize,
       top: 0,
       bottom: 0,
       child: GestureDetector(
@@ -965,7 +990,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                     child: Row(
                       children: [
                         ExpandCardButton(
-                          onTap: controller.refresh,
+                          onTap: () => _changeChapter(context, forward: false),
                           icon: Icons.keyboard_double_arrow_left,
                           tooltip: _localeText(
                             context,
@@ -999,7 +1024,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                             if (endAction == ReaderEndAction.nextChapter) {
                               final next = controller.nextChapter;
                               if (next == null) return;
-                              await controller.loadChapter(next);
+                              await _changeChapter(context, forward: true);
                             } else if (_pageCount > 0) {
                               final index = _pageCount - 1;
                               if (_readDirection(context, listen: false) ==

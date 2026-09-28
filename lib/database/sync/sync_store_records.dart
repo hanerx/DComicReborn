@@ -731,6 +731,15 @@ Map<String, dynamic> _validateSettingValue(
         throw FormatException('invalid $key');
       }
       break;
+    case 'HorizontalClickAreaPercent':
+    case 'VerticalClickAreaPercent':
+      final number = double.tryParse(raw);
+      if (number == null || !number.isFinite || number < 5 || number > 40) {
+        throw FormatException('invalid $key');
+      }
+      break;
+    // Legacy wire records and deletion acknowledgements remain readable while
+    // ConfigProvider migrates pixel settings to the percentage keys.
     case 'HorizontalClickAreaSize':
     case 'VerticalClickAreaSize':
       final number = double.tryParse(raw);

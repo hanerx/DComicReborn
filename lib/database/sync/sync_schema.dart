@@ -14,6 +14,8 @@ const _settingsAllowlist = <String>{
   'ReadDirection',
   'HorizontalClickAreaSize',
   'VerticalClickAreaSize',
+  'HorizontalClickAreaPercent',
+  'VerticalClickAreaPercent',
   'HorizontalImageFit',
   'VerticalImageFit',
   'ThemeColor',

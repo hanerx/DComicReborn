@@ -1,6 +1,9 @@
+import 'dart:ui' as ui;
+
 import 'package:dcomic/utils/reader_info_settings.dart';
 import 'package:dcomic/view/components/reader_info_overlay.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -37,26 +40,29 @@ Widget _host({
           ),
     home: Scaffold(
       body: SafeArea(
-        child: Stack(
-          children: [
-            if (onBackgroundTap != null)
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onBackgroundTap,
+        child: RepaintBoundary(
+          key: const ValueKey('overlay-capture'),
+          child: Stack(
+            children: [
+              if (onBackgroundTap != null)
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onBackgroundTap,
+                  ),
                 ),
+              ReaderInfoOverlay(
+                position: position,
+                batteryFormat: batteryFormat,
+                pageFormat: pageFormat,
+                showChapter: showChapter,
+                showTime: showTime,
+                currentPage: currentPage,
+                totalPages: totalPages,
+                chapterName: chapterName,
               ),
-            ReaderInfoOverlay(
-              position: position,
-              batteryFormat: batteryFormat,
-              pageFormat: pageFormat,
-              showChapter: showChapter,
-              showTime: showTime,
-              currentPage: currentPage,
-              totalPages: totalPages,
-              chapterName: chapterName,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     ),
@@ -222,13 +228,96 @@ void main() {
     await _emitBatteryState('charging');
     await tester.pump();
     expect(find.text('64%'), findsOneWidget);
-    expect(find.byIcon(Icons.bolt), findsOneWidget);
 
     batteryLevel = 77;
     await tester.pump(const Duration(minutes: 1));
     await tester.pump();
     expect(find.text('77%'), findsOneWidget);
+
+    await _emitBatteryState('discharging');
+    await tester.pump();
+    expect(find.byKey(_batteryIconKey), findsOneWidget);
+    await _emitBatteryState('full');
+    await tester.pump();
   });
+
+  testWidgets(
+    'charging bolt cuts through the fill and stays visible on an empty battery',
+    (tester) async {
+      tester.view.physicalSize = const Size(160, 80);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_host(batteryFormat: ReaderBatteryFormat.icon));
+      await tester.pump();
+
+      Future<({Color center, Color outline, Color background})> pixels() async {
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byKey(const ValueKey('overlay-capture')),
+        );
+        final battery = tester.renderObject<RenderBox>(
+          find.byKey(_batteryIconKey),
+        );
+        final origin = boundary.globalToLocal(
+          battery.localToGlobal(Offset.zero),
+        );
+        return (await tester.runAsync(() async {
+          final image = await boundary.toImage(pixelRatio: 4);
+          final bytes = (await image.toByteData(
+            format: ui.ImageByteFormat.rawRgba,
+          ))!;
+          Color sample(Offset local) {
+            final point = (origin + local) * 4;
+            final index =
+                (point.dy.floor() * image.width + point.dx.floor()) * 4;
+            return Color.fromARGB(
+              bytes.getUint8(index + 3),
+              bytes.getUint8(index),
+              bytes.getUint8(index + 1),
+              bytes.getUint8(index + 2),
+            );
+          }
+
+          final result = (
+            center: sample(const Offset(8, 5)),
+            outline: sample(const Offset(6, 5)),
+            background: sample(const Offset(-3, 5)),
+          );
+          image.dispose();
+          return result;
+        }))!;
+      }
+
+      for (final level in [0, 15, 67, 100]) {
+        batteryLevel = level;
+        await _emitBatteryState('charging');
+        await tester.pump();
+        final charging = await pixels();
+        expect(
+          charging.center,
+          charging.background,
+          reason: '$level% cutout must reveal the panel',
+        );
+        expect(
+          charging.outline.r,
+          greaterThan(.9),
+          reason: '$level% bolt edge must remain visible',
+        );
+        expect(charging.outline.g, greaterThan(.9));
+        expect(charging.outline.b, greaterThan(.9));
+
+        // Unplugging must repaint even when the battery level has not changed.
+        await _emitBatteryState('discharging');
+        await tester.pump();
+        final normal = await pixels();
+        expect(normal.center, level >= 67 ? Colors.white : normal.background);
+        if (level < 20) {
+          expect(normal.outline, normal.background);
+        }
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   testWidgets('battery refresh pauses in background and resumes immediately', (
     tester,
@@ -251,29 +340,51 @@ void main() {
     expect(batteryLevelRequests, greaterThan(requestsWhilePaused));
   });
 
-  testWidgets(
-    'unavailable or invalid battery readings are never shown as full',
-    (tester) async {
-      await tester.pumpWidget(
-        _host(batteryFormat: ReaderBatteryFormat.iconAndNumber),
-      );
-      await tester.pump();
-      expect(find.text('42%'), findsOneWidget);
+  for (final format in [
+    ReaderBatteryFormat.icon,
+    ReaderBatteryFormat.number,
+    ReaderBatteryFormat.iconAndNumber,
+  ]) {
+    testWidgets(
+      '$format: unavailable power shows a plug and recovers to battery',
+      (tester) async {
+        await tester.pumpWidget(_host(batteryFormat: format));
+        await tester.pump();
+        expect(find.byIcon(Icons.power), findsNothing);
 
-      batteryLevelFails = true;
-      await tester.pump(const Duration(minutes: 1));
-      await tester.pump();
-      expect(find.text('--%'), findsOneWidget);
-      expect(find.text('100%'), findsNothing);
+        batteryLevelFails = true;
+        await tester.pump(const Duration(minutes: 1));
+        await tester.pump();
+        expect(find.byIcon(Icons.power), findsOneWidget);
+        expect(find.byKey(_batteryIconKey), findsNothing);
+        expect(find.text('--%'), findsNothing);
+        expect(find.text('42%'), findsNothing);
 
-      batteryLevelFails = false;
-      batteryLevel = 255;
-      await _emitBatteryState('discharging');
-      await tester.pump();
-      expect(find.text('--%'), findsOneWidget);
-      expect(find.text('100%'), findsNothing);
-    },
-  );
+        batteryLevelFails = false;
+        batteryLevel = 255;
+        await _emitBatteryState('charging');
+        await tester.pump();
+        expect(find.byIcon(Icons.power), findsOneWidget);
+        expect(find.text('100%'), findsNothing);
+
+        // An empty battery is a valid reading, not an unavailable device.
+        batteryLevel = 0;
+        await _emitBatteryState('discharging');
+        await tester.pump();
+        expect(find.byIcon(Icons.power), findsNothing);
+        expect(
+          find.byKey(_batteryIconKey),
+          format == ReaderBatteryFormat.number ? findsNothing : findsOneWidget,
+        );
+        expect(
+          find.text('0%'),
+          format == ReaderBatteryFormat.icon ? findsNothing : findsOneWidget,
+        );
+        await tester.pumpWidget(_host());
+        expect(find.byIcon(Icons.power), findsNothing);
+      },
+    );
+  }
 
   testWidgets('all info remains bounded with large text on a narrow viewport', (
     tester,

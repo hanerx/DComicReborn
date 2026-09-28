@@ -13,6 +13,7 @@ import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:dcomic/view/components/viewer_setting_list.dart';
 import 'package:dcomic/view/comic_viewer/comic_viewer_page.dart';
 import 'package:dcomic/view/settings/viewer_setting_page.dart';
+import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -46,6 +47,24 @@ class _Config extends ConfigProvider {
   bool get resumeLastReadPage => resumeEnabled;
   ReaderImageFit horizontalFit;
   ReaderImageFit verticalFit;
+  double horizontalTapPercent = 20;
+  double verticalTapPercent = 20;
+  @override
+  double get horizontalClickAreaPercent => horizontalTapPercent;
+  @override
+  set horizontalClickAreaPercent(double value) {
+    horizontalTapPercent = value;
+    notifyListeners();
+  }
+
+  @override
+  double get verticalClickAreaPercent => verticalTapPercent;
+  @override
+  set verticalClickAreaPercent(double value) {
+    verticalTapPercent = value;
+    notifyListeners();
+  }
+
   @override
   ReaderImageFit get horizontalImageFit => horizontalFit;
   @override
@@ -140,14 +159,17 @@ class _Detail extends Fake implements BaseComicDetailModel {
   final _ChapterDetail chapter;
   final List<ChapterCommentEntity>? nextComments;
   ({String chapterId, int page})? savedPosition;
+  Completer<void>? chapterGate;
   @override
   Future<({String chapterId, int page})?> loadLocalReadingPosition() async =>
       savedPosition;
   @override
   final BaseComicSourceModel parent = _Source();
   @override
-  Future<BaseComicChapterDetailModel> getChapter(String chapterId) async =>
-      chapterId == 'next' ? _ChapterDetail(nextComments!) : chapter;
+  Future<BaseComicChapterDetailModel> getChapter(String chapterId) async {
+    await chapterGate?.future;
+    return chapterId == 'next' ? _ChapterDetail(nextComments!) : chapter;
+  }
   @override
   Future<bool> addComicHistory(
     String chapterId,
@@ -236,6 +258,133 @@ Future<void> _openReader(
 
 void main() {
   for (final direction in ReadDirectionType.values) {
+    testWidgets('${direction.name}: tap regions follow the viewport across resize', (tester) async {
+      await _openReader(
+        tester, direction, [], pageCount: 2,
+        size: const Size(1200, 1600),
+        verticalFit: ReaderImageFit.stretch,
+      );
+      final controller = tester.element(find.byType(DComicImage).first)
+          .read<ComicViewerPageController>();
+      Offset point(Size size, double fraction) =>
+          direction == ReadDirectionType.vertical
+              ? Offset(size.width / 2, size.height * fraction)
+              : Offset(size.width * (direction == ReadDirectionType.right ? 1 - fraction : fraction), size.height / 2);
+      Future<void> tap(Size size, double fraction) async {
+        await tester.tapAt(point(size, fraction));
+        await tester.pumpAndSettle(const Duration(milliseconds: 350));
+      }
+      for (final size in [const Size(1200, 1600), const Size(400, 800)]) {
+        tester.view.physicalSize = size;
+        await tester.pumpAndSettle();
+        // 15% from the edge must turn on tablets as well as phones.
+        await tap(size, .85);
+        expect(controller.currentPage, 1);
+        expect(controller.showToolBar, isFalse);
+        await tap(size, .15);
+        expect(controller.currentPage, 0);
+        // Just outside the 20% edge is the menu, not a turn.
+        await tap(size, .25);
+        expect(controller.currentPage, 0);
+        expect(controller.showToolBar, isTrue);
+        await tap(size, .5);
+        expect(controller.showToolBar, isFalse);
+      }
+      // The same boundary applies on the comments surface.
+      await tap(const Size(400, 800), .85);
+      await tap(const Size(400, 800), .85);
+      expect(controller.currentPage, 2);
+      await tap(const Size(400, 800), .15);
+      expect(controller.currentPage, 1);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+    testWidgets('${direction.name}: maximum tap regions preserve the central menu', (tester) async {
+      await _openReader(tester, direction, [], pageCount: 2,
+          size: const Size(1200, 1600), verticalFit: ReaderImageFit.stretch);
+      final context = tester.element(find.byType(DComicImage).first);
+      final controller = context.read<ComicViewerPageController>();
+      final config = context.read<ConfigProvider>();
+      config.horizontalClickAreaPercent = 40;
+      config.verticalClickAreaPercent = 40;
+      await tester.pumpAndSettle();
+      Future<void> tap(double fraction) async {
+        final point = direction == ReadDirectionType.vertical
+            ? Offset(600, 1600 * fraction)
+            : Offset(1200 * (direction == ReadDirectionType.right ? 1 - fraction : fraction), 800);
+        await tester.tapAt(point);
+        await tester.pumpAndSettle(const Duration(milliseconds: 350));
+      }
+      await tap(.65);
+      expect(controller.currentPage, 1);
+      expect(controller.showToolBar, isFalse);
+      await tap(.35);
+      expect(controller.currentPage, 0);
+      await tap(.45);
+      expect(controller.showToolBar, isTrue);
+      expect(controller.currentPage, 0);
+      await tap(.55);
+      expect(controller.showToolBar, isFalse);
+      await tap(.65);
+      await tap(.65);
+      expect(controller.currentPage, 2);
+      await tap(.45);
+      expect(controller.showToolBar, isTrue);
+      expect(controller.currentPage, 2);
+      await tap(.55);
+      await tap(.35);
+      expect(controller.currentPage, 1);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+    for (final entry in ['previous button', 'next button', 'back edge', 'forward edge']) {
+      testWidgets('${direction.name}: $entry animates while chapter is pending', (tester) async {
+        await _openReader(tester, direction, [], nextComments: [],
+            verticalFit: ReaderImageFit.stretch);
+        final controller = tester.element(find.byType(DComicImage).first)
+            .read<ComicViewerPageController>();
+        final config = tester.element(find.byType(ComicViewerPage)).read<ConfigProvider>();
+        final forward = entry == 'next button' || entry == 'forward edge';
+        if (!forward) {
+          await controller.load();
+          await tester.pumpAndSettle(const Duration(milliseconds: 350));
+        } else if (entry == 'forward edge') {
+          await tester.tapAt(switch (direction) {
+            ReadDirectionType.left => const Offset(380, 400),
+            ReadDirectionType.right => const Offset(20, 400),
+            ReadDirectionType.vertical => const Offset(200, 780),
+          });
+          await tester.pumpAndSettle(const Duration(milliseconds: 350));
+        }
+        final detail = controller.detailModel as _Detail;
+        final gate = detail.chapterGate = Completer<void>();
+        if (entry.endsWith('button')) {
+          config.readerEndAction = ReaderEndAction.nextChapter;
+          controller.showToolBar = true;
+          await tester.pumpAndSettle();
+          await tester.tap(find.byTooltip(forward ? '下一章' : '上一章').hitTestable());
+        } else {
+          final offset = direction == ReadDirectionType.vertical
+              ? Offset(200, forward ? 700 : 100)
+              : Offset((forward != (direction == ReadDirectionType.right)) ? 380 : 20, 400);
+          await tester.tapAt(offset);
+        }
+        for (var frame = 0; frame < 15; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        final refresh = tester.widget<EasyRefresh>(find.byType(EasyRefresh).first);
+        final indicator = forward
+            ? refresh.controller?.footerState
+            : refresh.controller?.headerState;
+        expect(indicator?.mode, IndicatorMode.processing);
+        expect(indicator!.offset, greaterThan(0));
+        gate.complete();
+        await tester.pumpAndSettle();
+        expect(controller.currentChapter!.chapterId, forward ? 'next' : 'chapter');
+        expect(controller.currentPage, 0);
+        expect((forward ? refresh.controller!.footerState : refresh.controller!.headerState)!.mode,
+            IndicatorMode.inactive);
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
     testWidgets('${direction.name}: cached chapter reload resets the viewport', (
       tester,
     ) async {

@@ -57,6 +57,33 @@ class ViewerSettingList extends StatelessWidget {
     );
   }
 
+  Widget _tapAreaSlider({
+    required double value,
+    required bool isChinese,
+    required ValueChanged<double>? onChanged,
+  }) {
+    final perSide = value.toStringAsFixed(0);
+    final total = (value * 2).toStringAsFixed(0);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          isChinese
+              ? '每侧 $perSide%，两侧合计 $total%（最多 80%）'
+              : '$perSide% per side, $total% combined (max 80%)',
+        ),
+        Slider(
+          value: value,
+          label: '$perSide%',
+          onChanged: onChanged,
+          min: 5,
+          max: 40,
+          divisions: 35,
+        ),
+      ],
+    );
+  }
+
   List<Widget> _buildSettingList(BuildContext context) {
     var config = Provider.of<ConfigProvider>(context);
     final viewer = context.watch<ComicViewerPageController?>();
@@ -167,27 +194,15 @@ class ViewerSettingList extends StatelessWidget {
           SettingsTile(
             leading: const Icon(Icons.expand),
             title: Text(S.of(context).ViewerSettingVerticalSize),
-            subtitle: SliderTheme(
-              data: const SliderThemeData(
-                showValueIndicator: ShowValueIndicator.always,
-              ),
-              child: Slider(
-                value: config.verticalClickAreaSize,
-                label: config.verticalClickAreaSize.toStringAsFixed(2),
-                onChanged: direction == ReadDirectionType.vertical
-                    ? (double value) {
-                        Provider.of<ConfigProvider>(
-                          context,
-                          listen: false,
-                        ).verticalClickAreaSize = value;
-                      }
-                    : null,
-                min: 10,
-                max: 300,
-              ),
+            subtitle: _tapAreaSlider(
+              value: config.verticalClickAreaPercent,
+              isChinese: isChinese,
+              onChanged: direction == ReadDirectionType.vertical
+                  ? (value) => config.verticalClickAreaPercent = value
+                  : null,
             ),
             trailing: Text(
-              config.verticalClickAreaSize.toStringAsFixed(0),
+              '${config.verticalClickAreaPercent.toStringAsFixed(0)}%',
               style: valueStyle,
             ),
           ),
@@ -197,27 +212,15 @@ class ViewerSettingList extends StatelessWidget {
               child: const Icon(Icons.expand),
             ),
             title: Text(S.of(context).ViewerSettingHorizontalSize),
-            subtitle: SliderTheme(
-              data: const SliderThemeData(
-                showValueIndicator: ShowValueIndicator.always,
-              ),
-              child: Slider(
-                value: config.horizontalClickAreaSize,
-                label: config.horizontalClickAreaSize.toStringAsFixed(2),
-                onChanged: direction != ReadDirectionType.vertical
-                    ? (double value) {
-                        Provider.of<ConfigProvider>(
-                          context,
-                          listen: false,
-                        ).horizontalClickAreaSize = value;
-                      }
-                    : null,
-                min: 10,
-                max: 200,
-              ),
+            subtitle: _tapAreaSlider(
+              value: config.horizontalClickAreaPercent,
+              isChinese: isChinese,
+              onChanged: direction != ReadDirectionType.vertical
+                  ? (value) => config.horizontalClickAreaPercent = value
+                  : null,
             ),
             trailing: Text(
-              config.horizontalClickAreaSize.toStringAsFixed(0),
+              '${config.horizontalClickAreaPercent.toStringAsFixed(0)}%',
               style: valueStyle,
             ),
           ),

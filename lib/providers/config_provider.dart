@@ -7,6 +7,7 @@ import 'package:dcomic/utils/reader_image_fit.dart';
 import 'package:dcomic/utils/reader_info_settings.dart';
 import 'package:dcomic/utils/theme_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 
 enum ReadDirectionType { left, right, vertical }
 
@@ -16,8 +17,8 @@ class ConfigProvider extends BaseProvider {
   ConfigEntity? _themeMode;
   ConfigEntity? _readDirection;
   bool _drawDebugWidget = false;
-  ConfigEntity? _horizontalClickAreaSize;
-  ConfigEntity? _verticalClickAreaSize;
+  ConfigEntity? _horizontalClickAreaPercent;
+  ConfigEntity? _verticalClickAreaPercent;
   ConfigEntity? _themeColor;
   ConfigEntity? _useMaterial3Design;
   ConfigEntity? _readerTheme;
@@ -47,6 +48,39 @@ class ConfigProvider extends BaseProvider {
     for (final setting in await database.configDao.getAllConfig()) {
       settings.putIfAbsent(setting.key, () => setting);
     }
+    // Old settings did not store a viewport. Use a fixed phone reference so
+    // the former 80/150 defaults both become 20%, consistently across devices.
+    Future<void> migrateTapArea(
+      String oldKey,
+      String newKey,
+      double referenceExtent,
+    ) async {
+      final legacy = settings[oldKey];
+      if (legacy == null) return;
+      await (database.database as sqflite.Database).transaction((transaction) async {
+        final existing = await transaction.query(
+          'ConfigEntity', where: 'key = ?', whereArgs: [newKey], limit: 1,
+        );
+        if (existing.isEmpty) {
+          final pixels = double.tryParse(legacy.value ?? '');
+          final percent = pixels != null && pixels.isFinite
+              ? (pixels / referenceExtent * 100).clamp(5.0, 40.0)
+              : 20.0;
+          await transaction.insert('ConfigEntity', {
+            'key': newKey,
+            'value': percent.toString(),
+          });
+        }
+        await transaction.delete(
+          'ConfigEntity', where: 'key = ?', whereArgs: [oldKey],
+        );
+      });
+      settings[newKey] = (await database.configDao.getConfigByKey(newKey))!;
+      settings.remove(oldKey);
+    }
+
+    await migrateTapArea('HorizontalClickAreaSize', 'HorizontalClickAreaPercent', 400);
+    await migrateTapArea('VerticalClickAreaSize', 'VerticalClickAreaPercent', 750);
     ConfigEntity read(String key, dynamic fallback) =>
         settings[key] ?? ConfigEntity.createConfigEntity(key, fallback);
 
@@ -54,8 +88,8 @@ class ConfigProvider extends BaseProvider {
     // recreate the row and publish it as a new local modification.
     _themeMode = read('ThemeMode', ThemeMode.system);
     _readDirection = read('ReadDirection', ReadDirectionType.left);
-    _horizontalClickAreaSize = read('HorizontalClickAreaSize', 80);
-    _verticalClickAreaSize = read('VerticalClickAreaSize', 150);
+    _horizontalClickAreaPercent = read('HorizontalClickAreaPercent', 20.0);
+    _verticalClickAreaPercent = read('VerticalClickAreaPercent', 20.0);
     _themeColor = read('ThemeColor', 'Blue');
     _useMaterial3Design = read('UseMaterial3Design', true);
     _readerTheme = read('ReaderTheme', ReaderTheme.app.name);
@@ -317,32 +351,37 @@ class ConfigProvider extends BaseProvider {
     notifyListeners();
   }
 
-  double get horizontalClickAreaSize {
-    if (_horizontalClickAreaSize == null) {
-      return 80;
-    }
-    return _horizontalClickAreaSize?.get<double>();
+  double _tapAreaPercent(ConfigEntity? setting) {
+    final value = double.tryParse(setting?.value ?? '');
+    return value != null && value.isFinite && value >= 5 && value <= 40
+        ? value
+        : 20;
   }
 
-  set horizontalClickAreaSize(double value) {
-    if (_horizontalClickAreaSize != null) {
-      _horizontalClickAreaSize?.set(value);
-      _persistSetting(_horizontalClickAreaSize!);
+  double get horizontalClickAreaPercent =>
+      _tapAreaPercent(_horizontalClickAreaPercent);
+
+  set horizontalClickAreaPercent(double value) {
+    if (!value.isFinite || value < 5 || value > 40) {
+      throw ArgumentError.value(value, 'value', 'Expected 5–40% per side');
+    }
+    if (_horizontalClickAreaPercent != null) {
+      _horizontalClickAreaPercent?.set(value);
+      _persistSetting(_horizontalClickAreaPercent!);
     }
     notifyListeners();
   }
 
-  double get verticalClickAreaSize {
-    if (_verticalClickAreaSize == null) {
-      return 150;
-    }
-    return _verticalClickAreaSize?.get<double>();
-  }
+  double get verticalClickAreaPercent =>
+      _tapAreaPercent(_verticalClickAreaPercent);
 
-  set verticalClickAreaSize(double value) {
-    if (_verticalClickAreaSize != null) {
-      _verticalClickAreaSize?.set(value);
-      _persistSetting(_verticalClickAreaSize!);
+  set verticalClickAreaPercent(double value) {
+    if (!value.isFinite || value < 5 || value > 40) {
+      throw ArgumentError.value(value, 'value', 'Expected 5–40% per side');
+    }
+    if (_verticalClickAreaPercent != null) {
+      _verticalClickAreaPercent?.set(value);
+      _persistSetting(_verticalClickAreaPercent!);
     }
     notifyListeners();
   }
