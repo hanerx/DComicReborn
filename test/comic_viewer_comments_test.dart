@@ -338,7 +338,7 @@ void main() {
     for (final entry in ['previous button', 'next button', 'back edge', 'forward edge']) {
       testWidgets('${direction.name}: $entry animates while chapter is pending', (tester) async {
         await _openReader(tester, direction, [], nextComments: [],
-            verticalFit: ReaderImageFit.stretch);
+            pageCount: 12, verticalFit: ReaderImageFit.stretch);
         final controller = tester.element(find.byType(DComicImage).first)
             .read<ComicViewerPageController>();
         final config = tester.element(find.byType(ComicViewerPage)).read<ConfigProvider>();
@@ -347,12 +347,14 @@ void main() {
           await controller.load();
           await tester.pumpAndSettle(const Duration(milliseconds: 350));
         } else if (entry == 'forward edge') {
-          await tester.tapAt(switch (direction) {
-            ReadDirectionType.left => const Offset(380, 400),
-            ReadDirectionType.right => const Offset(20, 400),
-            ReadDirectionType.vertical => const Offset(200, 780),
-          });
-          await tester.pumpAndSettle(const Duration(milliseconds: 350));
+          for (var page = 0; page < 12; page++) {
+            await tester.tapAt(switch (direction) {
+              ReadDirectionType.left => const Offset(380, 400),
+              ReadDirectionType.right => const Offset(20, 400),
+              ReadDirectionType.vertical => const Offset(200, 780),
+            });
+            await tester.pumpAndSettle(const Duration(milliseconds: 350));
+          }
         }
         final detail = controller.detailModel as _Detail;
         final gate = detail.chapterGate = Completer<void>();
@@ -367,15 +369,25 @@ void main() {
               : Offset((forward != (direction == ReadDirectionType.right)) ? 380 : 20, 400);
           await tester.tapAt(offset);
         }
-        for (var frame = 0; frame < 15; frame++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
         final refresh = tester.widget<EasyRefresh>(find.byType(EasyRefresh).first);
         final indicator = forward
             ? refresh.controller?.footerState
             : refresh.controller?.headerState;
-        expect(indicator?.mode, IndicatorMode.processing);
-        expect(indicator!.offset, greaterThan(0));
+        if (entry.endsWith('button')) {
+          expect(indicator!.offset, inExclusiveRange(0, 50),
+              reason: 'The chapter indicator must slide in before loading');
+        }
+        for (var frame = 0; frame < 15; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        final pending = forward
+            ? refresh.controller!.footerState!
+            : refresh.controller!.headerState!;
+        expect(pending.mode, IndicatorMode.processing);
+        expect(pending.offset, greaterThan(0));
         gate.complete();
         await tester.pumpAndSettle();
         expect(controller.currentChapter!.chapterId, forward ? 'next' : 'chapter');

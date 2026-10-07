@@ -195,15 +195,20 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     // hold the old position until the new viewport receives its first drag.
     if (direction != ReadDirectionType.vertical &&
         _pageController.hasClients) {
+      // Let the destination page lay out before animating past its boundary.
+      // Building the comments page can otherwise cancel the driven scroll.
+      _pageController.jumpToPage(forward ? _pageCount - 1 : 0);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
       _refreshController.headerState?.notifier.position = _pageController.position;
       _refreshController.footerState?.notifier.position = _pageController.position;
     }
-    // Jump into overscroll directly; PageView's snapping can consume an
-    // animated scroll before it reaches the refresh/load trigger.
+    // Animate the indicator in before starting the chapter request, including
+    // cache hits that otherwise replace the viewport before a frame is drawn.
     if (forward) {
-      await _refreshController.callLoad(duration: null);
+      await _refreshController.callLoad();
     } else {
-      await _refreshController.callRefresh(duration: null);
+      await _refreshController.callRefresh();
     }
   }
 
