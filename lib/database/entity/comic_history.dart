@@ -65,7 +65,7 @@ abstract class ComicHistoryDao {
   @Query('SELECT * FROM ComicHistoryEntity WHERE `comicId`= :comicId AND `providerName`= :providerName')
   Future<ComicHistoryEntity?> getComicHistoryByComicId(String comicId, String providerName);
 
-  @Query('SELECT * FROM ComicHistoryEntity WHERE `providerName`= :providerName GROUP BY comicId')
+  @Query('SELECT * FROM ComicHistoryEntity WHERE `providerName`= :providerName GROUP BY comicId ORDER BY timestamp DESC')
   Future<List<ComicHistoryEntity>> getComicHistoryByProvider(
       String providerName);
 

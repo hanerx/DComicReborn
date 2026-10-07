@@ -380,7 +380,7 @@ class _$ComicHistoryDao extends ComicHistoryDao {
     String providerName,
   ) async {
     return _queryAdapter.queryList(
-      'SELECT * FROM ComicHistoryEntity WHERE `providerName`= ?1 GROUP BY comicId',
+      'SELECT * FROM ComicHistoryEntity WHERE `providerName`= ?1 GROUP BY comicId ORDER BY timestamp DESC',
       mapper: (Map<String, Object?> row) => ComicHistoryEntity(
         row['id'] as int?,
         row['comicId'] as String,
