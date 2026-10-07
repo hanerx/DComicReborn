@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+import 'package:dcomic/utils/firbaselogoutput.dart';
 import 'package:dcomic/providers/automatic_mapping.dart';
 import 'package:dcomic/providers/download_provider.dart';
 import 'package:dcomic/providers/database_refresh_binding.dart';
@@ -27,7 +29,6 @@ import 'package:dcomic/view/components/dcomic_mark.dart';
 import 'package:dcomic/view/components/left_drawer.dart';
 import 'package:dcomic/view/homepage/homepage.dart';
 import 'package:easy_refresh/easy_refresh.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -38,12 +39,20 @@ Future<void> main() async {
   runZonedGuarded<Future<void>>(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+      if (defaultTargetPlatform != TargetPlatform.macOS) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      }
       await PerformanceMonitor.instance.initialize();
-      // The following lines are the same as previously explained in "Handling uncaught errors"
-      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
+      FlutterError.onError = (details) {
+        FlutterError.presentError(details);
+        recordAppError(
+          details.exception,
+          details.stack ?? StackTrace.current,
+          fatal: true,
+        );
+      };
 
       // Set Easy Refresh
       EasyRefresh.defaultHeaderBuilder = () => const ClassicHeader(
@@ -62,8 +71,7 @@ Future<void> main() async {
       );
       runApp(const App());
     },
-    (error, stack) =>
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true),
+    (error, stack) => recordAppError(error, stack, fatal: true),
   );
 }
 

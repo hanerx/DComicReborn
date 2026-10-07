@@ -26,6 +26,11 @@ on:
         required: false
         default: "true"
         type: boolean
+      run_macos:
+        description: "是否运行 macOS 打包（始终为 Release，含 universal ZIP 和 DMG）"
+        required: false
+        default: true
+        type: boolean
   push:
     branches:
       - develop
@@ -249,6 +254,80 @@ jobs:
           if-no-files-found: error
           compression-level: 0
 
+  build_macos:
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_macos == 'true' }}
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS universal Release
+        run: flutter build macos --release --no-pub
+
+      - name: Package universal ZIP and DMG
+        run: |
+          set -euo pipefail
+          version=''
+          while IFS= read -r line; do
+            if [[ "$line" =~ ^version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+              version="${BASH_REMATCH[1]}"
+              break
+            fi
+          done < pubspec.yaml
+          [[ -n "$version" ]] || {
+            echo 'Missing numeric app version in pubspec.yaml.' >&2
+            exit 1
+          }
+          bash .github/scripts/package_macos.sh "$version"
+
+      - name: Smoke launch packaged macOS app
+        run: |
+          set -euo pipefail
+          app_path='build/macos/Build/Products/Release/DComicReborn.app'
+          executable_name="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app_path/Contents/Info.plist")"
+          log_path='build/macos/packages/macos-launch.log'
+          "$app_path/Contents/MacOS/$executable_name" >"$log_path" 2>&1 &
+          app_pid=$!
+          cleanup() {
+            if kill -0 "$app_pid" 2>/dev/null; then
+              kill "$app_pid" 2>/dev/null || true
+              wait "$app_pid" 2>/dev/null || true
+            fi
+          }
+          trap cleanup EXIT
+          sleep 15
+          echo '--- macOS app launch log ---'
+          cat "$log_path"
+          echo '--- end macOS app launch log ---'
+          if grep -E 'Unhandled Exception|MissingPluginException|\[core/no-app\]' "$log_path"; then
+            echo 'DComicReborn reported a startup exception.' >&2
+            exit 1
+          fi
+          if ! kill -0 "$app_pid" 2>/dev/null; then
+            wait "$app_pid" || exit_code=$?
+            echo "DComicReborn exited during the startup smoke check (exit ${exit_code:-unknown})." >&2
+            exit 1
+          fi
+          ps -p "$app_pid" -o pid=,etime=,command=
+
+      - name: Upload macOS packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-release
+          path: |
+            build/macos/packages/DComicReborn-*-macos-universal.zip
+            build/macos/packages/DComicReborn-*-macos-universal.dmg
+          if-no-files-found: error
+          compression-level: 0
+
   generate_release_note:
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
@@ -289,7 +368,7 @@ jobs:
           path: release-note.md
 
   publish_release:
-    needs: [build_android, build_ios, build_windows, generate_release_note]
+    needs: [build_android, build_ios, build_windows, build_macos, generate_release_note]
     if: >-
       ${{
         !cancelled() && github.ref_type == 'tag' &&
@@ -297,7 +376,8 @@ jobs:
         !contains(needs.*.result, 'failure') &&
         (needs.build_android.result == 'success' ||
          needs.build_ios.result == 'success' ||
-         needs.build_windows.result == 'success')
+         needs.build_windows.result == 'success' ||
+         needs.build_macos.result == 'success')
       }}
     runs-on: ubuntu-latest
     permissions:
@@ -322,6 +402,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: windows-release
+          path: release-assets
+
+      - name: Download macOS packages
+        if: needs.build_macos.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-release
           path: release-assets
 
       - name: Download release-note

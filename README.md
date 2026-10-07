@@ -24,6 +24,7 @@
   <a href="https://github.com/hanerx/DComicReborn/releases/latest/download/app-release.apk"><img src="https://img.shields.io/badge/Android-下载_APK-38658a?style=for-the-badge&amp;logo=android&amp;logoColor=white" alt="Android APK 下载"></a>
   <a href="https://github.com/hanerx/DComicReborn/releases/latest/download/ios-release.ipa"><img src="https://img.shields.io/badge/iOS-下载_IPA-455a70?style=for-the-badge&amp;logo=apple&amp;logoColor=white" alt="iOS IPA 下载"></a>
   <a href="https://github.com/hanerx/DComicReborn/releases/latest"><img src="https://img.shields.io/badge/Windows-查看发布-586779?style=for-the-badge" alt="Windows 发布附件"></a>
+  <a href="https://github.com/hanerx/DComicReborn/releases/latest"><img src="https://img.shields.io/badge/macOS-查看发布-455a70?style=for-the-badge&amp;logo=apple&amp;logoColor=white" alt="macOS 发布附件"></a>
   <a href="https://hub.docker.com/r/hanerx/dcomic_server"><img src="https://img.shields.io/docker/pulls/hanerx/dcomic_server?style=for-the-badge" alt="Docker"></a>
 </p>
 
@@ -38,6 +39,7 @@
 | **Android** | Android 7.0+ | 下载 APK，允许安装此来源的应用。 |
 | **iOS** | iOS 15+ | IPA **未签名**，需要自行签名安装，不是 App Store 安装包。 |
 | **Windows** | Windows 10+ · x64 | 安装版 EXE / 免安装 ZIP，详见下方说明。 |
+| **macOS** | macOS 12.0+ · Apple Silicon / Intel | 通用架构 DMG / ZIP，详见下方说明。 |
 
 <details>
 <summary><strong>Windows 下载与安装须知</strong></summary>
@@ -50,9 +52,20 @@ Windows 正式发布提供 portable ZIP 和安装版 EXE，请以[发布页实�
 
 </details>
 
+<details>
+<summary><strong>macOS 下载与安装须知</strong></summary>
+
+从[发布页](https://github.com/hanerx/DComicReborn/releases/latest)下载文件名含 `macos-universal` 的 DMG 或 ZIP。DMG 打开后将 `DComicReborn.app` 拖入 Applications；ZIP 解压后将完整 `.app` 移入“应用程序”，不要拆出其中的可执行文件。
+
+包使用 ad-hoc 签名，尚未进行 Developer ID 签名或 Apple 公证。首次启动可能被 Gatekeeper 拦截；确认下载来源可信后，在“系统设置 → 隐私与安全性”中选择“仍要打开”。不要为此全局关闭 Gatekeeper。
+
+开发构建在 Actions 中下载 `macos-release` artifact；实际可用附件以成功的构建为准。
+
+</details>
+
 ## 介绍
 
-**DComicReborn 是使用 Flutter 开发的第三方多源漫画阅读应用**，面向 Android、iOS 和 Windows。浏览、收藏、阅读和记录在同一套界面中完成；需要多设备接力时，再连接自己的同步服务器。
+**DComicReborn 是使用 Flutter 开发的第三方多源漫画阅读应用**，面向 Android、iOS、Windows 和 macOS。浏览、收藏、阅读和记录在同一套界面中完成；需要多设备接力时，再连接自己的同步服务器。
 
 | 找到想看的 | 按习惯阅读 | 保留自己的记录 |
 | :--- | :--- | :--- |
@@ -267,7 +280,7 @@ flowchart TB
 <details>
 <summary><strong>展开应用开发指南</strong> · 环境、签名、运行与打包</summary>
 
-**工具链**：Flutter **3.47.2**（与 CI 一致，配套 Dart **3.13.2**）。Android 使用 JDK **21**、SDK **36**，NDK 跟随 Flutter；Gradle、AGP 和 Kotlin 使用仓库内配置，不单独升级。iOS 开发需要 macOS、Xcode 和 CocoaPods；Windows 开发需要 Visual Studio 的 C++ 桌面开发工具链，并开启开发者模式以支持插件符号链接。
+**工具链**：Flutter **3.47.2**（与 CI 一致，配套 Dart **3.13.2**）。Android 使用 JDK **21**、SDK **36**，NDK 跟随 Flutter；Gradle、AGP 和 Kotlin 使用仓库内配置，不单独升级。iOS / macOS 开发需要 macOS 和 Xcode，iOS 另需 CocoaPods；Windows 开发需要 Visual Studio 的 C++ 桌面开发工具链，并开启开发者模式以支持插件符号链接。
 
 ```sh
 git clone https://github.com/hanerx/DComicReborn.git
@@ -293,7 +306,7 @@ keyAlias=local-dev
 storeFile=local-dev.jks
 ```
 
-随后运行应用；`设备ID` 来自 `flutter devices`，Windows 可直接使用 `windows`：
+随后运行应用；`设备ID` 来自 `flutter devices`，Windows 可直接使用 `windows`，Mac 可使用 `macos`：
 
 ```sh
 flutter run -d 设备ID
@@ -311,6 +324,7 @@ flutter analyze
 flutter test
 flutter build apk --release
 flutter build windows --release
+flutter build macos --release
 ```
 
 Windows 安装版另需 Inno Setup 6。构建后使用现有脚本打包，`-Version` 与 `pubspec.yaml` 中的三段版本号保持一致：
@@ -320,6 +334,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .github/scripts/package_wind
 ```
 
 产物位于 `build/windows/packages/`。iOS 无签名编译可使用 `flutter build ios --release --no-codesign`，编译成功不代表已具备安装签名。
+
+macOS 打包须在 Mac 上进行，构建后执行：
+
+```sh
+bash .github/scripts/package_macos.sh 2.5.10
+```
+
+版本参数与 `pubspec.yaml` 保持一致。产物位于 `build/macos/packages/`，同时提供 `DComicReborn-<版本>-macos-universal.zip` 和 `.dmg`。脚本校验双架构、执行权限与符号链接，使用 ad-hoc 签名，不需要 Apple 开发者证书；这不等于 Developer ID 签名或 Apple 公证。
+
+在 **Actions → Flutter CI & Release → Run workflow** 中启用 `run_macos` 即可打包；如只需要 macOS，可关闭其他平台开关。macOS 始终构建 Release，不受 `build_type` 影响。推送 `develop` 或 tag 同样触发构建；成功的 tag 构建会将包上传到 GitHub Release，其余构建可下载 `macos-release` artifact。CI 包含应用进程启动检查，但不能替代真机交互验收。
+
+macOS 尚未配置 Firebase，不启用 Firebase 遥测；错误保留在控制台日志中。应用内更新通过默认浏览器下载 DMG，不调用仅支持移动端的下载器。
 
 </details>
 

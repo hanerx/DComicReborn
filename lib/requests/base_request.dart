@@ -22,10 +22,10 @@ class RequestStatics {
     if (_store == null) {
       Directory? value;
 
-      if (Platform.isIOS) {
-        value = await getApplicationDocumentsDirectory();
-      } else {
+      if (Platform.isAndroid) {
         value = await getExternalStorageDirectory();
+      } else {
+        value = await getApplicationDocumentsDirectory();
       }
 
       _store = DriftCacheStore(databasePath: '${value?.path}/cache/dio');

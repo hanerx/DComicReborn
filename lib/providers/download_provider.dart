@@ -1,5 +1,6 @@
 import 'dart:isolate';
 import 'dart:ui';
+import 'dart:io';
 
 import 'package:flutter_downloader/flutter_downloader.dart';
 
@@ -17,14 +18,16 @@ void onDownloadCallback(String id, int status, int progress) async {
 }
 
 class DownloadProvider extends BaseProvider {
-  final ReceivePort _port = ReceivePort();
+  ReceivePort? _port;
   final Map<String, ProviderDownloadCallback> _downloadCallbacks = {};
 
   @override
   Future<void> init() async{
+    if (!Platform.isAndroid && !Platform.isIOS) return;
     await FlutterDownloader.initialize();
-    IsolateNameServer.registerPortWithName(_port.sendPort, 'downloader_send_port');
-    _port.listen((dynamic data) {
+    final port = _port = ReceivePort();
+    IsolateNameServer.registerPortWithName(port.sendPort, 'downloader_send_port');
+    port.listen((dynamic data) {
       String id = data[0];
       DownloadTaskStatus status = DownloadTaskStatus.fromInt(data[1]);
       int progress = data[2];
@@ -51,7 +54,10 @@ class DownloadProvider extends BaseProvider {
 
   @override
   void dispose() {
-    IsolateNameServer.removePortNameMapping('downloader_send_port');
+    if (_port != null) {
+      IsolateNameServer.removePortNameMapping('downloader_send_port');
+      _port!.close();
+    }
     super.dispose();
   }
 }

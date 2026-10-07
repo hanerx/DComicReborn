@@ -237,6 +237,14 @@ class VersionProvider extends BaseProvider {
         );
         updateUrl = ipa != null ? ipa['browser_download_url'] : '';
       }
+      if (Platform.isMacOS) {
+        var dmg = data['assets'].firstWhere(
+          (a) => a['name'] != null &&
+              a['name'].toString().endsWith('-macos-universal.dmg'),
+          orElse: () => null,
+        );
+        updateUrl = dmg != null ? dmg['browser_download_url'] : '';
+      }
     }
     return ReleaseInfo(
       data['tag_name'],
@@ -316,6 +324,15 @@ class VersionProvider extends BaseProvider {
               TextButton(
                 onPressed: () async {
                   Navigator.of(context).pop();
+                  if (Platform.isMacOS) {
+                    await url_string_launcher.launchUrlString(
+                      releaseInfo.updateUrl.isEmpty
+                          ? releaseInfo.releaseUrl
+                          : releaseInfo.updateUrl,
+                      mode: url_string_launcher.LaunchMode.externalApplication,
+                    );
+                    return;
+                  }
                   if (releaseInfo.updateUrl.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
