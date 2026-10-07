@@ -26,6 +26,14 @@ class DatabaseInstance {
         'ALTER TABLE `ComicHistoryEntity` ADD COLUMN `lastPage` INTEGER NOT NULL DEFAULT 1',
       );
     }),
+    Migration(8, 9, (database) async {
+      // Removed when CopyManga switched to explicit API domain selection.
+      await database.delete(
+        'ModelConfigEntity',
+        where: 'key = ?',
+        whereArgs: ['useDynamicBaseUrl'],
+      );
+    }),
   ];
 
   /// 新装数据库建表完成后写入默认章节匹配分组；升级场景由 5 -> 6 迁移负责。

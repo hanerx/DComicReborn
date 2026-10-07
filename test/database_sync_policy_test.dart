@@ -162,6 +162,59 @@ void main() {
     },
   );
 
+  test('v8 upgrade removes retired routing key and preserves current source data',
+      () async {
+    final path = '${directory.path}/legacy_dynamic_url.db';
+    final legacy = await $FloorDComicDatabase.databaseBuilder(path).build();
+    await (legacy.database as Database).setVersion(8);
+    await legacy.database.insert('ModelConfigEntity', {
+      'id': 19,
+      'key': 'useDynamicBaseUrl',
+      'value': '1',
+      'sourceModel': 'copymanga',
+    });
+    final retained = [
+      {
+        'id': 20,
+        'key': 'apiDomain',
+        'value': 'api.copy4000.com',
+        'sourceModel': 'copymanga',
+      },
+      {
+        'id': 21,
+        'key': 'token',
+        'value': 'existing-account-token',
+        'sourceModel': 'copymanga',
+      },
+    ];
+    for (final row in retained) {
+      await legacy.database.insert('ModelConfigEntity', row);
+    }
+    await legacy.close();
+
+    final upgraded = await $FloorDComicDatabase
+        .databaseBuilder(path)
+        .addMigrations(DatabaseInstance.migrations)
+        .addCallback(DatabaseInstance.databaseCallback)
+        .build();
+    try {
+      expect(
+        await upgraded.database.query('ModelConfigEntity', orderBy: 'id'),
+        retained,
+      );
+      await expectLater(
+        upgraded.database.insert('ModelConfigEntity', {
+          'key': 'useDynamicBaseUrl',
+          'value': '1',
+          'sourceModel': 'copymanga',
+        }),
+        throwsA(isA<DatabaseException>()),
+      );
+    } finally {
+      await upgraded.close();
+    }
+  });
+
   test(
     'database open rejects legacy unregistered keys before transport exists',
     () async {
