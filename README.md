@@ -411,6 +411,20 @@ SSE 用于通知有变更，数据通过同步 API 拉取。删除同样参与�
 
 </details>
 
+### 数据库同步契约
+
+同步策略必须在数据库定义层显式登记，不采用“未登记就本地保存”或“未排除就自动上传”的默认行为：
+
+- [`database_sync_contract.dart`](lib/database/database_sync_contract.dart) 声明每张业务表的同步方式，以及每个字段属于传输值、记录标识、本地字段还是本地关联。不同步的表和字段必须说明原因；同步内部表也逐项登记为本地数据。SQL 变更捕获和传输字段投影消费这份声明。
+- [`setting_sync_contract.dart`](lib/database/setting_sync_contract.dart) 声明配置表中每个键的策略：`synced` 必须提供值校验器，`localOnly` 必须说明原因，`credential` 只进入用户单独开启的凭据分类。动态键只能使用显式登记的命名空间；不再通过名称包含 `token`、`secret` 等片段猜测分类。增加设置只登记一次，SQL 筛选与接收校验均由同一条定义生成。
+- 数据库打开并完成迁移后，自动对照 SQLite 实际表和字段检查完整性，并检查已有配置键；未声明、新增或已经失效的字段声明都会报出具体表／字段。构造未知配置对象立即报错；SQLite 守卫也拦截原始 SQL、更新配置键和批量写入中的未知键，即使同步尚未开启也生效。
+
+修改实体时，同步更新契约和数据库迁移；不要通过添加默认忽略分支掩盖错误。已有库中发现未登记键时，应确认其语义后补充显式策略或迁移，不能清空用户数据。
+
+```sh
+flutter test test/database_sync_policy_test.dart test/sync_store_test.dart test/database_upgrade_test.dart
+```
+
 ### 开发规范与提交流程
 
 1. **保持分层**：UI 负责展示与交互，页面控制器和模型处理状态，源站协议放在 `lib/requests/`。新增漫画源时复用现有模型接口，不把域名、请求头和解析逻辑散落到页面。

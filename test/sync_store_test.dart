@@ -460,6 +460,122 @@ void main() {
     );
   });
 
+  test('reader settings round-trip and retire acknowledged edits', () async {
+    const values = <String, List<String>>{
+      'ReaderInfoEnabled': ['0', '1'],
+      'ReaderInfoChapter': ['0', '1'],
+      'ReaderInfoTime': ['0', '1'],
+      'ReaderInfoPosition': ['bottomLeft', 'bottomRight', 'topLeft', 'topRight'],
+      'ReaderBatteryFormat': ['hidden', 'icon', 'number', 'iconAndNumber'],
+      'ReaderPageFormat': ['hidden', 'current', 'currentAndTotal', 'percentage'],
+      'ReaderPrecacheCount': ['0', '3', '9'],
+    };
+    await store.calibrate(1000, roundTrip: Duration.zero);
+    var wall = 2000;
+    for (final entry in values.entries) {
+      await database.configDao.insertConfig(
+        ConfigEntity.createConfigEntity(entry.key, entry.value.first),
+      );
+      final sent = (await store.pending({SyncCategory.settings})).single;
+      await store.acknowledge(sent, sent);
+      expect(await store.pending({SyncCategory.settings}), isEmpty);
+      for (final value in entry.value) {
+        final remote = SyncRecord(
+          category: SyncCategory.settings,
+          key: entry.key,
+          value: {'value': value},
+          deleted: false,
+          version: SyncVersion(wall: wall++, logical: 0, device: 'remote'),
+          uncertain: false,
+        );
+        await store.receive([remote]);
+        expect(
+          (await database.configDao.getConfigByKey(entry.key))?.value,
+          value,
+        );
+      }
+    }
+    expect(await store.pending({SyncCategory.settings}), isEmpty);
+  });
+
+  test('reader info conflict can be resolved without blocking later edits',
+      () async {
+    await database.configDao.insertConfig(
+      ConfigEntity.createConfigEntity('ReaderInfoEnabled', true),
+    );
+    final local = (await store.pending({SyncCategory.settings})).single;
+    final remote = SyncRecord(
+      category: SyncCategory.settings,
+      key: local.key,
+      value: const {'value': '0'},
+      deleted: false,
+      version: const SyncVersion(wall: 100, logical: 0, device: 'remote'),
+      uncertain: false,
+    );
+    await store.addConflict(local, remote);
+    expect(await store.pending({SyncCategory.settings}), isEmpty);
+    final conflict = (await store.conflicts()).single;
+    await store.calibrate(200, roundTrip: Duration.zero);
+    await store.resolveConflict(conflict.id, useLocal: false);
+    final resolution = (await store.pendingResolution(conflict.id))!;
+    expect(resolution.value, remote.value);
+    expect(resolution.baseVersion, remote.version);
+    await store.acknowledge(resolution, resolution);
+    expect(await store.conflicts(), isEmpty);
+    expect(await store.pendingResolution(conflict.id), isNull);
+    final setting = (await database.configDao.getConfigByKey(local.key))!;
+    expect(setting.value, '0');
+    setting.set(true);
+    await database.configDao.updateConfig(setting);
+    final next = (await store.pending({SyncCategory.settings})).single;
+    expect(next.version.compareTo(resolution.version), greaterThan(0));
+    await store.acknowledge(next, next);
+    expect(await store.pending({SyncCategory.settings}), isEmpty);
+    expect(
+      (await database.configDao.getConfigByKey(local.key))?.value,
+      '1',
+    );
+  });
+
+  test('invalid reader settings reject the whole incoming page', () async {
+    const invalidValues = {
+      'ReaderInfoEnabled': ['true'],
+      'ReaderInfoChapter': ['2'],
+      'ReaderInfoTime': [''],
+      'ReaderInfoPosition': ['center'],
+      'ReaderBatteryFormat': ['percentage'],
+      'ReaderPageFormat': ['number'],
+      'ReaderPrecacheCount': ['-1', '10', '1.5'],
+    };
+    for (final entry in invalidValues.entries) {
+      for (final value in entry.value) {
+        await expectLater(
+          store.receive([
+            SyncRecord(
+              category: SyncCategory.settings,
+              key: 'ThemeColor',
+              value: const {'value': 'Red'},
+              deleted: false,
+              version: const SyncVersion(wall: 100, logical: 0, device: 'remote'),
+              uncertain: false,
+            ),
+            SyncRecord(
+              category: SyncCategory.settings,
+              key: entry.key,
+              value: {'value': value},
+              deleted: false,
+              version: const SyncVersion(wall: 100, logical: 0, device: 'remote'),
+              uncertain: false,
+            ),
+          ]),
+          throwsFormatException,
+        );
+        expect(await database.configDao.getConfigByKey('ThemeColor'), isNull);
+        expect(await database.configDao.getConfigByKey(entry.key), isNull);
+      }
+    }
+  });
+
   test('conflict resolutions use a dedicated durable outbox', () async {
     await database.configDao.insertConfig(
       ConfigEntity.createConfigEntity('ThemeColor', 'Blue'),
@@ -514,7 +630,7 @@ void main() {
     expect(stillPending.value, const {'value': 'Blue'});
   });
 
-  test('source settings and credentials use conservative classification',
+  test('source settings and credentials use explicit policies',
       () async {
     await database.modelConfigDao.insertConfig(
       ModelConfigEntity.createConfigEntity(
@@ -525,13 +641,6 @@ void main() {
     );
     await database.modelConfigDao.insertConfig(
       ModelConfigEntity.createConfigEntity('token', 'secret', 'copymanga'),
-    );
-    await database.modelConfigDao.insertConfig(
-      ModelConfigEntity.createConfigEntity(
-        'debugToggle',
-        'device-only',
-        'copymanga',
-      ),
     );
     await database.configDao.insertConfig(
       ConfigEntity.createConfigEntity(

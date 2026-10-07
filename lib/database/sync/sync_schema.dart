@@ -9,85 +9,31 @@ const _resolutionTable = '_dcomic_sync_resolutions';
 const _accountSnapshotTable = '_dcomic_sync_account_snapshots';
 const _notificationTable = '_dcomic_sync_notifications';
 
-const _settingsAllowlist = <String>{
-  'ThemeMode',
-  'ReadDirection',
-  'HorizontalClickAreaSize',
-  'VerticalClickAreaSize',
-  'HorizontalClickAreaPercent',
-  'VerticalClickAreaPercent',
-  'HorizontalImageFit',
-  'VerticalImageFit',
-  'ThemeColor',
-  'UseMaterial3Design',
-  'ReaderTheme',
-  'ReaderPrecacheCount',
-  'ReaderEndAction',
-  'ReaderInfoEnabled',
-  'ReaderInfoPosition',
-  'ReaderBatteryFormat',
-  'ReaderPageFormat',
-  'ReaderInfoChapter',
-  'ReaderInfoTime',
-  'ResumeLastReadPage',
-  'AggregateSubscribeBadges',
-  'AggregateReadingProgress',
-  'AutoMapMissingComics',
-  'AutoMapIntervalSeconds',
-  'AutoMapRetryEveryLaunch',
-  'AutoMapMaxAttempts',
-  'sourceModelSortOrder',
-  'activeHomeModelIndex',
-};
-
-const _sourceSettingsAllowlist = <String>{
-  'chineseDisplayLanguage',
-  'apiDomain',
-  'chapterCommentApiDomain',
-  'autoSignInEnabled',
-};
-
-const _credentialKeyNames = <String>{
-  'token',
-  'islogin',
-  'username',
-  'password',
-  'userid',
-  'uid',
-  'refreshtoken',
-  'accesstoken',
-};
-
-bool _isCredentialKey(String key) {
-  final lower = key.toLowerCase();
-  return _credentialKeyNames.contains(lower) ||
-      lower.contains('password') ||
-      lower.contains('token') ||
-      lower.contains('secret') ||
-      lower.contains('cookie');
-}
+bool _isCredentialKey(String key) =>
+    modelSettingDefinition(key).mode == SettingSyncMode.credential;
 
 bool _isSourceSettingKey(String key) =>
-    _sourceSettingsAllowlist.contains(key) && !_isCredentialKey(key);
+    modelSettingDefinition(key).mode == SettingSyncMode.synced;
 
-String _sqlList(Iterable<String> values) =>
-    values.map((value) => "'${value.replaceAll("'", "''")}'").join(',');
+String get _settingsSql => settingPolicySql(
+      'ConfigEntity', 'key', mode: SettingSyncMode.synced,
+    );
+String get _newSettingsSql => settingPolicySql(
+      'ConfigEntity', 'NEW.key', mode: SettingSyncMode.synced,
+    );
+String get _oldSettingsSql => settingPolicySql(
+      'ConfigEntity', 'OLD.key', mode: SettingSyncMode.synced,
+    );
+String get _newSourceSettingSql => settingPolicySql(
+      'ModelConfigEntity', 'NEW.key', mode: SettingSyncMode.synced,
+    );
+String get _oldSourceSettingSql => settingPolicySql(
+      'ModelConfigEntity', 'OLD.key', mode: SettingSyncMode.synced,
+    );
 
-String get _settingsSql => 'key IN (${_sqlList(_settingsAllowlist)})';
-String get _newSettingsSql => 'NEW.key IN (${_sqlList(_settingsAllowlist)})';
-String get _oldSettingsSql => 'OLD.key IN (${_sqlList(_settingsAllowlist)})';
-String get _newSourceSettingSql =>
-    'NEW.key IN (${_sqlList(_sourceSettingsAllowlist)})';
-String get _oldSourceSettingSql =>
-    'OLD.key IN (${_sqlList(_sourceSettingsAllowlist)})';
-
-String _credentialSql(String prefix) {
-  final key = '$prefix.key';
-  final lower = 'lower($key)';
-  return '($lower IN (${_sqlList(_credentialKeyNames)}) '
-      "OR $lower LIKE '%password%' OR $lower LIKE '%token%' "
-      "OR $lower LIKE '%secret%' OR $lower LIKE '%cookie%')";
-}
+String _credentialSql(String prefix) => settingPolicySql(
+      'ModelConfigEntity', '$prefix.key', mode: SettingSyncMode.credential,
+    );
 
 Future<void> _installSyncSchema(sqflite.Database database) async {
   await database.transaction((transaction) async {
@@ -176,7 +122,10 @@ Future<void> _installSyncSchema(sqflite.Database database) async {
       'CREATE TABLE IF NOT EXISTS $_notificationTable ('
       'id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT NOT NULL)',
     );
+    await validateDatabaseSyncContract(transaction);
+    await validateStoredSettingPolicies(transaction);
     await _createCaptureTriggers(transaction);
+    await installSettingPolicyGuards(transaction);
   });
 }
 
@@ -224,265 +173,127 @@ Future<void> _createCaptureTriggers(sqflite.DatabaseExecutor database) async {
     await database.execute('DROP TRIGGER IF EXISTS $name');
   }
 
-  await _createTrigger(
-    database,
-    'dcomic_sync_history_insert',
-    'AFTER INSERT ON ComicHistoryEntity',
-    _captureBody(
-      SyncCategory.history,
-      "'history'",
-      'NEW.providerName',
-      'NEW.comicId',
-      '0',
-    ),
-  );
-  await _createTrigger(
-    database,
-    'dcomic_sync_history_update_old',
-    'AFTER UPDATE ON ComicHistoryEntity',
-    _captureBody(
-      SyncCategory.history,
-      "'history'",
-      'OLD.providerName',
-      'OLD.comicId',
-      "CASE WHEN EXISTS (SELECT 1 FROM ComicHistoryEntity WHERE providerName = OLD.providerName AND comicId = OLD.comicId) THEN 0 ELSE 1 END",
-    ),
-    when:
-        'OLD.providerName <> NEW.providerName OR OLD.comicId <> NEW.comicId',
-  );
-  await _createTrigger(
-    database,
-    'dcomic_sync_history_update_new',
-    'AFTER UPDATE ON ComicHistoryEntity',
-    _captureBody(
-      SyncCategory.history,
-      "'history'",
-      'NEW.providerName',
-      'NEW.comicId',
-      '0',
-    ),
-  );
-  await _createTrigger(
-    database,
-    'dcomic_sync_history_delete',
-    'AFTER DELETE ON ComicHistoryEntity',
-    _captureBody(
-      SyncCategory.history,
-      "'history'",
-      'OLD.providerName',
-      'OLD.comicId',
-      "CASE WHEN EXISTS (SELECT 1 FROM ComicHistoryEntity WHERE providerName = OLD.providerName AND comicId = OLD.comicId) THEN 0 ELSE 1 END",
-    ),
-  );
+  for (final entry in databaseSyncTables.entries) {
+    final table = entry.key;
+    switch (entry.value.strategy) {
+      case TableSyncStrategy.history:
+      case TableSyncStrategy.subscription:
+        final kind = entry.value.strategy == TableSyncStrategy.history
+            ? 'history'
+            : 'subscribe';
+        await _createRecordTriggers(
+          database,
+          table: table,
+          stem: 'dcomic_sync_$kind',
+          category: SyncCategory.history,
+          newKeys: ["'$kind'", 'NEW.providerName', 'NEW.comicId'],
+          oldKeys: ["'$kind'", 'OLD.providerName', 'OLD.comicId'],
+          changed: 'OLD.providerName <> NEW.providerName OR OLD.comicId <> NEW.comicId',
+          oldIdentity: 'providerName = OLD.providerName AND comicId = OLD.comicId',
+        );
+        break;
+      case TableSyncStrategy.settings:
+        await _createRecordTriggers(
+          database,
+          table: table,
+          stem: 'dcomic_sync_settings',
+          category: SyncCategory.settings,
+          newKeys: ['NEW.key', "''", "''"],
+          oldKeys: ['OLD.key', "''", "''"],
+          changed: 'OLD.key <> NEW.key',
+          oldIdentity: 'key = OLD.key',
+          newWhen: _newSettingsSql,
+          oldWhen: _oldSettingsSql,
+        );
+        break;
+      case TableSyncStrategy.sourceSettingsAndCredentials:
+        await _createRecordTriggers(
+          database,
+          table: table,
+          stem: 'dcomic_sync_source',
+          category: SyncCategory.sourceSettings,
+          newKeys: ["COALESCE(NEW.sourceModel, '')", 'NEW.key', "''"],
+          oldKeys: ["COALESCE(OLD.sourceModel, '')", 'OLD.key', "''"],
+          changed: "COALESCE(OLD.sourceModel, '') <> COALESCE(NEW.sourceModel, '') OR OLD.key <> NEW.key",
+          oldIdentity: "COALESCE(sourceModel, '') = COALESCE(OLD.sourceModel, '') AND key = OLD.key",
+          newWhen: "COALESCE(NEW.sourceModel, '') <> '' AND ($_newSourceSettingSql)",
+          oldWhen: "COALESCE(OLD.sourceModel, '') <> '' AND ($_oldSourceSettingSql)",
+        );
+        final newCredential = _credentialSql('NEW');
+        final oldCredential = _credentialSql('OLD');
+        await _createAggregateTriggers(
+          database,
+          table: table,
+          stem: 'dcomic_sync_credentials_model',
+          category: SyncCategory.credentials,
+          key: 'accounts',
+          insertWhen: newCredential,
+          updateWhen: '($oldCredential) OR ($newCredential)',
+          deleteWhen: oldCredential,
+        );
+        break;
+      case TableSyncStrategy.credentials:
+        await _createAggregateTriggers(
+          database,
+          table: table,
+          stem: 'dcomic_sync_credentials_cookie',
+          category: SyncCategory.credentials,
+          key: 'accounts',
+        );
+        break;
+      case TableSyncStrategy.bindings:
+        await _createAggregateTriggers(
+          database,
+          table: table,
+          stem: 'dcomic_sync_bindings',
+          category: SyncCategory.bindings,
+          key: 'graph',
+        );
+        break;
+      case TableSyncStrategy.chapterRuleGroups:
+      case TableSyncStrategy.chapterRulePatterns:
+        await _createAggregateTriggers(
+          database,
+          table: table,
+          stem: entry.value.strategy == TableSyncStrategy.chapterRuleGroups
+              ? 'dcomic_sync_rules_group'
+              : 'dcomic_sync_rules_pattern',
+          category: SyncCategory.chapterRules,
+          key: 'rules',
+        );
+        break;
+      case TableSyncStrategy.localOnly:
+        break;
+    }
+  }
+}
 
-  await _createTrigger(
-    database,
-    'dcomic_sync_subscribe_insert',
-    'AFTER INSERT ON ComicSubscribeStateEntity',
-    _captureBody(
-      SyncCategory.history,
-      "'subscribe'",
-      'NEW.providerName',
-      'NEW.comicId',
-      '0',
-    ),
+Future<void> _createRecordTriggers(
+  sqflite.DatabaseExecutor database, {
+  required String table,
+  required String stem,
+  required SyncCategory category,
+  required List<String> newKeys,
+  required List<String> oldKeys,
+  required String changed,
+  required String oldIdentity,
+  String newWhen = '1',
+  String oldWhen = '1',
+}) async {
+  final live = _captureBody(category, newKeys[0], newKeys[1], newKeys[2], '0');
+  final retired = _captureBody(
+    category, oldKeys[0], oldKeys[1], oldKeys[2],
+    'CASE WHEN EXISTS (SELECT 1 FROM $table WHERE $oldIdentity) THEN 0 ELSE 1 END',
   );
-  await _createTrigger(
-    database,
-    'dcomic_sync_subscribe_update_old',
-    'AFTER UPDATE ON ComicSubscribeStateEntity',
-    _captureBody(
-      SyncCategory.history,
-      "'subscribe'",
-      'OLD.providerName',
-      'OLD.comicId',
-      "CASE WHEN EXISTS (SELECT 1 FROM ComicSubscribeStateEntity WHERE providerName = OLD.providerName AND comicId = OLD.comicId) THEN 0 ELSE 1 END",
-    ),
-    when:
-        'OLD.providerName <> NEW.providerName OR OLD.comicId <> NEW.comicId',
-  );
-  await _createTrigger(
-    database,
-    'dcomic_sync_subscribe_update_new',
-    'AFTER UPDATE ON ComicSubscribeStateEntity',
-    _captureBody(
-      SyncCategory.history,
-      "'subscribe'",
-      'NEW.providerName',
-      'NEW.comicId',
-      '0',
-    ),
-  );
-  await _createTrigger(
-    database,
-    'dcomic_sync_subscribe_delete',
-    'AFTER DELETE ON ComicSubscribeStateEntity',
-    _captureBody(
-      SyncCategory.history,
-      "'subscribe'",
-      'OLD.providerName',
-      'OLD.comicId',
-      "CASE WHEN EXISTS (SELECT 1 FROM ComicSubscribeStateEntity WHERE providerName = OLD.providerName AND comicId = OLD.comicId) THEN 0 ELSE 1 END",
-    ),
-  );
-
-  await _createTrigger(
-    database,
-    'dcomic_sync_settings_insert',
-    'AFTER INSERT ON ConfigEntity',
-    _captureBody(
-      SyncCategory.settings,
-      'NEW.key',
-      "''",
-      "''",
-      '0',
-    ),
-    when: _newSettingsSql,
-  );
-  await _createTrigger(
-    database,
-    'dcomic_sync_settings_update_old',
-    'AFTER UPDATE ON ConfigEntity',
-    _captureBody(
-      SyncCategory.settings,
-      'OLD.key',
-      "''",
-      "''",
-      "CASE WHEN EXISTS (SELECT 1 FROM ConfigEntity WHERE key = OLD.key) THEN 0 ELSE 1 END",
-    ),
-    when:
-        '$_oldSettingsSql AND (NOT ($_newSettingsSql) OR OLD.key <> NEW.key)',
-  );
-  await _createTrigger(
-    database,
-    'dcomic_sync_settings_update_new',
-    'AFTER UPDATE ON ConfigEntity',
-    _captureBody(
-      SyncCategory.settings,
-      'NEW.key',
-      "''",
-      "''",
-      '0',
-    ),
-    when: _newSettingsSql,
-  );
-  await _createTrigger(
-    database,
-    'dcomic_sync_settings_delete',
-    'AFTER DELETE ON ConfigEntity',
-    _captureBody(
-      SyncCategory.settings,
-      'OLD.key',
-      "''",
-      "''",
-      "CASE WHEN EXISTS (SELECT 1 FROM ConfigEntity WHERE key = OLD.key) THEN 0 ELSE 1 END",
-    ),
-    when: _oldSettingsSql,
-  );
-
-  final newCredential = _credentialSql('NEW');
-  final oldCredential = _credentialSql('OLD');
-  await _createTrigger(
-    database,
-    'dcomic_sync_source_insert',
-    'AFTER INSERT ON ModelConfigEntity',
-    _captureBody(
-      SyncCategory.sourceSettings,
-      "COALESCE(NEW.sourceModel, '')",
-      'NEW.key',
-      "''",
-      '0',
-    ),
-    when:
-        "COALESCE(NEW.sourceModel, '') <> '' AND "
-        '$_newSourceSettingSql AND NOT $newCredential',
-  );
-  await _createTrigger(
-    database,
-    'dcomic_sync_source_update_old',
-    'AFTER UPDATE ON ModelConfigEntity',
-    _captureBody(
-      SyncCategory.sourceSettings,
-      "COALESCE(OLD.sourceModel, '')",
-      'OLD.key',
-      "''",
-      "CASE WHEN EXISTS (SELECT 1 FROM ModelConfigEntity WHERE COALESCE(sourceModel, '') = COALESCE(OLD.sourceModel, '') AND key = OLD.key) THEN 0 ELSE 1 END",
-    ),
-    when:
-        "COALESCE(OLD.sourceModel, '') <> '' AND "
-        '$_oldSourceSettingSql AND NOT $oldCredential AND '
-        '($newCredential OR NOT ($_newSourceSettingSql) OR '
-        "COALESCE(OLD.sourceModel, '') <> COALESCE(NEW.sourceModel, '') OR OLD.key <> NEW.key)",
-  );
-  await _createTrigger(
-    database,
-    'dcomic_sync_source_update_new',
-    'AFTER UPDATE ON ModelConfigEntity',
-    _captureBody(
-      SyncCategory.sourceSettings,
-      "COALESCE(NEW.sourceModel, '')",
-      'NEW.key',
-      "''",
-      '0',
-    ),
-    when:
-        "COALESCE(NEW.sourceModel, '') <> '' AND "
-        '$_newSourceSettingSql AND NOT $newCredential',
-  );
-  await _createTrigger(
-    database,
-    'dcomic_sync_source_delete',
-    'AFTER DELETE ON ModelConfigEntity',
-    _captureBody(
-      SyncCategory.sourceSettings,
-      "COALESCE(OLD.sourceModel, '')",
-      'OLD.key',
-      "''",
-      "CASE WHEN EXISTS (SELECT 1 FROM ModelConfigEntity WHERE COALESCE(sourceModel, '') = COALESCE(OLD.sourceModel, '') AND key = OLD.key) THEN 0 ELSE 1 END",
-    ),
-    when:
-        "COALESCE(OLD.sourceModel, '') <> '' AND "
-        '$_oldSourceSettingSql AND NOT $oldCredential',
-  );
-
-  await _createAggregateTriggers(
-    database,
-    table: 'ModelConfigEntity',
-    stem: 'dcomic_sync_credentials_model',
-    category: SyncCategory.credentials,
-    key: 'accounts',
-    insertWhen: newCredential,
-    updateWhen: '$oldCredential OR $newCredential',
-    deleteWhen: oldCredential,
-  );
-  await _createAggregateTriggers(
-    database,
-    table: 'CookieEntity',
-    stem: 'dcomic_sync_credentials_cookie',
-    category: SyncCategory.credentials,
-    key: 'accounts',
-  );
-  await _createAggregateTriggers(
-    database,
-    table: 'ComicMappingEntity',
-    stem: 'dcomic_sync_bindings',
-    category: SyncCategory.bindings,
-    key: 'graph',
-  );
-  await _createAggregateTriggers(
-    database,
-    table: 'ChapterRuleGroupEntity',
-    stem: 'dcomic_sync_rules_group',
-    category: SyncCategory.chapterRules,
-    key: 'rules',
-  );
-  await _createAggregateTriggers(
-    database,
-    table: 'ChapterRulePatternEntity',
-    stem: 'dcomic_sync_rules_pattern',
-    category: SyncCategory.chapterRules,
-    key: 'rules',
-  );
+  await _createTrigger(database, '${stem}_insert',
+      'AFTER INSERT ON $table', live, when: newWhen);
+  await _createTrigger(database, '${stem}_update_old',
+      'AFTER UPDATE ON $table', retired,
+      when: '($oldWhen) AND (NOT ($newWhen) OR ($changed))');
+  await _createTrigger(database, '${stem}_update_new',
+      'AFTER UPDATE ON $table', live, when: newWhen);
+  await _createTrigger(database, '${stem}_delete',
+      'AFTER DELETE ON $table', retired, when: oldWhen);
 }
 
 Future<void> _createAggregateTriggers(

@@ -6,6 +6,8 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:dcomic/database/database_common.dart';
+import 'package:dcomic/database/database_sync_contract.dart';
+import 'package:dcomic/database/setting_sync_contract.dart';
 import 'package:dcomic/database/sync/sync_models.dart';
 import 'package:dcomic/utils/chapter_matching_rules.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;

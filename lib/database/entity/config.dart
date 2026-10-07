@@ -1,4 +1,5 @@
 import 'package:dcomic/database/entity/entity_base.dart';
+import 'package:dcomic/database/setting_sync_contract.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:floor_community/floor.dart';
 
@@ -11,9 +12,12 @@ class ConfigEntity extends EntityBase {
 
   String? value;
 
-  ConfigEntity(this.id, this.key, this.value);
+  ConfigEntity(this.id, this.key, this.value) {
+    appSettingDefinition(key);
+  }
 
   ConfigEntity.createConfigEntity(this.key, dynamic value, {this.id}) {
+    appSettingDefinition(key);
     this.value = convertFromValue(value);
   }
 

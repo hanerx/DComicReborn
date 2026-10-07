@@ -35,7 +35,7 @@ Future<void> _bootstrapMetadata(
   bool accountBaseline = false,
 }) async {
   final history = await database.rawQuery(
-    'SELECT DISTINCT providerName, comicId FROM ComicHistoryEntity',
+    'SELECT DISTINCT providerName, comicId FROM ${tableNameForStrategy(TableSyncStrategy.history)}',
   );
   for (final row in history) {
     await _insertBaseline(
@@ -51,7 +51,7 @@ Future<void> _bootstrapMetadata(
     );
   }
   final subscriptions = await database.rawQuery(
-    'SELECT DISTINCT providerName, comicId FROM ComicSubscribeStateEntity',
+    'SELECT DISTINCT providerName, comicId FROM ${tableNameForStrategy(TableSyncStrategy.subscription)}',
   );
   for (final row in subscriptions) {
     await _insertBaseline(
@@ -67,7 +67,7 @@ Future<void> _bootstrapMetadata(
     );
   }
   final settings = await database.query(
-    'ConfigEntity',
+    tableNameForStrategy(TableSyncStrategy.settings),
     distinct: true,
     columns: ['key'],
     where: _settingsSql,
@@ -82,7 +82,7 @@ Future<void> _bootstrapMetadata(
     );
   }
   final modelSettings = await database.query(
-    'ModelConfigEntity',
+    tableNameForStrategy(TableSyncStrategy.sourceSettingsAndCredentials),
     distinct: true,
     columns: ['sourceModel', 'key'],
   );
@@ -368,8 +368,8 @@ _KeyParts _parseKey(SyncCategory category, String key) {
       }
       return _KeyParts(decoded[0], decoded[1]);
     case SyncCategory.settings:
-      if (!_settingsAllowlist.contains(key)) {
-        throw FormatException('setting is not syncable: $key');
+      if (appSettingDefinition(key).mode != SettingSyncMode.synced) {
+        throw FormatException('setting is explicitly local-only: $key');
       }
       return _KeyParts(key);
     case SyncCategory.bindings:
@@ -412,111 +412,68 @@ Future<Map<String, dynamic>?> _loadValue(
 ) async {
   switch (category) {
     case SyncCategory.history:
-      if (key.key1 == 'history') {
-        final rows = await database.query(
-          'ComicHistoryEntity',
-          where: 'providerName = ? AND comicId = ?',
-          whereArgs: [key.key2, key.key3],
-          orderBy: 'id DESC',
-          limit: 1,
-        );
-        if (rows.isEmpty) return null;
-        final row = rows.single;
-        return {
-          'comicId': row['comicId'],
-          'title': row['title'],
-          'cover': row['cover'],
-          'coverType': row['coverType'],
-          'lastChapterTitle': row['lastChapterTitle'],
-          'lastChapterId': row['lastChapterId'],
-          'lastPage': row['lastPage'],
-          'timestamp': row['timestamp'],
-          'providerName': row['providerName'],
-        };
-      }
+      final table = tableNameForStrategy(key.key1 == 'history'
+          ? TableSyncStrategy.history
+          : TableSyncStrategy.subscription);
       final rows = await database.query(
-        'ComicSubscribeStateEntity',
+        table,
         where: 'providerName = ? AND comicId = ?',
         whereArgs: [key.key2, key.key3],
         orderBy: 'id DESC',
         limit: 1,
       );
-      if (rows.isEmpty) return null;
-      final row = rows.single;
-      return {
-        'comicId': row['comicId'],
-        'timestamp': row['timestamp'],
-        'providerName': row['providerName'],
-      };
+      return rows.isEmpty ? null : tableSyncDefinition(table).projectPayload(rows.single);
     case SyncCategory.settings:
-      final rows = await database.query(
-        'ConfigEntity',
-        columns: ['value'],
-        where: 'key = ?',
-        whereArgs: [key.key1],
-        orderBy: 'id DESC',
-        limit: 1,
-      );
-      return rows.isEmpty ? null : {'value': rows.single['value']};
     case SyncCategory.sourceSettings:
+      final isApp = category == SyncCategory.settings;
+      final table = tableNameForStrategy(isApp
+          ? TableSyncStrategy.settings
+          : TableSyncStrategy.sourceSettingsAndCredentials);
       final rows = await database.query(
-        'ModelConfigEntity',
-        columns: ['value'],
-        where: "COALESCE(sourceModel, '') = ? AND key = ?",
-        whereArgs: [key.key1, key.key2],
+        table,
+        where: isApp ? 'key = ?' : "COALESCE(sourceModel, '') = ? AND key = ?",
+        whereArgs: isApp ? [key.key1] : [key.key1, key.key2],
         orderBy: 'id DESC',
         limit: 1,
       );
-      return rows.isEmpty ? null : {'value': rows.single['value']};
+      return rows.isEmpty ? null : tableSyncDefinition(table).projectPayload(rows.single);
     case SyncCategory.bindings:
+      final table = tableNameForStrategy(TableSyncStrategy.bindings);
+      final definition = tableSyncDefinition(table);
       final rows = await database.query(
-        'ComicMappingEntity',
-        columns: ['providerA', 'comicA', 'providerB', 'comicB', 'blocked'],
-        orderBy: 'providerA, comicA, providerB, comicB',
+        table, orderBy: 'providerA, comicA, providerB, comicB',
       );
-      return {
-        'edges': [
-          for (final row in rows)
-            {
-              'providerA': row['providerA'],
-              'comicA': row['comicA'],
-              'providerB': row['providerB'],
-              'comicB': row['comicB'],
-              'blocked': row['blocked'] == 1,
-            },
-        ],
-      };
+      return {'edges': [for (final row in rows) definition.projectPayload(row)]};
     case SyncCategory.chapterRules:
-      final groups = await database.query(
-        'ChapterRuleGroupEntity',
-        columns: ['id', 'name'],
-        orderBy: 'id ASC',
-      );
+      final groupTable = tableNameForStrategy(TableSyncStrategy.chapterRuleGroups);
+      final patternTable = tableNameForStrategy(TableSyncStrategy.chapterRulePatterns);
+      final definition = tableSyncDefinition(groupTable);
+      final groups = await database.query(groupTable, orderBy: 'id ASC');
       final result = <Map<String, dynamic>>[];
       for (final group in groups) {
         final patterns = await database.query(
-          'ChapterRulePatternEntity',
+          patternTable,
           columns: ['pattern'],
           where: 'groupId = ?',
           whereArgs: [group['id']],
           orderBy: 'id ASC',
         );
         result.add({
-          'name': group['name'],
+          ...definition.projectPayload(group),
           'patterns': [for (final row in patterns) row['pattern']],
         });
       }
       return {'groups': result};
     case SyncCategory.credentials:
+      final cookieTable = tableNameForStrategy(TableSyncStrategy.credentials);
+      final modelTable = tableNameForStrategy(TableSyncStrategy.sourceSettingsAndCredentials);
+      final cookieDefinition = tableSyncDefinition(cookieTable);
+      final modelDefinition = tableSyncDefinition(modelTable);
       final cookieRows = await database.query(
-        'CookieEntity',
-        columns: ['id', 'key', 'value'],
-        orderBy: 'key ASC, id DESC',
+        cookieTable, orderBy: 'key ASC, id DESC',
       );
       final configRows = await database.query(
-        'ModelConfigEntity',
-        columns: ['id', 'sourceModel', 'key', 'value'],
-        orderBy: 'sourceModel ASC, key ASC, id DESC',
+        modelTable, orderBy: 'sourceModel ASC, key ASC, id DESC',
       );
       final cookieKeys = <String>{};
       final configKeys = <String>{};
@@ -524,7 +481,7 @@ Future<Map<String, dynamic>?> _loadValue(
         'cookies': [
           for (final row in cookieRows)
             if (cookieKeys.add(row['key']! as String))
-              {'key': row['key'], 'value': row['value']},
+              cookieDefinition.projectPayload(row),
         ],
         'configs': [
           for (final row in configRows)
@@ -536,7 +493,7 @@ Future<Map<String, dynamic>?> _loadValue(
               {
                 'sourceModel': (row['sourceModel'] as String?) ?? '',
                 'key': row['key'],
-                'value': row['value'],
+                ...modelDefinition.projectPayload(row),
               },
         ],
       };
@@ -588,10 +545,12 @@ Map<String, dynamic> _validateValue(
           ? _validateHistoryValue(value, parts)
           : _validateSubscribeValue(value, parts);
     case SyncCategory.settings:
-      return _validateSettingValue(key, value);
+      return _validateSettingValue(appSettingDefinition(key), key, value);
     case SyncCategory.sourceSettings:
       final parts = _parseKey(category, key);
-      return _validateSourceSettingValue(parts.key2, value);
+      return _validateSettingValue(
+        modelSettingDefinition(parts.key2), parts.key2, value,
+      );
     case SyncCategory.bindings:
       return _validateBindings(value);
     case SyncCategory.chapterRules:
@@ -607,17 +566,10 @@ Map<String, dynamic> _validateHistoryValue(
 ) {
   final checked = Map<String, dynamic>.from(value);
   checked.putIfAbsent('lastPage', () => 1);
-  _requireExactKeys(checked, const {
-    'comicId',
-    'title',
-    'cover',
-    'coverType',
-    'lastChapterTitle',
-    'lastChapterId',
-    'lastPage',
-    'timestamp',
-    'providerName',
-  });
+  _requireExactKeys(
+    checked,
+    tableSyncDefinition(tableNameForStrategy(TableSyncStrategy.history)).payloadKeys,
+  );
   if (checked['comicId'] != key.key3 ||
       checked['providerName'] != key.key2) {
     throw const FormatException('history payload does not match its key');
@@ -650,7 +602,10 @@ Map<String, dynamic> _validateSubscribeValue(
   Map<String, dynamic> value,
   _KeyParts key,
 ) {
-  _requireExactKeys(value, const {'comicId', 'timestamp', 'providerName'});
+  _requireExactKeys(
+    value,
+    tableSyncDefinition(tableNameForStrategy(TableSyncStrategy.subscription)).payloadKeys,
+  );
   if (value['comicId'] != key.key3 || value['providerName'] != key.key2) {
     throw const FormatException('subscribe payload does not match its key');
   }
@@ -668,6 +623,7 @@ void _validateNullableTimestamp(Object? value, String field) {
 }
 
 Map<String, dynamic> _validateSettingValue(
+  SettingSyncDefinition definition,
   String key,
   Map<String, dynamic> value,
 ) {
@@ -676,156 +632,7 @@ Map<String, dynamic> _validateSettingValue(
   if (raw is! String) {
     throw FormatException('$key must have a persisted string value');
   }
-  switch (key) {
-    case 'ThemeMode':
-    case 'ReadDirection':
-      _parseBoundedInt(raw, key, 0, 2);
-      break;
-    case 'UseMaterial3Design':
-    case 'AggregateSubscribeBadges':
-    case 'AggregateReadingProgress':
-    case 'ResumeLastReadPage':
-    case 'AutoMapMissingComics':
-    case 'AutoMapRetryEveryLaunch':
-      _validateStoredBool(raw, key);
-      break;
-    case 'ThemeColor':
-      const colors = {
-        'Blue', 'Red', 'Pink', 'Purple', 'DeepPurple', 'Indigo',
-        'LightBlue', 'Cyan', 'Teal', 'LightGreen', 'Lime', 'Yellow',
-        'Amber', 'Orange', 'DeepOrange', 'Brown', 'Grey', 'BlueGrey',
-      };
-      if (!colors.contains(raw)) throw FormatException('invalid $key');
-      break;
-    case 'ReaderTheme':
-      if (!const {'app', 'white', 'light', 'dark', 'black'}.contains(raw)) {
-        throw FormatException('invalid $key');
-      }
-      break;
-    case 'ReaderEndAction':
-      if (!const {'nextChapter', 'comments'}.contains(raw)) {
-        throw FormatException('invalid $key');
-      }
-      break;
-    case 'HorizontalImageFit':
-      if (!const {
-        'original',
-        'actualSize',
-        'contain',
-        'cover',
-        'stretch',
-        'fitHeight',
-      }.contains(raw)) {
-        throw FormatException('invalid $key');
-      }
-      break;
-    case 'VerticalImageFit':
-      if (!const {
-        'original',
-        'actualSize',
-        'contain',
-        'cover',
-        'stretch',
-        'fitWidth',
-      }.contains(raw)) {
-        throw FormatException('invalid $key');
-      }
-      break;
-    case 'HorizontalClickAreaPercent':
-    case 'VerticalClickAreaPercent':
-      final number = double.tryParse(raw);
-      if (number == null || !number.isFinite || number < 5 || number > 40) {
-        throw FormatException('invalid $key');
-      }
-      break;
-    // Legacy wire records and deletion acknowledgements remain readable while
-    // ConfigProvider migrates pixel settings to the percentage keys.
-    case 'HorizontalClickAreaSize':
-    case 'VerticalClickAreaSize':
-      final number = double.tryParse(raw);
-      if (number == null || !number.isFinite || number < 1 || number > 1000) {
-        throw FormatException('invalid $key');
-      }
-      break;
-    case 'AutoMapIntervalSeconds':
-      _parseBoundedInt(raw, key, 1, 86400);
-      break;
-    case 'AutoMapMaxAttempts':
-      _parseBoundedInt(raw, key, 1, 1000);
-      break;
-    case 'activeHomeModelIndex':
-      _parseBoundedInt(raw, key, 0, 1000);
-      break;
-    case 'sourceModelSortOrder':
-      Object? decoded;
-      try {
-        decoded = jsonDecode(raw);
-      } on FormatException {
-        throw const FormatException('invalid sourceModelSortOrder JSON');
-      }
-      if (decoded is! Map || decoded.length > 100) {
-        throw const FormatException('invalid sourceModelSortOrder map');
-      }
-      final positions = <int>{};
-      for (final entry in decoded.entries) {
-        if (entry.key is! String ||
-            (entry.key as String).isEmpty ||
-            entry.value is! int ||
-            (entry.value as int) < 0 ||
-            (entry.value as int) > 1000 ||
-            !positions.add(entry.value as int)) {
-          throw const FormatException('invalid sourceModelSortOrder entry');
-        }
-      }
-      break;
-    default:
-      throw FormatException('setting is not syncable: $key');
-  }
-  return {'value': raw};
-}
-
-Map<String, dynamic> _validateSourceSettingValue(
-  String key,
-  Map<String, dynamic> value,
-) {
-  _requireExactKeys(value, const {'value'});
-  final raw = value['value'];
-  if (raw is! String) {
-    throw FormatException('$key must have a persisted string value');
-  }
-  switch (key) {
-    case 'chineseDisplayLanguage':
-      if (!const {'traditional', 'simplified'}.contains(raw)) {
-        throw const FormatException('invalid Chinese display language');
-      }
-      break;
-    case 'apiDomain':
-    case 'chapterCommentApiDomain':
-      const domains = {
-        'api.mangacopy.com',
-        'mapi.copy20.com',
-        'mapi.copy2000.site',
-        'api.2026copy.com',
-        'api.copy3000.com',
-        'api.copy4000.com',
-        'mapi.hotmangasd.com',
-        'api.manga2025.com',
-        'mapi.hotmangasf.com',
-        'mapi.hotmangasg.com',
-        'mapi.elfgjfghkk.club',
-        'mapi.fgjfghkk.club',
-        'mapi.fgjfghkkcenter.club',
-      };
-      if (raw.isNotEmpty && !domains.contains(raw)) {
-        throw const FormatException('invalid API domain');
-      }
-      break;
-    case 'autoSignInEnabled':
-      _validateStoredBool(raw, key);
-      break;
-    default:
-      throw FormatException('source setting is not syncable: $key');
-  }
+  definition.validateValue(key, raw);
   return {'value': raw};
 }
 
@@ -841,9 +648,10 @@ Map<String, dynamic> _validateBindings(Map<String, dynamic> value) {
   for (final raw in rawEdges) {
     if (raw is! Map) throw const FormatException('binding edge must be an object');
     final edge = Map<String, dynamic>.from(raw);
-    _requireExactKeys(edge, const {
-      'providerA', 'comicA', 'providerB', 'comicB', 'blocked',
-    });
+    _requireExactKeys(
+      edge,
+      tableSyncDefinition(tableNameForStrategy(TableSyncStrategy.bindings)).payloadKeys,
+    );
     final providerA = edge['providerA'];
     final comicA = edge['comicA'];
     final providerB = edge['providerB'];
@@ -937,7 +745,10 @@ Map<String, dynamic> _validateCredentials(Map<String, dynamic> value) {
   for (final raw in rawCookies) {
     if (raw is! Map) throw const FormatException('cookie must be an object');
     final cookie = Map<String, dynamic>.from(raw);
-    _requireExactKeys(cookie, const {'key', 'value'});
+    _requireExactKeys(
+      cookie,
+      tableSyncDefinition(tableNameForStrategy(TableSyncStrategy.credentials)).payloadKeys,
+    );
     final key = cookie['key'];
     final cookieValue = cookie['value'];
     if (key is! String ||
@@ -980,18 +791,6 @@ void _requireExactKeys(Map<String, dynamic> value, Set<String> expected) {
   }
 }
 
-void _validateStoredBool(String raw, String key) {
-  if (raw != '0' && raw != '1') throw FormatException('invalid $key');
-}
-
-int _parseBoundedInt(String raw, String key, int minimum, int maximum) {
-  final value = int.tryParse(raw);
-  if (value == null || value < minimum || value > maximum) {
-    throw FormatException('invalid $key');
-  }
-  return value;
-}
-
 Future<void> _applyBusinessRecord(
   sqflite.DatabaseExecutor database,
   SyncRecord record,
@@ -1000,9 +799,9 @@ Future<void> _applyBusinessRecord(
   final value = record.value;
   switch (record.category) {
     case SyncCategory.history:
-      final table = key.key1 == 'history'
-          ? 'ComicHistoryEntity'
-          : 'ComicSubscribeStateEntity';
+      final table = tableNameForStrategy(key.key1 == 'history'
+          ? TableSyncStrategy.history
+          : TableSyncStrategy.subscription);
       await database.delete(
         table,
         where: 'providerName = ? AND comicId = ?',
@@ -1013,26 +812,28 @@ Future<void> _applyBusinessRecord(
       }
       break;
     case SyncCategory.settings:
+      final table = tableNameForStrategy(TableSyncStrategy.settings);
       await database.delete(
-        'ConfigEntity',
+        table,
         where: 'key = ?',
         whereArgs: [key.key1],
       );
       if (!record.deleted) {
         await database.insert(
-          'ConfigEntity',
+          table,
           {'key': key.key1, 'value': value!['value']},
         );
       }
       break;
     case SyncCategory.sourceSettings:
+      final table = tableNameForStrategy(TableSyncStrategy.sourceSettingsAndCredentials);
       await database.delete(
-        'ModelConfigEntity',
+        table,
         where: "COALESCE(sourceModel, '') = ? AND key = ?",
         whereArgs: [key.key1, key.key2],
       );
       if (!record.deleted) {
-        await database.insert('ModelConfigEntity', {
+        await database.insert(table, {
           'sourceModel': key.key1,
           'key': key.key2,
           'value': value!['value'],
@@ -1040,11 +841,12 @@ Future<void> _applyBusinessRecord(
       }
       break;
     case SyncCategory.bindings:
-      await database.delete('ComicMappingEntity');
+      final table = tableNameForStrategy(TableSyncStrategy.bindings);
+      await database.delete(table);
       if (!record.deleted) {
         for (final raw in value!['edges']! as List) {
           final edge = Map<String, dynamic>.from(raw as Map);
-          await database.insert('ComicMappingEntity', {
+          await database.insert(table, {
             ...edge,
             'blocked': edge['blocked'] == true ? 1 : 0,
           });
@@ -1052,17 +854,19 @@ Future<void> _applyBusinessRecord(
       }
       break;
     case SyncCategory.chapterRules:
-      await database.delete('ChapterRulePatternEntity');
-      await database.delete('ChapterRuleGroupEntity');
+      final groupTable = tableNameForStrategy(TableSyncStrategy.chapterRuleGroups);
+      final patternTable = tableNameForStrategy(TableSyncStrategy.chapterRulePatterns);
+      await database.delete(patternTable);
+      await database.delete(groupTable);
       if (!record.deleted) {
         for (final raw in value!['groups']! as List) {
           final group = Map<String, dynamic>.from(raw as Map);
           final groupId = await database.insert(
-            'ChapterRuleGroupEntity',
+            groupTable,
             {'name': group['name']},
           );
           for (final pattern in group['patterns']! as List) {
-            await database.insert('ChapterRulePatternEntity', {
+            await database.insert(patternTable, {
               'groupId': groupId,
               'pattern': pattern,
             });
@@ -1071,15 +875,17 @@ Future<void> _applyBusinessRecord(
       }
       break;
     case SyncCategory.credentials:
-      await database.delete('CookieEntity');
+      final cookieTable = tableNameForStrategy(TableSyncStrategy.credentials);
+      final modelTable = tableNameForStrategy(TableSyncStrategy.sourceSettingsAndCredentials);
+      await database.delete(cookieTable);
       final credentialRows = await database.query(
-        'ModelConfigEntity',
+        modelTable,
         columns: ['id', 'key'],
       );
       for (final row in credentialRows) {
         if (_isCredentialKey(row['key']! as String)) {
           await database.delete(
-            'ModelConfigEntity',
+            modelTable,
             where: 'id = ?',
             whereArgs: [row['id']],
           );
@@ -1088,11 +894,11 @@ Future<void> _applyBusinessRecord(
       if (!record.deleted) {
         for (final raw in value!['cookies']! as List) {
           final cookie = Map<String, dynamic>.from(raw as Map);
-          await database.insert('CookieEntity', cookie);
+          await database.insert(cookieTable, cookie);
         }
         for (final raw in value['configs']! as List) {
           final config = Map<String, dynamic>.from(raw as Map);
-          await database.insert('ModelConfigEntity', config);
+          await database.insert(modelTable, config);
         }
       }
       break;

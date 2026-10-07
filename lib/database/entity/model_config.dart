@@ -1,4 +1,5 @@
 import 'package:dcomic/database/entity/entity_base.dart';
+import 'package:dcomic/database/setting_sync_contract.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:floor_community/floor.dart';
 
@@ -13,11 +14,14 @@ class ModelConfigEntity {
 
   String? sourceModel;
 
-  ModelConfigEntity(this.id, this.key, this.value, this.sourceModel);
+  ModelConfigEntity(this.id, this.key, this.value, this.sourceModel) {
+    modelSettingDefinition(key);
+  }
 
   ModelConfigEntity.createConfigEntity(
       this.key, dynamic value, this.sourceModel,
       {this.id}) {
+    modelSettingDefinition(key);
     this.value = convertFromValue(value);
   }
 

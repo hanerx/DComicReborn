@@ -48,7 +48,7 @@ void main() {
             },
           ),
         );
-        await legacy.insert('ConfigEntity', {'key': 'theme', 'value': 'dark'});
+        await legacy.insert('ConfigEntity', {'key': 'ReaderTheme', 'value': 'dark'});
         await legacy.insert('ComicHistoryEntity', {
           'comicId': 'book',
           'title': '保留阅读记录',
@@ -64,7 +64,7 @@ void main() {
           'value': 'existing',
         });
         await legacy.insert('ModelConfigEntity', {
-          'key': 'account',
+          'key': 'username',
           'value': 'existing-user',
           'sourceModel': 'copymanga',
         });
@@ -95,7 +95,7 @@ void main() {
           (english.groupIndex, english.number),
         );
         expect(rules.match('Vol. 10')!.groupIndex, isNot(chapter.groupIndex));
-        final config = await database.configDao.getConfigByKey('theme');
+        final config = await database.configDao.getConfigByKey('ReaderTheme');
         expect(config?.value, 'dark');
         final history = await database.comicHistoryDao.getComicHistoryByComicId(
           'book',
@@ -138,7 +138,7 @@ void main() {
         database = null;
         database = await $FloorDComicDatabase.databaseBuilder(path).build();
         expect(
-          (await database.configDao.getConfigByKey('theme'))?.value,
+          (await database.configDao.getConfigByKey('ReaderTheme'))?.value,
           'light',
         );
         expect(
@@ -185,7 +185,7 @@ void main() {
           ),
         );
         await legacy.insert('ConfigEntity', {
-          'key': 'unrelated',
+          'key': 'LastTimeCheckVersion',
           'value': 'preserved',
         });
         final batch = legacy.batch();
@@ -243,7 +243,7 @@ void main() {
         expect(mappings.where((row) => !row.blocked), hasLength(3));
         expect(mappings.where((row) => row.blocked), hasLength(12));
         expect(
-          (await database.configDao.getConfigByKey('unrelated'))?.value,
+          (await database.configDao.getConfigByKey('LastTimeCheckVersion'))?.value,
           'preserved',
         );
         final columns =
