@@ -397,50 +397,36 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
       });
     }
-    testWidgets('${direction.name}: cached chapter reload resets the viewport', (
-      tester,
-    ) async {
-      await _openReader(
-        tester,
-        direction,
-        [],
-        pageCount: 12,
-        savedPosition: (chapterId: 'chapter', page: 6),
-        resumeEnabled: true,
-      );
-      final controller = tester
-          .element(find.byType(DComicImage).first)
-          .read<ComicViewerPageController>();
-      final cachedChapter = controller.chapterDetailModel;
-      expect(controller.currentPage, 5);
-
-      controller.showToolBar = true;
-      await tester.pumpAndSettle();
-      expect(controller.currentPage, 5);
-
-      // At the first chapter, refresh reloads it; this source reuses its object.
-      await tester.tap(find.byTooltip('上一章').hitTestable());
-      await tester.pumpAndSettle();
-      expect(controller.chapterDetailModel, same(cachedChapter));
-      if (direction == ReadDirectionType.vertical) {
-        final positions = tester
-            .widget<ScrollablePositionedList>(find.byType(ScrollablePositionedList))
-            .itemPositionsNotifier!
-            .itemPositions
-            .value
-            .where((item) => item.itemTrailingEdge > 0 && item.itemLeadingEdge < 1);
-        final first = positions.reduce((a, b) => a.index < b.index ? a : b);
-        expect(first.index, 0);
-        expect(first.itemLeadingEdge, closeTo(0, 0.001));
-      } else {
-        expect(
-          tester.widget<PageView>(find.byType(PageView)).controller!.page,
-          0,
+    for (final forward in [false, true]) {
+      testWidgets('${direction.name}: ${forward ? 'load' : 'refresh'} at chapter boundary preserves position', (tester) async {
+        await _openReader(
+          tester, direction, [], pageCount: 12,
+          savedPosition: (chapterId: 'chapter', page: 6),
+          resumeEnabled: true,
         );
-      }
-      expect(controller.currentPage, 0);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
+        final controller = tester.element(find.byType(DComicImage).first)
+            .read<ComicViewerPageController>();
+        final revision = controller.chapterRevision;
+        expect(controller.currentPage, 5);
+        expect(find.byType(SnackBar), findsNothing);
+        final refresh = tester.widget<EasyRefresh>(find.byType(EasyRefresh).first);
+        await (forward ? refresh.onLoad!() : refresh.onRefresh!());
+        await tester.pump();
+        expect(find.text(forward ? '已经是最新话' : '已经是第一话'), findsOneWidget);
+        expect(controller.chapterRevision, revision);
+        expect(controller.currentPage, 5);
+        if (direction == ReadDirectionType.vertical) {
+          final positions = tester
+              .widget<ScrollablePositionedList>(find.byType(ScrollablePositionedList))
+              .itemPositionsNotifier!.itemPositions.value
+              .where((item) => item.itemTrailingEdge > 0 && item.itemLeadingEdge < 1);
+          expect(positions.reduce((a, b) => a.index < b.index ? a : b).index, 5);
+        } else {
+          expect(tester.widget<PageView>(find.byType(PageView)).controller!.page, 5);
+        }
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
 
     for (final scenario in [
       (enabled: true, chapter: 'chapter', page: 6, expected: 5),

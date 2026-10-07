@@ -104,17 +104,21 @@ class ComicViewerPageController extends BaseProvider {
       ? chapters[chapters.indexOf(currentChapter!) + 1]
       : null;
 
-  Future<void> refresh() => loadChapter(
-    chapterDetailModel != null
-        ? preChapter ?? currentChapter!
-        : currentChapter!,
-  );
+  /// Returns false at the first chapter without reloading or resetting progress.
+  Future<bool> refresh() async {
+    final chapter = chapterDetailModel == null ? currentChapter! : preChapter;
+    if (chapter == null) return false;
+    await loadChapter(chapter);
+    return true;
+  }
 
-  Future<void> load() => loadChapter(
-    chapterDetailModel != null
-        ? nextChapter ?? currentChapter!
-        : currentChapter!,
-  );
+  /// Returns false at the latest chapter without reloading or resetting progress.
+  Future<bool> load() async {
+    final chapter = chapterDetailModel == null ? currentChapter! : nextChapter;
+    if (chapter == null) return false;
+    await loadChapter(chapter);
+    return true;
+  }
 
   Future<void> loadChapter(BaseComicChapterEntityModel chapter) async {
     final load = ++_chapterLoad;

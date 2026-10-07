@@ -178,6 +178,18 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     }
   }
 
+  void _showChapterBoundary(BuildContext context, {required bool forward}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(forward
+              ? _localeText(context, '已经是最新话', 'Already at the latest chapter')
+              : _localeText(context, '已经是第一话', 'Already at the first chapter')),
+        ),
+      );
+  }
+
   Future<void> _changeChapter(
     BuildContext context, {
     required bool forward,
@@ -361,16 +373,22 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                       ),
                       refreshOnStart: true,
                       onRefresh: () async {
-                        await Provider.of<ComicViewerPageController>(
+                        final loaded = await Provider.of<ComicViewerPageController>(
                           context,
                           listen: false,
                         ).refresh();
+                        if (!loaded && context.mounted) {
+                          _showChapterBoundary(context, forward: false);
+                        }
                       },
                       onLoad: () async {
-                        await Provider.of<ComicViewerPageController>(
+                        final loaded = await Provider.of<ComicViewerPageController>(
                           context,
                           listen: false,
                         ).load();
+                        if (!loaded && context.mounted) {
+                          _showChapterBoundary(context, forward: true);
+                        }
                       },
                       child: SafeArea(
                         child: LayoutBuilder(

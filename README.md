@@ -338,7 +338,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .github/scripts/package_wind
 macOS 打包须在 Mac 上进行，构建后执行：
 
 ```sh
-bash .github/scripts/package_macos.sh 2.5.10
+bash .github/scripts/package_macos.sh 2.5.11
 ```
 
 版本参数与 `pubspec.yaml` 保持一致。产物位于 `build/macos/packages/`，同时提供 `DComicReborn-<版本>-macos-universal.zip` 和 `.dmg`。脚本校验双架构、执行权限与符号链接，使用 ad-hoc 签名，不需要 Apple 开发者证书；这不等于 Developer ID 签名或 Apple 公证。
