@@ -330,7 +330,7 @@ flutter build macos --release
 Windows 安装版另需 Inno Setup 6。构建后使用现有脚本打包，`-Version` 与 `pubspec.yaml` 中的三段版本号保持一致：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .github/scripts/package_windows.ps1 -Version 2.5.4
+powershell -NoProfile -ExecutionPolicy Bypass -File .github/scripts/package_windows.ps1 -Version 2.5.12
 ```
 
 产物位于 `build/windows/packages/`。iOS 无签名编译可使用 `flutter build ios --release --no-codesign`，编译成功不代表已具备安装签名。
@@ -338,7 +338,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .github/scripts/package_wind
 macOS 打包须在 Mac 上进行，构建后执行：
 
 ```sh
-bash .github/scripts/package_macos.sh 2.5.11
+bash .github/scripts/package_macos.sh 2.5.12
 ```
 
 版本参数与 `pubspec.yaml` 保持一致。产物位于 `build/macos/packages/`，同时提供 `DComicReborn-<版本>-macos-universal.zip` 和 `.dmg`。脚本校验双架构、执行权限与符号链接，使用 ad-hoc 签名，不需要 Apple 开发者证书；这不等于 Developer ID 签名或 Apple 公证。

@@ -17,7 +17,7 @@ import 'package:sqflite/sqflite.dart' as sqflite;
 part 'database_common.g.dart';
 
 @Database(
-  version: 9,
+  version: 10,
   entities: [
     ConfigEntity,
     ComicHistoryEntity,

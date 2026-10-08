@@ -215,6 +215,82 @@ void main() {
     }
   });
 
+  for (final version in [8, 9]) {
+    test('v$version upgrade retires profile caches but preserves account data',
+        () async {
+      final path = '${directory.path}/legacy_profile_$version.db';
+      final legacy = await $FloorDComicDatabase.databaseBuilder(path).build();
+      await (legacy.database as Database).setVersion(version);
+      for (final key in ['nickname', 'avatar']) {
+        await legacy.database.insert('ModelConfigEntity', {
+          'key': key,
+          'value': 'obsolete-profile-cache',
+          'sourceModel': 'zaimanhua',
+        });
+      }
+      final retained = [
+        {'key': 'token', 'value': 'existing-token'},
+        {'key': 'isLogin', 'value': '1'},
+        {'key': 'username', 'value': 'existing-user'},
+        {'key': 'uid', 'value': '123'},
+        {'key': 'apiDomain', 'value': 'example.com'},
+      ];
+      for (final row in retained) {
+        await legacy.database.insert('ModelConfigEntity', {
+          ...row,
+          'sourceModel': 'zaimanhua',
+        });
+      }
+      await legacy.close();
+
+      final upgraded = await $FloorDComicDatabase
+          .databaseBuilder(path)
+          .addMigrations(DatabaseInstance.migrations)
+          .addCallback(DatabaseInstance.databaseCallback)
+          .build();
+      try {
+        final configs = await upgraded.modelConfigDao.getAllConfig();
+        expect(
+          configs.map((row) => {'key': row.key, 'value': row.value}),
+          retained,
+        );
+        final store = await SyncStore.attach(upgraded);
+        try {
+          final publicRecords = await store.snapshot(SyncCategory.defaults);
+          expect(
+            publicRecords.where((record) =>
+                record.category == SyncCategory.sourceSettings).single.value,
+            {'value': 'example.com'},
+          );
+          final credentials =
+              (await store.snapshot({SyncCategory.credentials})).single;
+          expect(
+            credentials.value!['configs'],
+            contains(equals({
+              'sourceModel': 'zaimanhua',
+              'key': 'token',
+              'value': 'existing-token',
+            })),
+          );
+        } finally {
+          await store.close();
+        }
+        for (final key in ['nickname', 'avatar']) {
+          await expectLater(
+            upgraded.database.insert('ModelConfigEntity', {
+              'key': key,
+              'value': 'obsolete-profile-cache',
+              'sourceModel': 'zaimanhua',
+            }),
+            throwsA(isA<DatabaseException>()),
+          );
+        }
+      } finally {
+        await upgraded.close();
+      }
+    });
+  }
+
   test(
     'database open rejects legacy unregistered keys before transport exists',
     () async {

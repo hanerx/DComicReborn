@@ -34,6 +34,14 @@ class DatabaseInstance {
         whereArgs: ['useDynamicBaseUrl'],
       );
     }),
+    Migration(9, 10, (database) async {
+      // Account profiles now come from the source API, not persisted settings.
+      await database.delete(
+        'ModelConfigEntity',
+        where: 'key IN (?, ?)',
+        whereArgs: ['nickname', 'avatar'],
+      );
+    }),
   ];
 
   /// 新装数据库建表完成后写入默认章节匹配分组；升级场景由 5 -> 6 迁移负责。
