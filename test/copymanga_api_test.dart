@@ -3,11 +3,14 @@ import 'dart:ui' as ui;
 
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/providers/models/copymanga/copymanga_source_model.dart';
+import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/requests/base_request.dart';
 import 'package:dcomic/providers/page_controllers/comic_homepage_controller.dart';
 import 'package:dcomic/providers/source_provider.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
+import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
+import 'package:dcomic/view/components/carousel_item.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:flutter/material.dart';
@@ -439,6 +442,98 @@ void main() {
     expect(restored.formatDisplayText('為這美好世界獻上祝福'), '为这美好世界献上祝福');
 
     await restored.setDisplayLanguage(CopyMangaDisplayLanguage.traditional);
+  });
+
+  testWidgets('comic carousel tap opens its path word in the current source', (
+    tester,
+  ) async {
+    handler.dio.httpClientAdapter = ApiAdapter((_) => {
+      'code': 200,
+      'results': {
+        'banners': [
+          {
+            'type': 1,
+            'cover': 'https://example.com/banner.jpg',
+            'brief': '輪播推薦',
+            'out_uuid': 'not-the-comic-path',
+            'comic': {'name': '漫畫標題', 'path_word': 'comic-path'},
+          },
+        ],
+      },
+    });
+    final banners = await tester.runAsync(
+      () => source.homepage!.getHomepageCarousel(),
+    );
+    final banner = banners!.single;
+    late NavigatorProvider navigator;
+    late BuildContext bannerContext;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(builder: (context) {
+          navigator = NavigatorProvider(context);
+          return ChangeNotifierProvider.value(
+            value: navigator,
+            child: Builder(builder: (context) {
+              bannerContext = context;
+              return Scaffold(
+                body: SizedBox(
+                  width: 400,
+                  height: 200,
+                  child: CarouselItem(
+                    title: banner.title,
+                    cover: ImageEntity(
+                      ImageType.asset,
+                      'assets/branding/logo.png',
+                    ),
+                    onTap: banner.onTap,
+                  ),
+                ),
+              );
+            }),
+          );
+        }),
+      ),
+    );
+    addTearDown(navigator.dispose);
+
+    await tester.tap(find.text(banner.title));
+
+    expect(navigator.detailIdentity, (source, 'comic-path'));
+    final detail =
+        navigator.detailBuilder!(bannerContext, true) as ComicDetailPage;
+    expect(detail.title, '漫畫標題');
+    expect(detail.comicId, 'comic-path');
+    expect(detail.comicSourceModel, same(source));
+  });
+
+  test('non-comic and incomplete carousel targets have no tap action', () async {
+    final targets = [
+      {'type': 3, 'out_uuid': '/download', 'comic': null},
+      {'type': 6, 'out_uuid': 'https://example.com', 'comic': null},
+      {'type': 1, 'out_uuid': 'uuid', 'comic': null},
+      {'type': 1, 'comic': {'name': '缺少标识'}},
+      {'type': 1, 'comic': {'name': '空标识', 'path_word': ''}},
+      {'type': 6, 'comic': {'name': '不是漫画目标', 'path_word': 'ignored'}},
+    ];
+    handler.dio.httpClientAdapter = ApiAdapter((_) => {
+      'code': 200,
+      'results': {
+        'banners': [
+          for (final target in targets)
+            {
+              'cover': 'https://example.com/banner.jpg',
+              'brief': '推荐',
+              ...target,
+            },
+        ],
+      },
+    });
+
+    final banners = await source.homepage!.getHomepageCarousel();
+
+    for (var index = 0; index < targets.length; index++) {
+      expect(banners[index].onTap, isNull, reason: '${targets[index]}');
+    }
   });
 
   test(

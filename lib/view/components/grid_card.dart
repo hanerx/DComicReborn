@@ -85,6 +85,7 @@ class GridCard extends StatelessWidget {
                         constraints.maxWidth - 32,
                         targetWidth: coverAspectRatio > 1 ? 260 : 160,
                         compactColumns: crossAxisCount,
+                        itemCount: children.length,
                       ),
                       childAspectRatio: childAspectRatio!,
                       crossAxisSpacing: 12,
@@ -96,6 +97,7 @@ class GridCard extends StatelessWidget {
                       crossAxisCount: crossAxisCount,
                       coverAspectRatio: coverAspectRatio,
                       hasSubtitle: reserveSubtitle,
+                      itemCount: children.length,
                     ),
               children: children,
             ),
@@ -180,12 +182,14 @@ class GridCardItem extends StatelessWidget {
     double coverAspectRatio = 2 / 3,
     bool hasTitle = true,
     bool hasSubtitle = false,
+    int? itemCount,
   }) {
     var columns = AppLayout.gridColumns(
       gridWidth,
       targetWidth: coverAspectRatio > 1 ? 260 : 160,
       compactColumns: crossAxisCount,
       spacing: crossAxisSpacing,
+      itemCount: itemCount,
     );
     var columnWidth = (gridWidth - crossAxisSpacing * (columns - 1)) / columns;
     return SliverGridDelegateWithFixedCrossAxisCount(
@@ -248,7 +252,11 @@ class GridCardItem extends StatelessWidget {
                         }
                         return Row(
                           children: [
-                            for (var index = 0; index < visibleCount; index++) ...[
+                            for (
+                              var index = 0;
+                              index < visibleCount;
+                              index++
+                            ) ...[
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(3),
                                 child: Image.asset(

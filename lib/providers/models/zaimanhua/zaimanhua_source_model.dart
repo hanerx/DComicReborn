@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
+import 'package:dcomic/providers/models/zaimanhua/zaimanhua_topic_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/page_controllers/comic_favorite_page_controller.dart';
 import 'package:dcomic/requests/base_request.dart';
@@ -10,6 +11,8 @@ import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
 import 'package:dcomic/view/components/settings_widgets.dart';
+import 'package:dcomic/view/topic_pages/comic_topic_detail_page.dart';
+import 'package:dcomic/view/topic_pages/comic_topic_list_page.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +20,9 @@ import 'package:date_format/date_format.dart' as date_format;
 
 class ZaiManHuaSourceModel extends BaseComicSourceModel {
   final ZaiManHuaAccountModel _accountModel = ZaiManHuaAccountModel();
+
+  @override
+  final ZaiManHuaTopicModel topics = ZaiManHuaTopicModel();
 
   @override
   ComicSourceEntity get type => ComicSourceEntity(
@@ -686,6 +692,31 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
 
   ZaiManHuaHomepageModel(this.parent);
 
+  void Function(BuildContext)? _recommendationAction(Map item) {
+    if (item['type'] == 18) {
+      return (context) => ComicTopicListPage.open(context, sourceModel: parent);
+    }
+    final id = item['obj_id']?.toString();
+    if (id == null || id.isEmpty || id == '0') return null;
+    if (item['type'] == 5) {
+      return (context) => ComicTopicDetailPage.open(
+        context,
+        sourceModel: parent,
+        topicId: id,
+        title: item['title'],
+      );
+    }
+    if (item['type'] == 1) {
+      return (context) => ComicDetailPage.open(
+        context,
+        title: item['title'],
+        comicId: id,
+        comicSourceModel: parent,
+      );
+    }
+    return null;
+  }
+
   @override
   Future<List<HomepageCardEntity>> getHomepageCard() async {
     List<HomepageCardEntity> data = [];
@@ -707,16 +738,7 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
                 rawItem['title'],
                 rawItem['sub_title'],
                 ImageEntity(ImageType.network, rawItem['cover']),
-                (context) {
-                  if (rawItem['type'] == 1) {
-                    ComicDetailPage.open(
-                      context,
-                      title: rawItem['title'],
-                      comicId: rawItem['obj_id'].toString(),
-                      comicSourceModel: parent,
-                    );
-                  }
-                },
+                _recommendationAction(rawItem),
               ),
             );
           }
@@ -725,8 +747,13 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
           data.add(
             HomepageCardEntity(
               rawData['title'],
-              null,
-              (context) {},
+              isHotTopics ? Icons.arrow_forward : null,
+              isHotTopics
+                  ? (context) => ComicTopicListPage.open(
+                      context,
+                      sourceModel: parent,
+                    )
+                  : null,
               children,
               coverAspectRatio: isHotTopics ? 3 / 2 : 2 / 3,
               crossAxisCount: isHotTopics ? 2 : null,
@@ -759,16 +786,7 @@ class ZaiManHuaHomepageModel extends BaseComicHomepageModel {
             CarouselEntity(
               ImageEntity(ImageType.network, rawItem['cover']),
               rawItem['title'],
-              (context) {
-                if (rawItem['type'] == 1) {
-                  ComicDetailPage.open(
-                    context,
-                    title: rawItem['title'],
-                    comicId: rawItem['obj_id'].toString(),
-                    comicSourceModel: parent,
-                  );
-                }
-              },
+              _recommendationAction(rawItem),
             ),
           );
         }

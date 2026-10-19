@@ -1,6 +1,7 @@
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
+import 'package:dcomic/providers/models/copymanga/copymanga_topic_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/page_controllers/comic_favorite_page_controller.dart';
 import 'package:dcomic/requests/base_request.dart';
@@ -10,6 +11,8 @@ import 'package:dcomic/utils/layout_utils.dart';
 import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
 import 'package:dcomic/view/components/settings_widgets.dart';
+import 'package:dcomic/view/topic_pages/comic_topic_detail_page.dart';
+import 'package:dcomic/view/topic_pages/comic_topic_list_page.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -20,6 +23,9 @@ enum CopyMangaDisplayLanguage { traditional, simplified }
 
 class CopyMangaComicSourceModel extends BaseComicSourceModel {
   final CopyMangaAccountModel _accountModel = CopyMangaAccountModel();
+
+  @override
+  final CopyMangaTopicModel topics = CopyMangaTopicModel();
   CopyMangaApiDomain _apiDomain = CopyMangaApiDomain.defaultDomain;
   CopyMangaApiDomain _chapterCommentDomain = CopyMangaApiDomain.defaultDomain;
   bool _changingDomain = false;
@@ -1211,6 +1217,41 @@ class CopyMangaComicHomepageModel extends BaseComicHomepageModel {
       if ((response.statusCode == 200 || response.statusCode == 304) &&
           response.data['code'] == 200) {
         var result = response.data['results'];
+        final topicItems = result['topics']?['list'] as List? ?? const [];
+        final topicCards = <GridItemEntity>[];
+        for (final item in topicItems) {
+          final topicId = item['path_word'];
+          if (topicId is! String || topicId.isEmpty) continue;
+          topicCards.add(
+            GridItemEntity(
+              item['title'],
+              item['brief'],
+              ImageEntity(ImageType.network, item['cover']),
+              (context) => ComicTopicDetailPage.open(
+                context,
+                sourceModel: parent,
+                topicId: topicId,
+                title: item['title'],
+              ),
+              titleFormatter: parent.formatDisplayText,
+            ),
+          );
+        }
+        if (topicCards.isNotEmpty) {
+          data.add(
+            HomepageCardEntity(
+              '漫画专题',
+              Icons.arrow_forward,
+              (context) => ComicTopicListPage.open(
+                context,
+                sourceModel: parent,
+              ),
+              topicCards,
+              coverAspectRatio: 5 / 2,
+              crossAxisCount: 2,
+            ),
+          );
+        }
         makeHomepageCardForComic(
           'recComics',
           '推荐漫画',
@@ -1347,11 +1388,24 @@ class CopyMangaComicHomepageModel extends BaseComicHomepageModel {
           response.data['code'] == 200) {
         var rawData = response.data['results']['banners'];
         for (var item in rawData) {
+          final comic = item['comic'];
+          final comicId = comic is Map ? comic['path_word'] : null;
+          final canOpenComic =
+              item['type'] == 1 && comicId is String && comicId.isNotEmpty;
           data.add(
             CarouselEntity(
               ImageEntity(ImageType.network, item['cover']),
               item['brief'],
-              (context) {},
+              canOpenComic
+                  ? (context) {
+                      ComicDetailPage.open(
+                        context,
+                        title: comic['name'] ?? item['brief'],
+                        comicId: comicId,
+                        comicSourceModel: parent,
+                      );
+                    }
+                  : null,
               titleFormatter: parent.formatDisplayText,
             ),
           );

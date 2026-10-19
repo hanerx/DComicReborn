@@ -107,6 +107,21 @@ class ZaiManHuaMobileRequestHandler extends RequestHandler {
     );
   }
 
+  Future<Response> getTopicList({int page = 0, int size = 24}) {
+    return dio.get(
+      'https://v4api.zaimanhua.com/api/v1/zt/h5/list',
+      queryParameters: {'page': page + 1, 'size': size},
+    );
+  }
+
+  Future<Response> getTopicDetail(String topicId) async {
+    return dio.get(
+      'https://v4api.zaimanhua.com/api/v1/zt/h5/detail',
+      queryParameters: {'id': topicId},
+      options: await setHeader(),
+    );
+  }
+
   Future<Response> getComments(
     String comicId, {
     int page = 0,

@@ -5,6 +5,7 @@ import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/comic_reading_progress.dart';
 import 'package:dcomic/providers/models/base_model.dart';
+import 'package:dcomic/providers/models/comic_topic_model.dart';
 import 'package:dcomic/providers/subscribe_badge_state.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
@@ -43,6 +44,8 @@ abstract class BaseComicSourceModel extends BaseModel {
   BaseComicHomepageModel? get homepage => null;
 
   BaseComicAccountModel? get accountModel => null;
+
+  BaseComicTopicModel? get topics => null;
 
   ComicSourceEntity get type => ComicSourceEntity("初始漫画源", "BaseComicSource");
 
