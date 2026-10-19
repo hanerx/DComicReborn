@@ -161,6 +161,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          upload_symbols=""
+          for candidate in \
+            build/ios/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols \
+            ios/Pods/FirebaseCrashlytics/upload-symbols; do
+            if [ -x "$candidate" ]; then
+              upload_symbols="$candidate"
+              break
+            fi
+          done
+          if [ -z "$upload_symbols" ]; then
+            echo "::error::Crashlytics upload-symbols not found in Flutter's Swift Package Manager checkout or CocoaPods installation."
+            exit 1
+          fi
+          echo "Using Crashlytics uploader: $upload_symbols"
+
           dsyms=()
           while IFS= read -r -d '' dsym; do
             dsyms+=("$dsym")
@@ -171,7 +186,7 @@ jobs:
             exit 1
           fi
 
-          ios/Pods/FirebaseCrashlytics/upload-symbols \
+          "$upload_symbols" \
             -gsp ios/Runner/GoogleService-Info.plist \
             -p ios "${dsyms[@]}"
 

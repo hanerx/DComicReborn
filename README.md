@@ -341,7 +341,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .github/scripts/package_wind
 
 产物位于 `build/windows/packages/`。iOS 无签名编译可使用 `flutter build ios --release --no-codesign`，编译成功不代表已具备安装签名。
 
-GitHub Actions 的 iOS 构建（Debug / Release）会在打包 IPA 前，将 `build/ios` 下的 dSYM 上传到 Firebase Crashlytics。上传使用 CocoaPods 提供的 `upload-symbols` 和仓库中的 `ios/Runner/GoogleService-Info.plist`，无需额外配置 Firebase Token 或服务账号 Secret；目标为该 plist 对应的 Firebase 应用（当前项目 `dcomic-93209`）。缺少 dSYM 或上传命令失败会使 iOS 任务失败。若切换 Firebase 应用，请同步更换 Firebase 配置；此步骤只上传本次构建的符号，不能代替旧版本缺失的 dSYM。
+GitHub Actions 的 iOS 构建（Debug / Release）会在打包 IPA 前，将 `build/ios` 下的 dSYM 上传到 Firebase Crashlytics。上传优先使用 Flutter 的 Swift Package Manager 检出目录 `build/ios/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols`，未找到时使用 CocoaPods 的 `ios/Pods/FirebaseCrashlytics/upload-symbols`。两种方式均使用仓库中的 `ios/Runner/GoogleService-Info.plist`，无需额外配置 Firebase Token 或服务账号 Secret；目标为该 plist 对应的 Firebase 应用（当前项目 `dcomic-93209`）。缺少上传工具、缺少 dSYM 或上传命令失败会使 iOS 任务失败。若切换 Firebase 应用，请同步更换 Firebase 配置；此步骤只上传本次构建的符号，不能代替旧版本缺失的 dSYM。
 
 macOS 打包须在 Mac 上进行，构建后执行：
 
