@@ -157,6 +157,24 @@ jobs:
             flutter build ios --debug --no-codesign
           fi
 
+      - name: Upload iOS dSYMs to Firebase Crashlytics
+        shell: bash
+        run: |
+          set -euo pipefail
+          dsyms=()
+          while IFS= read -r -d '' dsym; do
+            dsyms+=("$dsym")
+          done < <(find build/ios -type d -name '*.dSYM' -prune -print0)
+
+          if [ "${#dsyms[@]}" -eq 0 ]; then
+            echo "::error::No iOS dSYM bundles found; cannot upload Crashlytics symbols."
+            exit 1
+          fi
+
+          ios/Pods/FirebaseCrashlytics/upload-symbols \
+            -gsp ios/Runner/GoogleService-Info.plist \
+            -p ios "${dsyms[@]}"
+
       # 统一制作ipa（所有场景）
       - name: Create IPA from Runner.app (Dev)
         if: github.ref == 'refs/heads/develop'
