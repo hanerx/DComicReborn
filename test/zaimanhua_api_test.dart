@@ -65,6 +65,9 @@ void main() {
     account.dio.interceptors.clear();
     source.accountModel!.logger = quietLogger;
     (source.accountModel as ZaiManHuaAccountModel).parent = source;
+    BaseComicDetailModel.installOfflineResolver(
+      (detail, chapterId) async => null,
+    );
   });
 
   setUp(() async {
@@ -77,6 +80,7 @@ void main() {
     account.dio.close(force: true);
     await (await DatabaseInstance.instance).close();
     await (await RequestStatics.store).close();
+    BaseComicDetailModel.clearOfflineResolverForTest();
     await temporaryDirectory.delete(recursive: true);
   });
 

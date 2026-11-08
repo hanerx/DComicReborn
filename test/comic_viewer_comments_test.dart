@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:dcomic/downloads/comic_download_models.dart' show ChapterProvenance;
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
+import 'package:dcomic/providers/models/chapter_metadata.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/page_controllers/comic_viewer_page_controller.dart';
 import 'package:dcomic/utils/image_utils.dart';
@@ -115,15 +117,27 @@ class _Chapter extends Fake implements BaseComicChapterEntityModel {
   String get rawTitle => title;
   @override
   DateTime get uploadTime => DateTime(2026);
+  @override
+  String? get language => null;
+  @override
+  List<ScanlationGroup> get scanlationGroups => const [];
 }
 
 class _ChapterDetail extends Fake implements BaseComicChapterDetailModel {
-  _ChapterDetail(this.comments, {this.pageCount = 1, this.pageImage});
+  _ChapterDetail(this.comments, {this.pageCount = 1, this.pageImage, this.chapterId = 'chapter'});
+  @override
+  final String chapterId;
   final ImageEntity? pageImage;
   final int pageCount;
   final List<ChapterCommentEntity> comments;
   @override
+  ChapterProvenance? get provenance => null;
+  @override
   String get title => 'Chapter';
+  @override
+  String? get language => null;
+  @override
+  List<ScanlationGroup> get scanlationGroups => const [];
   @override
   List<ImageEntity> get pages => List.generate(
     pageCount,
@@ -152,7 +166,7 @@ class _Source extends BaseComicSourceModel {
   }) async => [];
 }
 
-class _Detail extends Fake implements BaseComicDetailModel {
+class _Detail extends BaseComicDetailModel {
   _Detail(this.chapter, this.nextComments, {this.isLongComic = false});
   @override
   final bool isLongComic;
@@ -161,15 +175,43 @@ class _Detail extends Fake implements BaseComicDetailModel {
   ({String chapterId, int page})? savedPosition;
   Completer<void>? chapterGate;
   @override
+  Future<void> doInit() async {}
+  @override
   Future<({String chapterId, int page})?> loadLocalReadingPosition() async =>
       savedPosition;
   @override
   final BaseComicSourceModel parent = _Source();
   @override
-  Future<BaseComicChapterDetailModel> getChapter(String chapterId) async {
+  String get comicId => 'comic';
+  @override
+  String get title => 'Comic';
+  @override
+  ImageEntity get cover =>
+      ImageEntity(ImageType.asset, 'assets/sources/copymanga.png');
+  @override
+  DateTime get lastUpdate => DateTime(2026);
+  @override
+  Map<String, List<BaseComicChapterEntityModel>> get chapters => const {};
+  @override
+  String get description => '';
+  @override
+  String get status => '';
+  @override
+  List<CategoryEntity> get authors => const [];
+  @override
+  List<CategoryEntity> get categories => const [];
+  @override
+  Future<BaseComicChapterDetailModel> fetchRemoteChapter(
+    String chapterId,
+  ) async {
     await chapterGate?.future;
-    return chapterId == 'next' ? _ChapterDetail(nextComments!) : chapter;
+    return chapterId == 'next'
+        ? _ChapterDetail(nextComments!, chapterId: chapterId)
+        : chapter;
   }
+  @override
+  Future<List<ComicCommentEntity>> getComments({int page = 0}) async =>
+      const [];
   @override
   Future<bool> addComicHistory(
     String chapterId,
@@ -194,6 +236,10 @@ Future<void> _openReader(
   ({String chapterId, int page})? savedPosition,
   bool resumeEnabled = false,
 }) async {
+  BaseComicDetailModel.installOfflineResolver(
+    (detail, chapterId) async => null,
+  );
+  addTearDown(BaseComicDetailModel.clearOfflineResolverForTest);
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);

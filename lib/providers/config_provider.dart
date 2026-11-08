@@ -25,6 +25,8 @@ class ConfigProvider extends BaseProvider {
   ConfigEntity? _aggregateSubscribeBadges;
   ConfigEntity? _aggregateReadingProgress;
   ConfigEntity? _resumeLastReadPage;
+  ConfigEntity? _aggregateDownloads;
+  ConfigEntity? _reuseDownloadedChaptersAcrossSources;
   ConfigEntity? _advancedSettingsUnlocked;
   ConfigEntity? _autoMapMissingComics;
   ConfigEntity? _autoMapIntervalSeconds;
@@ -96,6 +98,11 @@ class ConfigProvider extends BaseProvider {
     _aggregateSubscribeBadges = read(SubscribeBadgeState.configKey, false);
     _aggregateReadingProgress = read(ComicReadingProgress.configKey, false);
     _resumeLastReadPage = read('ResumeLastReadPage', false);
+    _aggregateDownloads = read('AggregateDownloads', false);
+    _reuseDownloadedChaptersAcrossSources = read(
+      'ReuseDownloadedChaptersAcrossSources',
+      true,
+    );
     // Retain the persisted key for already-unlocked installations.
     _advancedSettingsUnlocked = read('ExperimentalFeaturesUnlocked', false);
     _autoMapMissingComics = read('AutoMapMissingComics', false);
@@ -446,6 +453,37 @@ class ConfigProvider extends BaseProvider {
     _aggregateReadingProgress = setting;
     notifyListeners();
     ComicReadingProgress.changes.value++;
+  }
+
+  bool get aggregateDownloads => _aggregateDownloads?.get<bool>() == true;
+
+  Future<void> setAggregateDownloads(bool value) async {
+    if (aggregateDownloads == value) return;
+    final database = await DatabaseInstance.instance;
+    final setting = await database.configDao.getOrCreateConfigByKey(
+      'AggregateDownloads',
+      value: false,
+    );
+    setting.set(value);
+    await database.configDao.updateConfig(setting);
+    _aggregateDownloads = setting;
+    notifyListeners();
+  }
+
+  bool get reuseDownloadedChaptersAcrossSources =>
+      _reuseDownloadedChaptersAcrossSources?.get<bool>() != false;
+
+  Future<void> setReuseDownloadedChaptersAcrossSources(bool value) async {
+    if (reuseDownloadedChaptersAcrossSources == value) return;
+    final database = await DatabaseInstance.instance;
+    final setting = await database.configDao.getOrCreateConfigByKey(
+      'ReuseDownloadedChaptersAcrossSources',
+      value: true,
+    );
+    setting.set(value);
+    await database.configDao.updateConfig(setting);
+    _reuseDownloadedChaptersAcrossSources = setting;
+    notifyListeners();
   }
 
   bool get resumeLastReadPage => _resumeLastReadPage?.get<bool>() == true;

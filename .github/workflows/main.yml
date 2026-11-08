@@ -119,6 +119,9 @@ jobs:
   build_ios:
     if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_ios == 'true' }}
     runs-on: macos-latest
+    env:
+      BYPASS_PERMISSION_IOSADDTOPHOTOLIBRARY: '1'
+      BYPASS_PERMISSION_IOSCHANGEPHOTOLIBRARY: '1'
 
     steps:
       - name: Checkout repository

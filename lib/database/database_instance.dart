@@ -42,6 +42,8 @@ class DatabaseInstance {
         whereArgs: ['nickname', 'avatar'],
       );
     }),
+    Migration(10, 11, _createDownloadTaskSchema),
+    Migration(11, 12, _createOfflineComicSchema),
   ];
 
   /// 新装数据库建表完成后写入默认章节匹配分组；升级场景由 5 -> 6 迁移负责。
@@ -75,6 +77,120 @@ class DatabaseInstance {
       rethrow;
     }
   }
+}
+
+Future<void> _createDownloadTaskSchema(sqflite.Database database) async {
+  await database.execute(
+    'CREATE TABLE IF NOT EXISTS `DownloadTaskEntity` ('
+    '`id` TEXT NOT NULL, '
+    '`url` TEXT NOT NULL, '
+    '`headersJson` TEXT NOT NULL, '
+    '`relativePath` TEXT NOT NULL, '
+    '`canonicalPath` TEXT NOT NULL, '
+    '`taskGroup` TEXT NOT NULL, '
+    '`expectedBytes` INTEGER, '
+    '`sha256Hex` TEXT, '
+    '`strategy` TEXT NOT NULL, '
+    '`effectiveStrategy` TEXT NOT NULL, '
+    '`chunks` INTEGER NOT NULL, '
+    '`cacheKey` TEXT, '
+    '`displayName` TEXT, '
+    '`state` TEXT NOT NULL, '
+    '`generation` INTEGER NOT NULL, '
+    '`engineTaskId` TEXT, '
+    '`resumeRequested` INTEGER NOT NULL, '
+    '`bytesReceived` INTEGER NOT NULL, '
+    '`totalBytes` INTEGER, '
+    '`error` TEXT, '
+    '`createdAt` INTEGER NOT NULL, '
+    '`completedAt` INTEGER, '
+    'PRIMARY KEY (`id`))',
+  );
+  await database.execute(
+    'CREATE TABLE IF NOT EXISTS `DownloadTaskEpochEntity` ('
+    '`id` TEXT NOT NULL, '
+    '`nextGeneration` INTEGER NOT NULL, '
+    'PRIMARY KEY (`id`))',
+  );
+  await database.execute(
+    'CREATE INDEX `index_DownloadTaskEntity_state` '
+    'ON `DownloadTaskEntity` (`state`)',
+  );
+  await database.execute(
+    'CREATE UNIQUE INDEX `index_DownloadTaskEntity_engineTaskId` '
+    'ON `DownloadTaskEntity` (`engineTaskId`)',
+  );
+  await database.execute(
+    'CREATE UNIQUE INDEX `index_DownloadTaskEntity_canonicalPath` '
+    'ON `DownloadTaskEntity` (`canonicalPath`)',
+  );
+}
+
+Future<void> _createOfflineComicSchema(sqflite.Database database) async {
+  await database.execute(
+    'CREATE TABLE IF NOT EXISTS `OfflineComicEntity` ('
+    '`sourceId` TEXT NOT NULL, '
+    '`comicId` TEXT NOT NULL, '
+    '`rawTitle` TEXT NOT NULL, '
+    '`catalogJson` TEXT NOT NULL, '
+    '`coverRelativePath` TEXT, '
+    '`remoteCoverUrl` TEXT, '
+    '`isLongComic` INTEGER NOT NULL, '
+    'PRIMARY KEY (`sourceId`, `comicId`))',
+  );
+  await database.execute(
+    'CREATE TABLE IF NOT EXISTS `OfflineChapterEntity` ('
+    '`sourceId` TEXT NOT NULL, '
+    '`comicId` TEXT NOT NULL, '
+    '`chapterId` TEXT NOT NULL, '
+    '`rawTitle` TEXT NOT NULL, '
+    '`groupName` TEXT NOT NULL, '
+    '`sortIndex` INTEGER NOT NULL, '
+    '`manifestGeneration` INTEGER NOT NULL, '
+    '`operationGeneration` INTEGER NOT NULL, '
+    '`manifestSignature` TEXT NOT NULL, '
+    '`state` TEXT NOT NULL, '
+    '`error` TEXT, '
+    '`completedAt` INTEGER, '
+    'PRIMARY KEY (`sourceId`, `comicId`, `chapterId`), '
+    'FOREIGN KEY (`sourceId`, `comicId`) '
+    'REFERENCES `OfflineComicEntity` (`sourceId`, `comicId`) '
+    'ON UPDATE NO ACTION ON DELETE CASCADE)',
+  );
+  await database.execute(
+    'CREATE TABLE IF NOT EXISTS `OfflinePageEntity` ('
+    '`sourceId` TEXT NOT NULL, '
+    '`comicId` TEXT NOT NULL, '
+    '`chapterId` TEXT NOT NULL, '
+    '`manifestGeneration` INTEGER NOT NULL, '
+    '`pageIndex` INTEGER NOT NULL, '
+    '`taskId` TEXT NOT NULL, '
+    '`relativePath` TEXT NOT NULL, '
+    '`resourceUrl` TEXT NOT NULL, '
+    '`headersJson` TEXT NOT NULL, '
+    '`cacheKey` TEXT, '
+    '`expectedBytes` INTEGER, '
+    '`submitted` INTEGER NOT NULL, '
+    'PRIMARY KEY (`sourceId`, `comicId`, `chapterId`, '
+    '`manifestGeneration`, `pageIndex`), '
+    'FOREIGN KEY (`sourceId`, `comicId`, `chapterId`) '
+    'REFERENCES `OfflineChapterEntity` (`sourceId`, `comicId`, `chapterId`) '
+    'ON UPDATE NO ACTION ON DELETE CASCADE)',
+  );
+  await database.execute(
+    'CREATE INDEX `index_OfflineChapterEntity_state_completedAt` '
+    'ON `OfflineChapterEntity` (`state`, `completedAt`)',
+  );
+  await database.execute(
+    'CREATE UNIQUE INDEX `index_OfflinePageEntity_taskId` '
+    'ON `OfflinePageEntity` (`taskId`)',
+  );
+  await database.execute(
+    'CREATE INDEX '
+    '`index_OfflinePageEntity_sourceId_comicId_chapterId_manifestGeneration` '
+    'ON `OfflinePageEntity` '
+    '(`sourceId`, `comicId`, `chapterId`, `manifestGeneration`)',
+  );
 }
 
 typedef _ComicEndpoint = ({String provider, String comic});

@@ -5,6 +5,7 @@ import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/page_controllers/comic_viewer_page_controller.dart';
+import 'package:dcomic/providers/source_provider.dart';
 import 'package:dcomic/utils/layout_utils.dart';
 import 'package:dcomic/utils/reader_image_fit.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
@@ -43,7 +44,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     with SingleTickerProviderStateMixin {
   static const _toolbarDuration = Duration(milliseconds: 300);
   static const _toolbarCurve = Curves.easeInOutCubic;
-  static const double _appBarHeight = 70;
+  static const double _minimumAppBarHeight = 70;
   static const double _toolBarHeight = 96;
 
   PageController _pageController = PageController();
@@ -297,7 +298,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
           duration: _toolbarDuration,
           curve: _toolbarCurve,
           padding: EdgeInsets.only(
-            top: controller.showToolBar ? _appBarHeight : 0,
+            top: controller.showToolBar ? _readerAppBarHeight(context) : 0,
             bottom: controller.showToolBar ? _toolBarHeight : 0,
           ),
           child: ChapterCommentsPage(
@@ -1086,8 +1087,51 @@ class _ComicViewerPageState extends State<ComicViewerPage>
     );
   }
 
+
+  double _readerAppBarHeight(BuildContext context) {
+    final theme = Theme.of(context);
+    final scaler = MediaQuery.textScalerOf(context);
+    double lineExtent(TextStyle? style, double fallbackSize) {
+      return scaler.scale(style?.fontSize ?? fallbackSize) *
+          (style?.height ?? 1.2);
+    }
+
+    final titleExtent = lineExtent(theme.textTheme.titleLarge, 22);
+    final subtitleExtent = _readerSubtitle(context) == null
+        ? 0.0
+        : lineExtent(theme.textTheme.labelSmall, 11);
+    return max(
+      _minimumAppBarHeight,
+      titleExtent + subtitleExtent + 16,
+    );
+  }
+
+  String? _readerSubtitle(BuildContext context) => _localSourceLabel(context);
+
+  String? _localSourceLabel(BuildContext context) {
+    final provenance = context
+        .read<ComicViewerPageController>()
+        .chapterDetailModel
+        ?.provenance;
+    if (provenance == null || !provenance.isLocal) return null;
+    final sourceId = provenance.actual.sourceId;
+    var sourceName = sourceId;
+    for (final source in context.read<ComicSourceProvider>().sources) {
+      if (source.type.sourceId == sourceId) {
+        sourceName = source.type.sourceName;
+        break;
+      }
+    }
+    return _localeText(
+      context,
+      '本地 · 实际来源：$sourceName',
+      'Local · Actual source: $sourceName',
+    );
+  }
+
   Widget _buildAppBar(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final appBarHeight = _readerAppBarHeight(context);
     return AnimatedPositioned(
       duration: _toolbarDuration,
       curve: _toolbarCurve,
@@ -1095,10 +1139,10 @@ class _ComicViewerPageState extends State<ComicViewerPage>
       right: 0,
       top: Provider.of<ComicViewerPageController>(context).showToolBar
           ? 0
-          : -_appBarHeight,
+          : -appBarHeight,
       child: SafeArea(
         child: SizedBox(
-          height: _appBarHeight,
+          height: appBarHeight,
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: colors.surfaceContainerLow,
@@ -1119,12 +1163,26 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(left: 8, right: 16),
-                        child: Text(
-                          Provider.of<ComicViewerPageController>(context).title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w600),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              Provider.of<ComicViewerPageController>(context).title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            if (_readerSubtitle(context) case final label?)
+                              Text(
+                                label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(color: colors.onSurfaceVariant),
+                              ),
+                          ],
                         ),
                       ),
                     ),
@@ -1193,7 +1251,7 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                   SizedBox.expand(
                     child: EasyRefresh(
                       onRefresh: () async {
-                        await controller.loadComment();
+                        await controller.loadComment(explicit: true);
                       },
                       child: SizedBox.expand(
                         child: SingleChildScrollView(
@@ -1203,6 +1261,88 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                               spacing: 8,
                               runSpacing: 8,
                               children: [
+                                if (controller.commentLoadState ==
+                                    ChapterCommentLoadState.loading)
+                                  const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                if (controller.commentLoadState ==
+                                    ChapterCommentLoadState.offlineUnavailable)
+                                  Card(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.cloud_off_outlined),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            _localeText(
+                                              context,
+                                              '本地章节不会自动请求评论。如需评论，可主动连接实际来源。',
+                                              'Local chapters do not load comments automatically. Connect to the actual source only when you request them.',
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          TextButton(
+                                            onPressed: () => controller.loadComment(
+                                              explicit: true,
+                                            ),
+                                            child: Text(
+                                              _localeText(
+                                                context,
+                                                '联网获取',
+                                                'Fetch online',
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                if (controller.commentLoadState ==
+                                    ChapterCommentLoadState.failed)
+                                  Card(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.error_outline,
+                                            color: colors.error,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            _localeText(
+                                              context,
+                                              '评论加载失败',
+                                              'Could not load comments',
+                                            ),
+                                          ),
+                                          Text(
+                                            '${controller.commentError}',
+                                            textAlign: TextAlign.center,
+                                            style: Theme.of(context).textTheme.bodySmall,
+                                          ),
+                                          TextButton(
+                                            onPressed: () => controller.loadComment(
+                                              explicit: true,
+                                            ),
+                                            child: Text(
+                                              _localeText(context, '重试', 'Retry'),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                if (controller.commentLoadState ==
+                                        ChapterCommentLoadState.loaded &&
+                                    controller.comments.isEmpty)
+                                  Text(
+                                    _localeText(context, '暂无评论', 'No comments'),
+                                  ),
                                 for (var item in controller.comments)
                                   Chip(
                                     avatar: CircleAvatar(
@@ -1244,31 +1384,31 @@ class _ComicViewerPageState extends State<ComicViewerPage>
                     child: ListView.builder(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       itemCount: chapters.length,
-                      itemBuilder: (context, index) => ListTile(
-                        selected: controller.currentChapter == chapters[index],
-                        title: Text(chapters[index].title),
-                        subtitle: Text(
-                          S
-                              .of(context)
-                              .ComicDetailPageChapterEntitySubtitle(
-                                formatdate.formatDate(
-                                  chapters[index].uploadTime,
-                                  [
+                      itemBuilder: (context, index) {
+                        final chapter = chapters[index];
+                        return ListTile(
+                          selected: controller.currentChapter == chapter,
+                          title: Text(chapter.title),
+                          subtitle: Text(
+                            S
+                                .of(context)
+                                .ComicDetailPageChapterEntitySubtitle(
+                                  formatdate.formatDate(chapter.uploadTime, [
                                     formatdate.yyyy,
                                     '-',
                                     formatdate.mm,
                                     '-',
                                     formatdate.dd,
-                                  ],
+                                  ]),
+                                  chapter.chapterId,
                                 ),
-                                chapters[index].chapterId,
-                              ),
-                        ),
-                        onTap: () async {
-                          Navigator.of(context).pop();
-                          await controller.loadChapter(chapters[index]);
-                        },
-                      ),
+                          ),
+                          onTap: () async {
+                            Navigator.of(context).pop();
+                            await controller.loadChapter(chapter);
+                          },
+                        );
+                      },
                     ),
                   ),
                 ],

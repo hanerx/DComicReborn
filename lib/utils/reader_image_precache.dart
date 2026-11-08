@@ -8,7 +8,7 @@ class ReaderImagePrecache {
   ReaderImagePrecache({BaseCacheManager? cacheManager, required this.onError})
     : _cache = cacheManager;
 
-  BaseCacheManager? _cache;
+  final BaseCacheManager? _cache;
   final void Function(Object, StackTrace) onError;
   List<ImageEntity> _pages = const [];
   final Set<int> _attempted = {};
@@ -60,14 +60,16 @@ class ReaderImagePrecache {
         continue;
       }
       try {
-        final cache = _cache ??= DefaultCacheManager();
-        final cached = await cache.getFileFromCache(page.imageUrl);
+        final cache = _cache ?? DefaultCacheManager();
+        final identity = imageCacheIdentity(page.imageUrl, page.imageHeaders);
+        final cached = await cache.getFileFromCache(identity);
         // Navigation can change the window while the cache lookup is pending.
         if (revision != _revision) continue;
         _attempted.add(index);
         if (cached == null) {
           await cache.downloadFile(
             page.imageUrl,
+            key: identity,
             authHeaders: page.imageHeaders,
           );
         }

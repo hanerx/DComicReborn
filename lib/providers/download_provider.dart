@@ -1,63 +1,58 @@
-import 'dart:isolate';
-import 'dart:ui';
-import 'dart:io';
+import 'dart:async';
 
-import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:dcomic/downloads/download_models.dart';
+import 'package:dcomic/downloads/download_service.dart';
+import 'package:flutter/foundation.dart';
 
-import 'base_provider.dart';
+class DownloadProvider extends ChangeNotifier {
+  final DownloadService service;
+  late final Future<void> ready;
+  StreamSubscription<List<DownloadRecord>>? _subscription;
+  List<DownloadRecord> _records = const [];
+  Object? _error;
+  bool _disposed = false;
 
-typedef ProviderDownloadCallback = Future<void> Function(
-    String id,
-    DownloadTaskStatus status,
-    int progress);
-
-@pragma('vm:entry-point')
-void onDownloadCallback(String id, int status, int progress) async {
-  final SendPort? send = IsolateNameServer.lookupPortByName('downloader_send_port');
-  send?.send([id, status, progress]);
-}
-
-class DownloadProvider extends BaseProvider {
-  ReceivePort? _port;
-  final Map<String, ProviderDownloadCallback> _downloadCallbacks = {};
-
-  @override
-  Future<void> init() async{
-    if (!Platform.isAndroid && !Platform.isIOS) return;
-    await FlutterDownloader.initialize();
-    final port = _port = ReceivePort();
-    IsolateNameServer.registerPortWithName(port.sendPort, 'downloader_send_port');
-    port.listen((dynamic data) {
-      String id = data[0];
-      DownloadTaskStatus status = DownloadTaskStatus.fromInt(data[1]);
-      int progress = data[2];
-      onDownload(id, status, progress);
-    });
-    FlutterDownloader.registerCallback(onDownloadCallback);
+  DownloadProvider({DownloadService? service})
+    : service = service ?? DownloadService.instance {
+    ready = _initialize();
   }
 
-  Future<void> onDownload(String id, DownloadTaskStatus status, int progress) async {
-    // Handle the download callback here
-    logger.d('Download ID: $id, Status: $status, Progress: $progress');
-    if (_downloadCallbacks.containsKey(id)) {
-      _downloadCallbacks[id]!(id, status, progress);
-      if(status == DownloadTaskStatus.complete) {
-        _downloadCallbacks.remove(id);
-      }
+  List<DownloadRecord> get records => _records;
+
+  Object? get error => _error;
+
+  Future<void> _initialize() async {
+    try {
+      await service.initialize();
+      _records = await service.list();
+      _error = service.notificationWarning;
+      if (!_disposed) notifyListeners();
+      if (_disposed) return;
+      _subscription = service.watch().listen(
+        (records) {
+          if (_disposed) return;
+          _records = records;
+          _error = service.notificationWarning;
+          notifyListeners();
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          if (_disposed) return;
+          _error = error;
+          notifyListeners();
+        },
+      );
+    } on Object catch (error) {
+      _error = error;
+      if (!_disposed) notifyListeners();
+      rethrow;
     }
-    notifyListeners();
-  }
-
-  void registerDownloadCallback(String id, ProviderDownloadCallback callback) {
-    _downloadCallbacks[id] = callback;
   }
 
   @override
   void dispose() {
-    if (_port != null) {
-      IsolateNameServer.removePortNameMapping('downloader_send_port');
-      _port!.close();
-    }
+    _disposed = true;
+    _subscription?.cancel();
+    _subscription = null;
     super.dispose();
   }
 }

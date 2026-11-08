@@ -627,7 +627,9 @@ class CopyMangaComicDetailModel extends BaseComicDetailModel {
   String get description => parent.formatDisplayText(rawData['brief']);
 
   @override
-  Future<BaseComicChapterDetailModel?> getChapter(String chapterId) async {
+  Future<BaseComicChapterDetailModel?> fetchRemoteChapter(
+    String chapterId,
+  ) async {
     try {
       var response = await RequestHandlers.copyMangaRequestHandler.getComic(
         comicId,

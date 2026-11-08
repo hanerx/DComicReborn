@@ -1,6 +1,6 @@
 import UIKit
 import Flutter
-import flutter_downloader
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -8,17 +8,11 @@ import flutter_downloader
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    FlutterDownloaderPlugin.setPluginRegistrantCallback(registerDownloadPlugins)
+    UNUserNotificationCenter.current().delegate = self
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-  }
-}
-
-private func registerDownloadPlugins(registry: FlutterPluginRegistry) {
-  if !registry.hasPlugin("FlutterDownloaderPlugin") {
-    FlutterDownloaderPlugin.register(with: registry.registrar(forPlugin: "FlutterDownloaderPlugin")!)
   }
 }

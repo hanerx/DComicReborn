@@ -6,6 +6,14 @@ import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/utils/reader_image_precache.dart';
 
+enum ChapterCommentLoadState {
+  idle,
+  loading,
+  loaded,
+  offlineUnavailable,
+  failed,
+}
+
 class ComicViewerPageController extends BaseProvider {
   final BaseComicDetailModel detailModel;
   final List<BaseComicChapterEntityModel> chapters;
@@ -46,6 +54,12 @@ class ComicViewerPageController extends BaseProvider {
 
   List<ChapterCommentEntity> get comments => _comments;
 
+  ChapterCommentLoadState _commentLoadState = ChapterCommentLoadState.idle;
+  ChapterCommentLoadState get commentLoadState => _commentLoadState;
+
+  Object? _commentError;
+  Object? get commentError => _commentError;
+
   int get maxLikes => _comments.isNotEmpty
       ? _comments.first.likes > 100
             ? _comments.first.likes
@@ -59,13 +73,10 @@ class ComicViewerPageController extends BaseProvider {
     required this._precacheCount,
     this.resumeLastReadPage = false,
   }) {
-    if (chapters.indexWhere((element) => element.chapterId == initChapterId) >=
-        0) {
-      currentChapter =
-          chapters[chapters.indexWhere(
-            (element) => element.chapterId == initChapterId,
-          )];
-    }
+    final initialIndex = chapters.indexWhere(
+      (chapter) => chapter.chapterId == initChapterId,
+    );
+    if (initialIndex >= 0) currentChapter = chapters[initialIndex];
   }
 
   set precacheCount(int value) {
@@ -93,20 +104,25 @@ class ComicViewerPageController extends BaseProvider {
     super.dispose();
   }
 
-  BaseComicChapterEntityModel? get preChapter =>
-      currentChapter != null && chapters.indexOf(currentChapter!) > 0
-      ? chapters[chapters.indexOf(currentChapter!) - 1]
-      : null;
+  BaseComicChapterEntityModel? get preChapter {
+    final current = currentChapter;
+    if (current == null) return null;
+    final index = chapters.indexOf(current);
+    return index > 0 ? chapters[index - 1] : null;
+  }
 
-  BaseComicChapterEntityModel? get nextChapter =>
-      currentChapter != null &&
-          chapters.indexOf(currentChapter!) < chapters.length - 1
-      ? chapters[chapters.indexOf(currentChapter!) + 1]
-      : null;
+  BaseComicChapterEntityModel? get nextChapter {
+    final current = currentChapter;
+    if (current == null) return null;
+    final index = chapters.indexOf(current);
+    return index >= 0 && index < chapters.length - 1
+        ? chapters[index + 1]
+        : null;
+  }
 
   /// Returns false at the first chapter without reloading or resetting progress.
   Future<bool> refresh() async {
-    final chapter = chapterDetailModel == null ? currentChapter! : preChapter;
+    final chapter = chapterDetailModel == null ? currentChapter : preChapter;
     if (chapter == null) return false;
     await loadChapter(chapter);
     return true;
@@ -114,7 +130,7 @@ class ComicViewerPageController extends BaseProvider {
 
   /// Returns false at the latest chapter without reloading or resetting progress.
   Future<bool> load() async {
-    final chapter = chapterDetailModel == null ? currentChapter! : nextChapter;
+    final chapter = chapterDetailModel == null ? currentChapter : nextChapter;
     if (chapter == null) return false;
     await loadChapter(chapter);
     return true;
@@ -124,6 +140,9 @@ class ComicViewerPageController extends BaseProvider {
     final load = ++_chapterLoad;
     _precache.clear();
     _precachePages = const [];
+    _comments = const [];
+    _commentLoadState = ChapterCommentLoadState.idle;
+    _commentError = null;
     currentChapter = chapter;
     // Read before chapter-entry history can replace the previous position.
     final position = resumeLastReadPage && chapterDetailModel == null
@@ -141,19 +160,46 @@ class ComicViewerPageController extends BaseProvider {
         ? (position!.page - 1).clamp(0, detail.pages.length - 1)
         : 0;
     _updatePrecache();
-    await loadComment();
-    if (_disposed || load != _chapterLoad) return;
-    unawaited(addComicHistory());
+    _commentLoadState = detail?.provenance?.isLocal == true
+        ? ChapterCommentLoadState.offlineUnavailable
+        : ChapterCommentLoadState.loading;
     notifyListeners();
+    unawaited(addComicHistory());
+    if (detail != null && detail.provenance?.isLocal != true) {
+      unawaited(loadComment());
+    }
   }
 
-  Future<void> loadComment() async {
+  Future<void> loadComment({bool explicit = false}) async {
     final chapter = chapterDetailModel;
     final load = _chapterLoad;
-    if (chapter != null) {
+    if (chapter == null) return;
+    if (chapter.provenance?.isLocal == true && !explicit) {
+      _commentLoadState = ChapterCommentLoadState.offlineUnavailable;
+      _commentError = null;
+      if (!_disposed) notifyListeners();
+      return;
+    }
+    _commentLoadState = ChapterCommentLoadState.loading;
+    _commentError = null;
+    if (!_disposed) notifyListeners();
+    try {
       final comments = await chapter.getChapterComments();
-      if (_disposed || load != _chapterLoad) return;
+      if (_disposed ||
+          load != _chapterLoad ||
+          !identical(chapter, chapterDetailModel)) {
+        return;
+      }
       _comments = comments;
+      _commentLoadState = ChapterCommentLoadState.loaded;
+    } catch (error) {
+      if (_disposed ||
+          load != _chapterLoad ||
+          !identical(chapter, chapterDetailModel)) {
+        return;
+      }
+      _commentError = error;
+      _commentLoadState = ChapterCommentLoadState.failed;
     }
     if (!_disposed) notifyListeners();
   }

@@ -6,6 +6,7 @@ import 'package:dcomic/providers/source_provider.dart';
 import 'package:dcomic/view/components/dcomic_mark.dart';
 import 'package:dcomic/view/drawer_page/favorite_page.dart';
 import 'package:dcomic/view/drawer_page/history_page.dart';
+import 'package:dcomic/view/drawer_page/download_page.dart';
 import 'package:dcomic/view/settings/account_manage_page.dart';
 import 'package:dcomic/view/settings/settings_main.dart';
 import 'package:flutter/material.dart';
@@ -55,6 +56,13 @@ class _LeftDrawerState extends State<LeftDrawer> {
                     title: S.of(context).DrawerHistory,
                     routeName: 'HistoryPage',
                     builder: (context) => const HistoryPage(),
+                  ),
+                  _buildNavigationTile(
+                    context: context,
+                    icon: Icons.download_outlined,
+                    title: _locale(context, '下载管理', 'Downloads'),
+                    routeName: 'DownloadPage',
+                    builder: (context) => const DownloadPage(),
                   ),
                 ],
               ),

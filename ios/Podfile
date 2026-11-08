@@ -37,5 +37,14 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    if target.name == 'background_downloader'
+      target.build_configurations.each do |config|
+        config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
+        config.build_settings['OTHER_SWIFT_FLAGS'] += [
+          '-D BYPASS_PERMISSION_IOSADDTOPHOTOLIBRARY',
+          '-D BYPASS_PERMISSION_IOSCHANGEPHOTOLIBRARY',
+        ]
+      end
+    end
   end
 end

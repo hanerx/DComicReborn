@@ -2,14 +2,17 @@ import 'dart:async';
 
 import 'package:badges/badges.dart';
 import 'package:dcomic/database/database_instance.dart';
+import 'package:dcomic/downloads/comic_download_models.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/comic_reading_progress.dart';
 import 'package:dcomic/providers/models/base_model.dart';
+import 'package:dcomic/providers/models/chapter_metadata.dart';
 import 'package:dcomic/providers/models/comic_topic_model.dart';
 import 'package:dcomic/providers/subscribe_badge_state.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
 import 'package:dcomic/view/components/settings_widgets.dart';
+import 'package:flutter/foundation.dart' show nonVirtual, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:date_format/date_format.dart' as date_format;
@@ -202,6 +205,12 @@ class CategoryEntity {
   CategoryEntity(this.title, this.categoryId, this.onTap);
 }
 
+typedef OfflineChapterResolverCallback =
+    Future<BaseComicChapterDetailModel?> Function(
+      BaseComicDetailModel detail,
+      String requestedChapterId,
+    );
+
 abstract class BaseComicDetailModel extends BaseModel {
   ImageEntity get cover;
 
@@ -213,6 +222,10 @@ abstract class BaseComicDetailModel extends BaseModel {
   DateTime get lastUpdate;
 
   Map<String, List<BaseComicChapterEntityModel>> get chapters;
+
+  /// Complete upstream versions for durable UUID lookups; [chapters] may be
+  /// aggregated for display according to the user's source preferences.
+  Map<String, List<BaseComicChapterEntityModel>> get chapterCatalog => chapters;
 
   String get description;
 
@@ -233,9 +246,50 @@ abstract class BaseComicDetailModel extends BaseModel {
 
   BaseComicSourceModel get parent;
 
-  Future<BaseComicChapterDetailModel?> getChapter(String chapterId);
+  static OfflineChapterResolverCallback? _offlineResolver;
+  static Future<void> Function()? _offlineRuntimeInitializer;
+
+  static void installOfflineResolver(OfflineChapterResolverCallback resolver) {
+    _offlineResolver = resolver;
+  }
+
+  static void installOfflineRuntimeInitializer(
+    Future<void> Function() initializer,
+  ) {
+    _offlineRuntimeInitializer = initializer;
+  }
+
+  @visibleForTesting
+  static void clearOfflineResolverForTest() {
+    _offlineResolver = null;
+  }
+
+  @nonVirtual
+  Future<BaseComicChapterDetailModel?> getChapter(String chapterId) async {
+    var resolver = _offlineResolver;
+    if (resolver == null) {
+      final initializer = _offlineRuntimeInitializer;
+      if (initializer != null) {
+        await initializer();
+        resolver = _offlineResolver;
+      }
+    }
+    if (resolver == null) {
+      throw StateError(
+        'Offline chapter runtime is not initialized. '
+        'Install one resolver before opening chapters.',
+      );
+    }
+    final local = await resolver(this, chapterId);
+    return local ?? fetchRemoteChapter(chapterId);
+  }
+
+  Future<BaseComicChapterDetailModel?> fetchRemoteChapter(String chapterId);
 
   Future<List<ComicCommentEntity>> getComments({int page = 0});
+
+  /// Cover persisted into synchronized history. Local file paths are forbidden.
+  ImageEntity get historyCover => cover;
 
   Future<void>? _initFuture;
 
@@ -319,8 +373,9 @@ abstract class BaseComicDetailModel extends BaseModel {
       var databaseInstance = await DatabaseInstance.instance;
       var comicHistoryEntity = (await databaseInstance.comicHistoryDao
           .getOrCreateConfigByComicId(comicId, parent.type.sourceId));
-      comicHistoryEntity.cover = cover.imageUrl;
-      comicHistoryEntity.coverType = cover.imageType;
+      final persistedCover = historyCover;
+      comicHistoryEntity.cover = persistedCover.imageUrl;
+      comicHistoryEntity.coverType = persistedCover.imageType;
       comicHistoryEntity.title = rawTitle;
       comicHistoryEntity.lastChapterId = chapterId;
       comicHistoryEntity.lastChapterTitle = chapterName;
@@ -350,6 +405,10 @@ abstract class BaseComicChapterEntityModel extends BaseModel {
   String get chapterId;
 
   DateTime get uploadTime;
+
+  String? get language => null;
+
+  List<ScanlationGroup> get scanlationGroups => const [];
 }
 
 class DefaultComicChapterEntityModel extends BaseComicChapterEntityModel {
@@ -357,13 +416,20 @@ class DefaultComicChapterEntityModel extends BaseComicChapterEntityModel {
   final String _chapterId;
   final DateTime _uploadTime;
   final ComicDisplayTextFormatter? _titleFormatter;
+  @override
+  final String? language;
+  @override
+  final List<ScanlationGroup> scanlationGroups;
 
   DefaultComicChapterEntityModel(
     this._title,
     this._chapterId,
     this._uploadTime, {
     ComicDisplayTextFormatter? titleFormatter,
-  }) : _titleFormatter = titleFormatter;
+    this.language,
+    List<ScanlationGroup> scanlationGroups = const [],
+  }) : _titleFormatter = titleFormatter,
+       scanlationGroups = List.unmodifiable(scanlationGroups);
 
   @override
   String get chapterId => _chapterId;
@@ -385,7 +451,14 @@ abstract class BaseComicChapterDetailModel extends BaseModel {
 
   String get chapterId;
 
+  String? get language => null;
+
+  List<ScanlationGroup> get scanlationGroups => const [];
+
   Future<List<ChapterCommentEntity>> getChapterComments();
+
+  /// Requested vs actual content identity. Remote chapters have no provenance.
+  ChapterProvenance? get provenance => null;
 }
 
 abstract class BaseComicAccountModel extends BaseModel {

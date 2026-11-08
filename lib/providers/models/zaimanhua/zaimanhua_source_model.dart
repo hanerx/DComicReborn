@@ -1106,7 +1106,9 @@ class ZaiManHuaComicDetailModel extends BaseComicDetailModel {
   String get description => rawData['data']['description'];
 
   @override
-  Future<BaseComicChapterDetailModel?> getChapter(String chapterId) async {
+  Future<BaseComicChapterDetailModel?> fetchRemoteChapter(
+    String chapterId,
+  ) async {
     try {
       var response = await RequestHandlers.zaiManHuaMobileRequestHandler
           .getComicChapterDetail(comicId, chapterId);

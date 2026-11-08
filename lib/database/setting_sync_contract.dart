@@ -270,6 +270,18 @@ final _appSettingRegistry = _SettingPolicyRegistry('ConfigEntity', [
     ),
   ),
   _SettingPolicyEntry.exact(
+    'AggregateDownloads',
+    SettingSyncDefinition.localOnly(
+      reason: 'Downloaded-library aggregation is device-local.',
+    ),
+  ),
+  _SettingPolicyEntry.exact(
+    'ReuseDownloadedChaptersAcrossSources',
+    SettingSyncDefinition.localOnly(
+      reason: 'Downloaded chapter reuse depends on device-local files.',
+    ),
+  ),
+  _SettingPolicyEntry.exact(
     'SearchHistory',
     SettingSyncDefinition.localOnly(
       reason: 'Search history is private device-local activity.',

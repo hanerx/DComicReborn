@@ -111,8 +111,8 @@ class _DownloadSettingPageState extends State<DownloadSettingPage> {
               SettingsNotice(
                 child: Text(
                   _locale(
-                    '页数指当前页之后的后续页面，不包含当前页；当前页始终可以加载。选择“整章”时，图片文件会按章节顺序下载到磁盘缓存，并不会一次性解码整章；屏幕上可见的图片仍按需加载和解码。',
-                    'The count covers following pages after the current page and excludes the current page; the current page is always eligible. “Full chapter” downloads image files sequentially to the disk cache instead of decoding the entire chapter at once. Visible images still load and decode on demand.',
+                    '这里控制的是阅读时的临时预缓存：文件可能被系统或缓存清理删除，也不会出现在“已下载漫画”中。需要长期离线阅读时，请在漫画详情中使用“下载章节”。页数指当前页之后的页面，不包含当前页；当前页始终可以加载。选择“整章”只会把图片依次写入临时磁盘缓存，不会一次性解码整章。',
+                    'This controls temporary reading precache. Cached files may be removed by the system or cache cleanup and do not appear in “Downloaded comics”. For durable offline reading, use “Download chapters” from comic details. The count covers pages after the current page and excludes the current page; the current page is always eligible. “Full chapter” writes images to temporary disk cache in order and does not decode the whole chapter at once.',
                   ),
                 ),
               ),

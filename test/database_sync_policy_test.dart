@@ -9,6 +9,16 @@ import 'package:dcomic/database/sync/sync_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+Future<void> _restorePreDownloadSchema(Database database, int version) async {
+  for (final table in [
+    'OfflinePageEntity', 'OfflineChapterEntity', 'OfflineComicEntity', 'DownloadTaskEntity',
+    'DownloadTaskEpochEntity',
+  ]) {
+    await database.execute('DROP TABLE $table');
+  }
+  await database.setVersion(version);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late Directory directory;
@@ -31,6 +41,66 @@ void main() {
   tearDown(() async {
     await database.close();
     await directory.delete(recursive: true);
+  });
+
+  test('download manifests, paths and credentials never enter sync export', () async {
+    final store = await SyncStore.attach(database);
+    addTearDown(store.close);
+    final categories = SyncCategory.values.toSet();
+    await database.configDao.insertConfig(ConfigEntity.createConfigEntity('ThemeColor', 'Blue'));
+    Future<Map<String, Object?>> export() async => {
+      for (final record in await store.snapshot(categories))
+        '${record.category.name}/${record.key}': record.value,
+    };
+    final before = await export();
+    await raw.insert('DownloadTaskEntity', {
+      'id': 'private-download',
+      'url': 'https://images.invalid/page?token=device-secret',
+      'headersJson': '{"Authorization":"private-token"}',
+      'relativePath': 'comics/private/page.png',
+      'canonicalPath': 'comics/private/page.png',
+      'resumeRequested': 0,
+      'taskGroup': 'comic',
+      'strategy': 'single',
+      'effectiveStrategy': 'single',
+      'chunks': 1,
+      'state': 'completed',
+      'generation': 1,
+      'bytesReceived': 10,
+      'createdAt': 1,
+    });
+    await raw.insert('DownloadTaskEpochEntity', {
+      'id': 'private-download', 'nextGeneration': 2,
+    });
+    await raw.insert('OfflineComicEntity', {
+      'sourceId': 'private-source', 'comicId': 'private-comic',
+      'rawTitle': 'Local comic', 'isLongComic': 0, 'catalogJson': '[]',
+    });
+    await raw.insert('OfflineChapterEntity', {
+      'sourceId': 'private-source', 'comicId': 'private-comic',
+      'chapterId': 'private-chapter', 'rawTitle': 'Chapter 1',
+      'groupName': 'Main', 'sortIndex': 0, 'manifestGeneration': 1,
+      'operationGeneration': 1, 'manifestSignature': 'signature',
+      'state': 'completed',
+    });
+    await raw.insert('OfflinePageEntity', {
+      'sourceId': 'private-source', 'comicId': 'private-comic',
+      'chapterId': 'private-chapter', 'manifestGeneration': 1,
+      'pageIndex': 0, 'taskId': 'private-download',
+      'relativePath': 'comics/private/page.png',
+      'resourceUrl': 'https://images.invalid/page?token=device-secret',
+      'headersJson': '{"Authorization":"private-token"}',
+      'expectedBytes': 10, 'submitted': 1,
+    });
+    for (final key in ['AggregateDownloads', 'ReuseDownloadedChaptersAcrossSources']) {
+      await database.configDao.insertConfig(ConfigEntity.createConfigEntity(key, true));
+    }
+    expect(await export(), before);
+    await raw.update('DownloadTaskEntity', {'state': 'failed', 'error': 'private path missing'});
+    await raw.delete('OfflineComicEntity');
+    final pending = await store.pending(categories);
+    expect(pending.map((record) => record.key), ['ThemeColor']);
+    expect(pending.single.value, {'value': 'Blue'});
   });
 
   test('unregistered in-memory defaults fail at their definition site', () {
@@ -166,7 +236,7 @@ void main() {
       () async {
     final path = '${directory.path}/legacy_dynamic_url.db';
     final legacy = await $FloorDComicDatabase.databaseBuilder(path).build();
-    await (legacy.database as Database).setVersion(8);
+    await _restorePreDownloadSchema(legacy.database as Database, 8);
     await legacy.database.insert('ModelConfigEntity', {
       'id': 19,
       'key': 'useDynamicBaseUrl',
@@ -220,7 +290,7 @@ void main() {
         () async {
       final path = '${directory.path}/legacy_profile_$version.db';
       final legacy = await $FloorDComicDatabase.databaseBuilder(path).build();
-      await (legacy.database as Database).setVersion(version);
+      await _restorePreDownloadSchema(legacy.database as Database, version);
       for (final key in ['nickname', 'avatar']) {
         await legacy.database.insert('ModelConfigEntity', {
           'key': key,

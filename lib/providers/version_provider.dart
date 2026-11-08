@@ -1,31 +1,22 @@
-import 'dart:io';
-
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/entity/config.dart';
+import 'package:dcomic/downloads/update_download.dart';
 import 'package:dcomic/providers/base_provider.dart';
-import 'package:dcomic/providers/download_provider.dart';
+import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/requests/base_request.dart';
+import 'package:dcomic/view/drawer_page/download_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher_string.dart' as url_string_launcher;
 import 'package:version/version.dart';
-import 'package:flutter_downloader/flutter_downloader.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../generated/l10n.dart';
 
+
 enum UpdateChannel { release, beta, develop }
 
-class ReleaseInfo {
-  final String version;
-  final String updateUrl;
-  final String desc;
-  final String releaseUrl;
-
-  ReleaseInfo(this.version, this.updateUrl, this.desc, this.releaseUrl);
-}
 
 class VersionProvider extends BaseProvider {
   String _currentVersion = '2.0.0';
@@ -221,37 +212,7 @@ class VersionProvider extends BaseProvider {
     if (data == null) {
       return null;
     }
-    // 根据平台选择合适的安装包
-    String updateUrl = '';
-    if (data['assets'] != null && data['assets'].isNotEmpty) {
-      if (Platform.isAndroid) {
-        var apk = data['assets'].firstWhere(
-          (a) => a['name'] != null && a['name'].toString().endsWith('.apk'),
-          orElse: () => null,
-        );
-        updateUrl = apk != null ? apk['browser_download_url'] : '';
-      } else if (Platform.isIOS) {
-        var ipa = data['assets'].firstWhere(
-          (a) => a['name'] != null && a['name'].toString().endsWith('.ipa'),
-          orElse: () => null,
-        );
-        updateUrl = ipa != null ? ipa['browser_download_url'] : '';
-      }
-      if (Platform.isMacOS) {
-        var dmg = data['assets'].firstWhere(
-          (a) => a['name'] != null &&
-              a['name'].toString().endsWith('-macos-universal.dmg'),
-          orElse: () => null,
-        );
-        updateUrl = dmg != null ? dmg['browser_download_url'] : '';
-      }
-    }
-    return ReleaseInfo(
-      data['tag_name'],
-      updateUrl,
-      data['body'] ?? '',
-      data['html_url'] ?? '',
-    );
+    return releaseInfoFromGithub(data, currentUpdateTargetPlatform);
   }
 
   String get currentVersion => _currentVersion;
@@ -286,147 +247,176 @@ class VersionProvider extends BaseProvider {
   }
 
   Future<void> showReleaseInfo(BuildContext context) async {
-    ReleaseInfo? releaseInfo = await getLatestUpdateInfo();
-    if (releaseInfo != null) {
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            scrollable: true,
-            title: Text(S.of(context).ReleaseInfoTitle(releaseInfo.version)),
-            content: SizedBox(
-              width: 560,
-              child: MarkdownBody(
-                data: releaseInfo.desc,
-                onTapLink: (text, href, title) async {
-                  if (href != null &&
-                      await url_string_launcher.canLaunchUrlString(href)) {
-                    await url_string_launcher.launchUrlString(href);
-                  }
-                },
+    final releaseInfo = await getLatestUpdateInfo();
+    if (!context.mounted) return;
+    if (releaseInfo == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).SettingPageFailToGetReleaseInfo),
+        ),
+      );
+      return;
+    }
+
+    final targetPlatform = currentUpdateTargetPlatform;
+    final targetNavigator = context
+        .read<NavigatorProvider>()
+        .getNavigator(context, NavigatorType.defaultNavigator);
+    final messenger = ScaffoldMessenger.of(context);
+    final messages = _UpdateMessages(
+      Localizations.localeOf(context).languageCode == 'zh',
+    );
+    final canDownload =
+        releaseInfo.updateUrl.isNotEmpty &&
+        targetPlatform != UpdateTargetPlatform.unsupported;
+    final canVerify = releaseInfo.hasTrustedSha256;
+    final warnings = <String>[
+      if (!canDownload) messages.noPackage,
+      if (canDownload && !canVerify) messages.unverified,
+      if (canDownload && targetPlatform == UpdateTargetPlatform.ios)
+        messages.unsignedIos,
+    ];
+    var submitStarted = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        final dialogNavigator = Navigator.of(dialogContext);
+        final dialogRoute = ModalRoute.of(dialogContext);
+        return AlertDialog(
+          scrollable: true,
+          title: Text(S.of(dialogContext).ReleaseInfoTitle(releaseInfo.version)),
+          content: SizedBox(
+            width: 560,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                MarkdownBody(
+                  data: releaseInfo.desc,
+                  onTapLink: (text, href, title) {
+                    if (href != null) {
+                      _openExternalUrl(href);
+                    }
+                  },
+                ),
+                for (final warning in warnings) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    warning,
+                    style: TextStyle(
+                      color: Theme.of(dialogContext).colorScheme.error,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: releaseInfo.releaseUrl.isEmpty
+                  ? null
+                  : () => _openExternalUrl(releaseInfo.releaseUrl),
+              child: Text(S.of(dialogContext).AboutPageGithub),
+            ),
+            TextButton(
+              onPressed: () {
+                if (!canDownload || !canVerify) {
+                  dialogNavigator.pop();
+                  _openExternalUrl(releaseInfo.releaseUrl);
+                  return;
+                }
+                if (submitStarted) return;
+                submitStarted = true;
+                _submitAndOpenDownloads(
+                  releaseInfo: releaseInfo,
+                  platform: targetPlatform,
+                  dialogNavigator: dialogNavigator,
+                  dialogRoute: dialogRoute,
+                  targetNavigator: targetNavigator,
+                  messenger: messenger,
+                  onSubmitFailed: () {
+                    submitStarted = false;
+                  },
+                  messages: messages,
+                );
+              },
+              child: Text(
+                canDownload && canVerify
+                    ? S.of(dialogContext).ReleaseInfoDownload
+                    : messages.openReleasePage,
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  if (await url_string_launcher.canLaunchUrlString(
-                    releaseInfo.releaseUrl,
-                  )) {
-                    if (context.mounted) {
-                      url_string_launcher.launchUrlString(
-                        releaseInfo.releaseUrl,
-                      );
-                    }
-                  }
-                },
-                child: Text(S.of(context).AboutPageGithub),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  if (Platform.isMacOS) {
-                    await url_string_launcher.launchUrlString(
-                      releaseInfo.updateUrl.isEmpty
-                          ? releaseInfo.releaseUrl
-                          : releaseInfo.updateUrl,
-                      mode: url_string_launcher.LaunchMode.externalApplication,
-                    );
-                    return;
-                  }
-                  if (releaseInfo.updateUrl.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(S.of(context).ReleaseInfoNoApkOrIpa),
-                      ),
-                    );
-                    return;
-                  }
-                  // 初始化下载器
-                  final dir = Platform.isAndroid
-                      ? await getExternalStorageDirectory()
-                      : await getApplicationDocumentsDirectory();
-                  if (dir == null) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            S.of(context).ReleaseInfoDownloadFailed,
-                          ),
-                        ),
-                      );
-                    }
-                    return;
-                  }
-                  final filePath =
-                      '${dir.path}/app${Platform.isAndroid ? '.apk' : '.ipa'}';
-                  if (await File(filePath).exists()) {
-                    File(filePath).deleteSync();
-                  }
-                  final taskId = await FlutterDownloader.enqueue(
-                    url: releaseInfo.updateUrl,
-                    savedDir: dir.path,
-                    showNotification: true,
-                    openFileFromNotification: true,
-                    fileName: 'app${Platform.isAndroid ? '.apk' : '.ipa'}',
-                  );
-                  if (taskId == null) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            S.of(context).ReleaseInfoDownloadFailed,
-                          ),
-                        ),
-                      );
-                    }
-                  } else {
-                    if (context.mounted) {
-                      Provider.of<DownloadProvider>(
-                        context,
-                        listen: false,
-                      ).registerDownloadCallback(taskId, (
-                        id,
-                        status,
-                        progress,
-                      ) async {
-                        if (status == DownloadTaskStatus.complete) {
-                          await FlutterDownloader.open(taskId: id);
-                        } else if (status == DownloadTaskStatus.failed) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  S.of(context).ReleaseInfoDownloadFailed,
-                                ),
-                              ),
-                            );
-                          }
-                        }
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            S.of(context).ReleaseInfoDownloadStarted,
-                          ),
-                        ),
-                      );
-                    }
-                  }
-                },
-                child: Text(S.of(context).ReleaseInfoDownload),
-              ),
-            ],
-          ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _submitAndOpenDownloads({
+    required ReleaseInfo releaseInfo,
+    required UpdateTargetPlatform platform,
+    required NavigatorState dialogNavigator,
+    required NavigatorState? targetNavigator,
+    required Route<dynamic>? dialogRoute,
+    required ScaffoldMessengerState messenger,
+    required VoidCallback onSubmitFailed,
+    required _UpdateMessages messages,
+  }) async {
+    try {
+      await submitUpdateDownload(releaseInfo, platform);
+    } catch (_) {
+      if (messenger.mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(messages.downloadFailed)),
         );
       }
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(S.of(context).SettingPageFailToGetReleaseInfo),
-          ),
-        );
-      }
+      onSubmitFailed();
+      return;
+    }
+
+    if (dialogNavigator.mounted && dialogRoute?.isCurrent == true) {
+      dialogNavigator.pop();
+    }
+    if (targetNavigator?.mounted == true) {
+      await targetNavigator!.push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => const DownloadPage(),
+          settings: const RouteSettings(name: 'DownloadPage'),
+        ),
+      );
     }
   }
+}
+
+Future<void> _openExternalUrl(String url) async {
+  if (url.isEmpty) return;
+  if (await url_string_launcher.canLaunchUrlString(url)) {
+    await url_string_launcher.launchUrlString(
+      url,
+      mode: url_string_launcher.LaunchMode.externalApplication,
+    );
+  }
+}
+
+class _UpdateMessages {
+  final bool zh;
+
+  const _UpdateMessages(this.zh);
+
+  String get noPackage => zh
+      ? '当前平台没有可用的安装包。请在发布页查看可用文件。'
+      : 'No installation package is available for this platform. Check the release page for available files.';
+
+  String get unverified => zh
+      ? '该安装包没有可信的 SHA-256 摘要，无法验证其完整性，因此不会提供下载后安装入口。请改从发布页查看。'
+      : 'This package has no trusted SHA-256 digest, so its integrity cannot be verified and it will not be offered for installation. Check the release page instead.';
+
+  String get unsignedIos => zh
+      ? 'iOS 的 IPA 可能未签名，下载完成也不代表可直接安装；可能需要自行签名或使用受支持的安装方式。'
+      : 'The iOS IPA may be unsigned. A completed download does not mean it can be installed directly; signing or another supported installation method may be required.';
+
+  String get openReleasePage => zh ? '打开发布页' : 'Open release page';
+
+  String get downloadFailed => zh ? '下载任务启动失败' : 'Failed to start download task';
 }

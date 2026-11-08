@@ -253,8 +253,68 @@ TableSyncFieldDefinition _sqliteSequenceField(String column) =>
       reason: 'SQLite owns AUTOINCREMENT sequence state locally.',
     );
 
+TableSyncFieldDefinition _downloadField(String column) =>
+    TableSyncFieldDefinition.localOnly(
+      column: column,
+      reason: 'Download jobs, credentials, manifests and files belong to this device.',
+    );
+
 _DatabaseSyncRegistry _buildDatabaseSyncRegistry() {
   final definitions = <String, TableSyncDefinition>{
+    'DownloadTaskEntity': TableSyncDefinition(
+      strategy: TableSyncStrategy.localOnly,
+      localReason: 'Persistent transfer state and local file paths are device-local.',
+      fields: [
+        for (final column in [
+          'id', 'url', 'headersJson', 'relativePath', 'taskGroup',
+          'expectedBytes', 'sha256Hex', 'strategy', 'effectiveStrategy',
+          'chunks', 'cacheKey', 'displayName', 'state', 'generation',
+          'engineTaskId', 'bytesReceived', 'totalBytes', 'error',
+          'createdAt', 'completedAt', 'canonicalPath', 'resumeRequested',
+        ])
+          _downloadField(column),
+      ],
+    ),
+    'DownloadTaskEpochEntity': TableSyncDefinition(
+      strategy: TableSyncStrategy.localOnly,
+      localReason: 'Retains device-local callback generations after task deletion.',
+      fields: [_downloadField('id'), _downloadField('nextGeneration')],
+    ),
+    'OfflineComicEntity': TableSyncDefinition(
+      strategy: TableSyncStrategy.localOnly,
+      localReason: 'The downloaded library describes files on this device only.',
+      fields: [
+        for (final column in [
+          'sourceId', 'comicId', 'rawTitle', 'coverRelativePath',
+          'remoteCoverUrl', 'isLongComic', 'catalogJson',
+        ])
+          _downloadField(column),
+      ],
+    ),
+    'OfflineChapterEntity': TableSyncDefinition(
+      strategy: TableSyncStrategy.localOnly,
+      localReason: 'Chapter availability depends on device-local manifests and files.',
+      fields: [
+        for (final column in [
+          'sourceId', 'comicId', 'chapterId', 'rawTitle', 'groupName',
+          'sortIndex', 'manifestGeneration', 'manifestSignature', 'operationGeneration',
+          'state', 'error', 'completedAt',
+        ])
+          _downloadField(column),
+      ],
+    ),
+    'OfflinePageEntity': TableSyncDefinition(
+      strategy: TableSyncStrategy.localOnly,
+      localReason: 'Downloaded page paths and request credentials must not be synchronized.',
+      fields: [
+        for (final column in [
+          'sourceId', 'comicId', 'chapterId', 'manifestGeneration',
+          'pageIndex', 'taskId', 'relativePath', 'resourceUrl',
+          'headersJson', 'cacheKey', 'expectedBytes', 'submitted',
+        ])
+          _downloadField(column),
+      ],
+    ),
     'ConfigEntity': TableSyncDefinition(
       strategy: TableSyncStrategy.settings,
       fields: [

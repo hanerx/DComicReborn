@@ -53,6 +53,10 @@ class DComicImage extends StatelessWidget {
           // the image subtree for every download chunk.
           placeholder: (context, url) => _buildPlaceholder(context),
           httpHeaders: imageEntity.imageHeaders,
+          cacheKey: imageCacheIdentity(
+            imageEntity.imageUrl,
+            imageEntity.imageHeaders,
+          ),
           errorWidget: (context, url, error) => _buildLoadErrorWidget(context),
           cacheManager: DefaultCacheManager(),
           width: width,

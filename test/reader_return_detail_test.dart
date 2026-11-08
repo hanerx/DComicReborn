@@ -103,7 +103,9 @@ class _Detail extends BaseComicDetailModel {
   @override
   List<CategoryEntity> get categories => [];
   @override
-  Future<BaseComicChapterDetailModel?> getChapter(String chapterId) async =>
+  Future<BaseComicChapterDetailModel?> fetchRemoteChapter(
+    String chapterId,
+  ) async =>
       _Chapter(chapterId);
   @override
   Future<List<ComicCommentEntity>> getComments({int page = 0}) async => [];
@@ -127,6 +129,9 @@ void main() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     await databaseFactory.setDatabasesPath(directory.path);
+    BaseComicDetailModel.installOfflineResolver(
+      (detail, chapterId) async => null,
+    );
   });
   setUp(() async {
     await (await DatabaseInstance.instance).database.delete(
@@ -136,6 +141,7 @@ void main() {
   tearDownAll(() async {
     await (await DatabaseInstance.instance).close();
     await directory.delete(recursive: true);
+    BaseComicDetailModel.clearOfflineResolverForTest();
   });
 
   for (final entry in ['grid', 'list', 'start', 'continue']) {
@@ -151,7 +157,6 @@ void main() {
         await tester.runAsync(() async {
           source = _Source();
           detail = source.detail = _Detail(source);
-          addTearDown(detail.dispose);
           addTearDown(source.dispose);
           await detail.init();
           if (entry != 'start') {

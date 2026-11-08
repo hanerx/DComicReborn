@@ -318,6 +318,69 @@ class _ExperimentalFeaturesPageState extends State<ExperimentalFeaturesPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _settingRow(
+                      icon: Icons.download_for_offline_outlined,
+                      accent: colors.primary,
+                      title: _locale(
+                        '聚合跨源下载',
+                        'Aggregate downloads across sources',
+                      ),
+                      description: _locale(
+                        '在本地下载库中合并展示已绑定漫画的不同来源。关闭后按来源分别展示，不会删除已下载内容。',
+                        'Combine downloads from linked sources in the local library. Turning this off separates sources without deleting downloads.',
+                      ),
+                      trailing: Switch(
+                        key: const ValueKey('aggregateDownloadsSwitch'),
+                        value: config.aggregateDownloads,
+                        onChanged: _saving
+                            ? null
+                            : (value) => _save(
+                                () => config.setAggregateDownloads(value),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Material(
+                      color: colors.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(14),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: _settingRow(
+                          icon: Icons.folder_copy_outlined,
+                          title: _locale(
+                            '跨源复用已下载章节',
+                            'Reuse downloaded chapters across sources',
+                          ),
+                          description: _locale(
+                            '阅读已绑定漫画时，优先复用其他来源中可对应的本地章节。关闭聚合时此选项不可用，但会保留当前选择。',
+                            'Reuse matching local chapters from linked sources while reading. This option is unavailable while aggregation is off, but its value is preserved.',
+                          ),
+                          enabled: config.aggregateDownloads,
+                          trailing: Switch(
+                            key: const ValueKey(
+                              'reuseDownloadedChaptersAcrossSourcesSwitch',
+                            ),
+                            value:
+                                config.reuseDownloadedChaptersAcrossSources,
+                            onChanged: config.aggregateDownloads && !_saving
+                                ? (value) => _save(
+                                    () => config
+                                        .setReuseDownloadedChaptersAcrossSources(
+                                          value,
+                                        ),
+                                  )
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _panel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _settingRow(
                       icon: Icons.auto_stories_outlined,
                       accent: colors.secondary,
                       title: _locale(

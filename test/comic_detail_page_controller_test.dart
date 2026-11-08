@@ -21,12 +21,11 @@ ComicListItemEntity _searchHit(String title, String comicId) =>
 // Only network data is simulated; binding persistence and controller transitions
 // exercise the production implementations.
 class _FakeDetail extends BaseComicDetailModel {
-  _FakeDetail(
-      {required this.parentSource,
-      this.detailId = 'detail-id',
-      this.detailTitle = 'Detail Title'}) {
-    addTearDown(dispose);
-  }
+  _FakeDetail({
+    required this.parentSource,
+    this.detailId = 'detail-id',
+    this.detailTitle = 'Detail Title',
+  });
 
   final BaseComicSourceModel parentSource;
   final String detailId;
@@ -66,7 +65,9 @@ class _FakeDetail extends BaseComicDetailModel {
   List<CategoryEntity> get categories => [];
 
   @override
-  Future<BaseComicChapterDetailModel?> getChapter(String chapterId) async =>
+  Future<BaseComicChapterDetailModel?> fetchRemoteChapter(
+    String chapterId,
+  ) async =>
       null;
 
   @override

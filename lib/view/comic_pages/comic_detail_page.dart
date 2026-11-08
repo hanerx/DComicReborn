@@ -2,12 +2,16 @@ import 'dart:math' as math;
 
 import 'package:date_format/date_format.dart' as formatdate;
 import 'package:dcomic/generated/l10n.dart';
+import 'package:dcomic/downloads/comic_download_models.dart';
+import 'package:dcomic/downloads/comic_download_service.dart';
+import 'package:dcomic/providers/config_provider.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/page_controllers/comic_detail_page_controller.dart';
 import 'package:dcomic/providers/source_provider.dart';
 import 'package:dcomic/utils/layout_utils.dart';
 import 'package:dcomic/view/comic_viewer/comic_viewer_page.dart';
+import 'package:dcomic/view/downloads/chapter_download_sheet.dart';
 import 'package:dcomic/view/components/comment_card.dart';
 import 'package:dcomic/view/components/dcomic_image.dart';
 import 'package:dcomic/view/popup_pages/search_dialog.dart';
@@ -64,11 +68,21 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
   String _tr(BuildContext context, String zh, String en) =>
       _isZh(context) ? zh : en;
 
+  String _sourceName(BuildContext context, String sourceId) {
+    for (final source in context.read<ComicSourceProvider>().sources) {
+      if (source.type.sourceId == sourceId) return source.type.sourceName;
+    }
+    return sourceId;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) {
-        var controller = ComicDetailPageController(widget.comicSourceModel);
+        var controller = ComicDetailPageController(
+          widget.comicSourceModel,
+          downloads: ComicDownloadService.instance,
+        );
         // 等待 Provider 挂载后再加载详情，避免在构建过程中通知监听者。
         Future.delayed(Duration.zero).then((_) {
           if (context.mounted) {
@@ -96,6 +110,9 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
           math.min(260, media.size.height * 0.4),
         );
         final controller = Provider.of<ComicDetailPageController>(context);
+        controller.syncDownloadAggregation(
+          context.watch<ConfigProvider>().aggregateDownloads,
+        );
         final ready = controller.loadState == ComicDetailLoadState.ready;
         final displaySource =
             controller.comicSourceModel ??
@@ -802,12 +819,14 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
     await controller.refresh(context, widget.comicId, widget.title);
   }
 
+
   Widget _buildChapterToolbar(
     BuildContext context, {
     EdgeInsetsGeometry padding = const EdgeInsets.fromLTRB(16, 16, 8, 0),
   }) {
     var controller = Provider.of<ComicDetailPageController>(context);
     final colors = Theme.of(context).colorScheme;
+    final hasChapters = controller.chapters.isNotEmpty;
     var chapterCount = controller.chapters.values.fold<int>(
       0,
       (sum, list) => sum + list.length,
@@ -826,6 +845,17 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+          ),
+          IconButton(
+            tooltip: _tr(context, '下载章节', 'Download chapters'),
+            onPressed: !hasChapters
+                ? null
+                : () => ChapterDownloadSheet.show(
+                    context,
+                    detail: controller.detailModel!,
+                    chapters: controller.chapters,
+                  ),
+            icon: const Icon(Icons.download_for_offline_outlined),
           ),
           TextButton.icon(
             onPressed: () {
@@ -947,20 +977,27 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
             itemBuilder: (context, index) {
               var chapter = data[index];
               bool isCurrent = chapter.chapterId == controller.latestChapterId;
-              // 本源可继续阅读的章节：本地历史或可靠匹配的跨源历史。
-              Widget label = Text(
-                chapter.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              final label = Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      chapter.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (_chapterStatusIcon(context, chapter.chapterId)
+                      case final status?) ...[
+                    const SizedBox(width: 4),
+                    status,
+                  ],
+                ],
               );
               Widget button;
               if (isCurrent) {
                 button = FilledButton(
-                  onPressed: () => _openChapter(
-                    context,
-                    index,
-                    data,
-                  ),
+                  onPressed: () => _openChapter(context, index, data),
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.primary,
                     foregroundColor: colors.onPrimary,
@@ -973,11 +1010,7 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                 );
               } else {
                 button = OutlinedButton(
-                  onPressed: () => _openChapter(
-                    context,
-                    index,
-                    data,
-                  ),
+                  onPressed: () => _openChapter(context, index, data),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colors.onSurface,
                     side: BorderSide(color: colors.outlineVariant),
@@ -989,7 +1022,10 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                   child: label,
                 );
               }
-              return Padding(padding: const EdgeInsets.all(3), child: button);
+              return Padding(
+                padding: const EdgeInsets.all(3),
+                child: button,
+              );
             },
           );
         },
@@ -1003,46 +1039,114 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
         itemBuilder: (context, index) {
           var chapter = data[index];
           bool isCurrent = chapter.chapterId == controller.latestChapterId;
-          final trailing = isCurrent
-              ? Icon(Icons.bookmark, size: 18, color: colors.primary)
-              : null;
+          final trailing = Wrap(
+            spacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              ?_chapterStatusIcon(context, chapter.chapterId),
+              if (isCurrent)
+                Icon(Icons.bookmark, size: 18, color: colors.primary),
+            ],
+          );
+          final titleStyle = isCurrent
+              ? Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: colors.primary,
+                  fontWeight: FontWeight.w600,
+                )
+              : Theme.of(context).textTheme.titleSmall;
+          final metadata = Text(
+            _chapterSubtitle(context, chapter),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          );
           return ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 4),
             title: Text(
               chapter.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: isCurrent
-                  ? Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: colors.primary,
-                      fontWeight: FontWeight.w600,
-                    )
-                  : Theme.of(context).textTheme.titleSmall,
+              style: titleStyle,
             ),
-            subtitle: Text(
-              S
-                  .of(context)
-                  .ComicDetailPageChapterEntitySubtitle(
-                    formatdate.formatDate(chapter.uploadTime, [
-                      formatdate.yyyy,
-                      '-',
-                      formatdate.mm,
-                      '-',
-                      formatdate.dd,
-                    ]),
-                    chapter.chapterId,
-                  ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: colors.onSurfaceVariant),
-            ),
+            subtitle: metadata,
             trailing: trailing,
             onTap: () => _openChapter(context, index, data),
           );
         },
       );
     }
+  }
+
+  String _chapterSubtitle(
+    BuildContext context,
+    BaseComicChapterEntityModel chapter,
+  ) {
+    return S
+        .of(context)
+        .ComicDetailPageChapterEntitySubtitle(
+          formatdate.formatDate(chapter.uploadTime, [
+            formatdate.yyyy,
+            '-',
+            formatdate.mm,
+            '-',
+            formatdate.dd,
+          ]),
+          chapter.chapterId,
+        );
+  }
+
+  Widget? _chapterStatusIcon(BuildContext context, String chapterId) {
+    final controller = context.read<ComicDetailPageController>();
+    final availability = controller.chapterAvailability(chapterId);
+    final progress = controller.chapterProgress(chapterId);
+    final own = availability?.ownCompleteAvailable ?? false;
+    final alternate = availability?.alternateCompleteAvailable ?? false;
+    late final IconData icon;
+    late final String tooltip;
+    if (own) {
+      icon = Icons.offline_pin_rounded;
+      tooltip = _tr(context, '本源已下载', 'Downloaded from this source');
+    } else if (alternate) {
+      icon = Icons.hub_outlined;
+      final sources = availability!.alternateCompletes
+          .map((chapter) => _sourceName(context, chapter.key.sourceId))
+          .join(' / ');
+      tooltip = _tr(context, '其他源已下载：$sources', 'Downloaded from another source: $sources');
+    } else if (progress?.state == OfflineChapterState.failed) {
+      icon = Icons.error_outline;
+      final error = progress?.error;
+      tooltip = error == null
+          ? _tr(context, '下载失败', 'Download failed')
+          : _tr(
+              context,
+              '下载失败：$error',
+              'Download failed: $error',
+            );
+    } else if (progress?.state == OfflineChapterState.paused) {
+      icon = Icons.pause_circle_outline;
+      tooltip = _tr(context, '下载已暂停', 'Download paused');
+    } else if (progress != null &&
+        progress.totalPages > 0 &&
+        progress.completedPages > 0 &&
+        progress.completedPages < progress.totalPages) {
+      icon = Icons.pie_chart_outline;
+      tooltip = _tr(
+        context,
+        '部分完成 ${progress.completedPages}/${progress.totalPages}',
+        'Partial ${progress.completedPages}/${progress.totalPages}',
+      );
+    } else if (progress?.state == OfflineChapterState.pending ||
+        progress?.state == OfflineChapterState.resolving ||
+        progress?.state == OfflineChapterState.downloading) {
+      icon = Icons.downloading_rounded;
+      tooltip = _tr(context, '下载中', 'Downloading');
+    } else {
+      return null;
+    }
+    final child = Icon(icon, size: 17);
+    return Tooltip(message: tooltip, child: child);
   }
 
   void _openChapter(
@@ -1055,7 +1159,8 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       context,
       listen: false,
     );
-    var detailModel = controller.detailModel!;
+    final detailModel = controller.detailModel;
+    if (detailModel == null) return;
     var chapters = controller.reverse ? data.reversed.toList() : data;
     Provider.of<NavigatorProvider>(context, listen: false)
         .getNavigator(context, NavigatorType.root)
@@ -1080,12 +1185,10 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       context,
       listen: false,
     );
-    if (controller.chapters.isEmpty) {
-      return;
-    }
-    // 优先回到历史对应的本源章节（含实验性跨源匹配），否则使用默认章节。
+    final detailModel = controller.detailModel;
+    if (detailModel == null || controller.chapters.isEmpty) return;
     var resultChapters = controller.chapters.values.first;
-    var resultChapter = resultChapters.reversed.toList().first;
+    var resultChapter = resultChapters.reversed.first;
     for (var data in controller.chapters.values) {
       for (var item in data) {
         if (item.chapterId == controller.latestChapterId) {
@@ -1096,7 +1199,6 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
       }
     }
 
-    var detailModel = controller.detailModel!;
     var chapters = controller.reverse
         ? resultChapters.reversed.toList()
         : resultChapters;
@@ -1143,6 +1245,18 @@ class _ComicDetailPageState extends State<ComicDetailPage> {
                   color: colors.onSurfaceVariant,
                   tooltip: S.of(context).ComicDetailPageComments,
                 ),
+              ),
+              IconButton(
+                onPressed: hasChapters && controller.detailModel != null
+                    ? () => ChapterDownloadSheet.show(
+                        context,
+                        detail: controller.detailModel!,
+                        chapters: controller.chapters,
+                      )
+                    : null,
+                icon: const Icon(Icons.download_for_offline_outlined),
+                color: colors.onSurfaceVariant,
+                tooltip: _tr(context, '下载章节', 'Download chapters'),
               ),
               const SizedBox(width: 8),
               Expanded(

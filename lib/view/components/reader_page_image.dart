@@ -16,6 +16,7 @@ ImageProvider<Object>? _readerImageProvider(ImageEntity image) {
     ImageType.network => CachedNetworkImageProvider(
       image.imageUrl,
       headers: image.imageHeaders,
+      cacheKey: imageCacheIdentity(image.imageUrl, image.imageHeaders),
       cacheManager: DefaultCacheManager(),
     ),
     ImageType.local => FileImage(File(image.imageUrl)),

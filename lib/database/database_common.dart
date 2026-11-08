@@ -6,6 +6,8 @@ import 'package:dcomic/database/entity/comic_mapping.dart';
 import 'package:dcomic/database/entity/config.dart';
 import 'package:dcomic/database/entity/cookie.dart';
 import 'package:dcomic/database/entity/model_config.dart';
+import 'package:dcomic/database/entity/download_task.dart';
+import 'package:dcomic/database/entity/offline_comic.dart';
 import 'package:dcomic/database/entity/somic_subscribe_state.dart';
 import 'package:dcomic/utils/chapter_matching_rules.dart';
 
@@ -17,7 +19,7 @@ import 'package:sqflite/sqflite.dart' as sqflite;
 part 'database_common.g.dart';
 
 @Database(
-  version: 10,
+  version: 12,
   entities: [
     ConfigEntity,
     ComicHistoryEntity,
@@ -27,6 +29,11 @@ part 'database_common.g.dart';
     ComicSubscribeStateEntity,
     ChapterRuleGroupEntity,
     ChapterRulePatternEntity,
+    DownloadTaskEntity,
+    DownloadTaskEpochEntity,
+    OfflineComicEntity,
+    OfflineChapterEntity,
+    OfflinePageEntity,
   ],
 )
 @TypeConverters([
@@ -64,4 +71,8 @@ abstract class DComicDatabase extends FloorDatabase {
   ComicSubscribeStateDao get comicSubscribeStateDao;
 
   ChapterRuleDao get chapterRuleDao;
+
+  DownloadTaskDao get downloadTaskDao;
+
+  OfflineComicDao get offlineComicDao;
 }

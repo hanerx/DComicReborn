@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:dcomic/database/database_instance.dart';
+import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/models/copymanga/copymanga_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/requests/base_request.dart';
@@ -104,6 +105,9 @@ void main() {
     await RequestStatics.store;
     handler.dio.interceptors.clear();
     source.logger = Logger(output: ConsoleOutput());
+    BaseComicDetailModel.installOfflineResolver(
+      (detail, chapterId) async => null,
+    );
   });
 
   setUp(() async {
@@ -117,6 +121,7 @@ void main() {
     handler.dio.close(force: true);
     await (await DatabaseInstance.instance).close();
     await (await RequestStatics.store).close();
+    BaseComicDetailModel.clearOfflineResolverForTest();
     await directory.delete(recursive: true);
   });
 

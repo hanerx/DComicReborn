@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:dcomic/utils/firbaselogoutput.dart';
 import 'package:dcomic/providers/automatic_mapping.dart';
 import 'package:dcomic/providers/download_provider.dart';
+import 'package:dcomic/providers/download_runtime_binding.dart';
 import 'package:dcomic/providers/database_refresh_binding.dart';
 import 'package:dcomic/providers/database_sync_service.dart';
 import 'package:dcomic/providers/version_provider.dart';
@@ -119,6 +120,14 @@ class App extends StatelessWidget {
         ),
         ChangeNotifierProvider<DownloadProvider>(
           create: (_) => DownloadProvider(),
+          lazy: false,
+        ),
+        Provider<DownloadRuntimeBinding>(
+          create: (context) => DownloadRuntimeBinding(
+            context.read<ConfigProvider>(),
+            context.read<ComicSourceProvider>(),
+          ),
+          dispose: (_, binding) => binding.dispose(),
           lazy: false,
         ),
       ],

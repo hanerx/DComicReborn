@@ -54,6 +54,7 @@ dependencies:
   dio: ^5.11.1
   connectivity_plus: ^7.3.1
   path_provider: ^2.1.6
+  path: ^1.9.1
   intl: ^0.20.3
   date_format: ^2.0.9
   photo_view: ^0.15.0
@@ -70,7 +71,7 @@ dependencies:
   version: ^3.0.2
   badges: ^3.2.0
   flutter_cache_manager: ^3.4.2
-  flutter_downloader: ^1.12.1
+  background_downloader: 9.6.4
   flutter_markdown_plus: ^1.0.12
   battery_plus: ^7.1.1
 

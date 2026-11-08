@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:date_format/date_format.dart';
+import 'package:dcomic/downloads/comic_download_models.dart';
+import 'package:dcomic/downloads/comic_download_service.dart';
 import 'package:dcomic/providers/base_provider.dart';
 import 'package:dcomic/providers/comic_reading_progress.dart';
 import 'package:dcomic/providers/models/comic_source_model.dart';
@@ -35,7 +37,13 @@ class ComicDetailPageController extends BaseProvider {
   BaseComicDetailModel? detailModel;
   BaseComicSourceModel? comicSourceModel;
   BaseComicSourceModel? sourceModel;
-
+  final ComicDownloadService? _downloads;
+  StreamSubscription<void>? _downloadChanges;
+  Timer? _downloadRefreshDebounce;
+  Map<String, OfflineChapterProgress> _chapterProgress = const {};
+  Map<String, OfflineChapterAvailability> _chapterAvailability = const {};
+  bool _aggregateDownloads = false;
+  int _downloadStatusGeneration = 0;
   bool _nest = true;
   bool _reverse = true;
 
@@ -54,9 +62,27 @@ class ComicDetailPageController extends BaseProvider {
 
   List<ComicCommentEntity> get comments => _comments;
 
-  ComicDetailPageController(this.comicSourceModel) {
+  ComicDetailPageController(
+    this.comicSourceModel, {
+    ComicDownloadService? downloads,
+  }) : _downloads = downloads {
     sourceModel = comicSourceModel;
     ComicReadingProgress.changes.addListener(_onReadingProgressChanged);
+    _downloadChanges = downloads?.changes.listen((_) {
+      _downloadRefreshDebounce?.cancel();
+      _downloadRefreshDebounce = Timer(
+        const Duration(milliseconds: 250),
+        () => unawaited(refreshDownloadStatus()),
+      );
+    }, onError: (Object error, StackTrace stack) {
+      _downloadRefreshDebounce?.cancel();
+      _downloadStatusGeneration++;
+      if (_disposed) return;
+      _chapterProgress = const {};
+      _chapterAvailability = const {};
+      logger.w('Chapter download reconciliation failed', error: error, stackTrace: stack);
+      notifyListeners();
+    });
   }
 
   Future<void> _historyRefresh = Future.value();
@@ -89,10 +115,76 @@ class ComicDetailPageController extends BaseProvider {
         });
   }
 
+  OfflineChapterProgress? chapterProgress(String chapterId) =>
+      _chapterProgress[chapterId];
+
+  OfflineChapterAvailability? chapterAvailability(String chapterId) =>
+      _chapterAvailability[chapterId];
+
+  void syncDownloadAggregation(bool aggregate) {
+    if (_aggregateDownloads == aggregate) return;
+    _aggregateDownloads = aggregate;
+    unawaited(refreshDownloadStatus());
+  }
+
+  Future<void> refreshDownloadStatus() async {
+    final model = detailModel;
+    final downloads = _downloads;
+    if (_disposed || model == null || downloads == null) return;
+    final generation = ++_downloadStatusGeneration;
+    try {
+      await downloads.initialize();
+      final key = (
+        sourceId: model.parent.type.sourceId,
+        comicId: model.comicId,
+      );
+      final progressByKey = await downloads.listChapterProgress(key);
+      final progress = <String, OfflineChapterProgress>{
+        for (final entry in progressByKey.entries)
+          entry.key.chapterId: entry.value,
+      };
+      final availability = <String, OfflineChapterAvailability>{};
+      for (final chapter in model.chapters.values.expand((value) => value)) {
+        availability[chapter.chapterId] = await downloads.chapterAvailability(
+          model,
+          chapter.chapterId,
+          includeMapped: _aggregateDownloads,
+        );
+      }
+      if (_disposed ||
+          generation != _downloadStatusGeneration ||
+          detailModel != model) {
+        return;
+      }
+      _chapterProgress = Map.unmodifiable(progress);
+      _chapterAvailability = Map.unmodifiable(availability);
+      notifyListeners();
+    } catch (error, stack) {
+      logger.w(
+        'Failed to refresh chapter download status',
+        error: error,
+        stackTrace: stack,
+      );
+    }
+  }
+
+
+  void _disposeDetailModel() {
+    final model = detailModel;
+    if (model == null) return;
+    detailModel = null;
+    model.dispose();
+  }
+
+
   @override
   void dispose() {
     _disposed = true;
+    _disposeDetailModel();
     _requestGeneration++;
+    _downloadStatusGeneration++;
+    unawaited(_downloadChanges?.cancel());
+    _downloadRefreshDebounce?.cancel();
     ComicReadingProgress.changes.removeListener(_onReadingProgressChanged);
     super.dispose();
   }
@@ -275,6 +367,7 @@ class ComicDetailPageController extends BaseProvider {
     }
     final generation = ++_requestGeneration;
     _setLoading();
+    BaseComicDetailModel? pendingModel;
     try {
       var resolvedComicId = await source.resolveComicId(
         _originComicId ?? '',
@@ -294,6 +387,7 @@ class ComicDetailPageController extends BaseProvider {
         resolvedComicId,
         _originTitle ?? '',
       );
+      pendingModel = model;
       if (_isStale(generation)) {
         return;
       }
@@ -323,23 +417,31 @@ class ComicDetailPageController extends BaseProvider {
       }
       detailModel = model;
       _detail = payload;
+      pendingModel = null;
       _publish(ComicDetailLoadState.ready);
+      unawaited(refreshDownloadStatus());
     } catch (e, s) {
       if (_isStale(generation)) {
         return;
       }
       logger.e('$e', error: e, stackTrace: s);
       _publishError(e);
+    } finally {
+      pendingModel?.dispose();
     }
   }
 
   void _setLoading() {
+    _disposeDetailModel();
     _loadError = null;
     detailModel = null;
     _detail = null;
     _boundComicId = null;
     _comments = [];
     _commentPage = 0;
+    _downloadStatusGeneration++;
+    _chapterProgress = const {};
+    _chapterAvailability = const {};
     _loadState = ComicDetailLoadState.loading;
     notifyListeners();
   }
