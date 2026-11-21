@@ -16,6 +16,7 @@
     <a href="#如何开发">开发指南</a> &nbsp; / &nbsp;
     <a href="#鸣谢">鸣谢</a>
   </p>
+  <img src="https://repobeats.axiom.co/api/embed/600d512a253a75ad3464f05970a778a6742acc0f.svg" alt="Repobeats analytics image">
 </div>
 
 ## 下载
