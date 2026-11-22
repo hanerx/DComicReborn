@@ -315,20 +315,10 @@ final _modelSettingRegistry = _SettingPolicyRegistry('ModelConfigEntity', [
   _SettingPolicyEntry.exact('apiDomain', _synced(_apiDomain)),
   _SettingPolicyEntry.exact('chapterCommentApiDomain', _synced(_apiDomain)),
   _SettingPolicyEntry.exact('autoSignInEnabled', _synced(_storedBool)),
-  for (final key in const [
+  _SettingPolicyEntry.caseInsensitive(
     'token',
-    'islogin',
-    'username',
-    'password',
-    'userid',
-    'uid',
-    'refreshtoken',
-    'accesstoken',
-  ])
-    _SettingPolicyEntry.caseInsensitive(
-      key,
-      SettingSyncDefinition.credential(),
-    ),
+    SettingSyncDefinition.credential(),
+  ),
 ]);
 
 /// Returns the explicit policy for a `ConfigEntity` key.

@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cryptography/cryptography.dart';
+
 import 'package:dcomic/database/database_common.dart';
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/entity/config.dart';
@@ -11,6 +13,71 @@ import 'package:dcomic/database/sync/sync_models.dart';
 import 'package:dcomic/database/sync/sync_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+Future<Uint8List> _legacyCredentialBackup(String password) async {
+  const version = SyncVersion(wall: 50, logical: 0, device: 'legacy-backup');
+  final body = {
+    'categories': ['credentials'],
+    'records': [
+      SyncRecord(
+        category: SyncCategory.credentials,
+        key: 'accounts',
+        value: const {
+          'cookies': [
+            {'key': 'session', 'value': 'cookie-value'},
+          ],
+          'configs': [
+            {'sourceModel': 'active', 'key': 'token', 'value': 'active-token'},
+            {'sourceModel': 'active', 'key': 'username', 'value': 'old-user'},
+            {
+              'sourceModel': 'logged-out',
+              'key': 'token',
+              'value': 'stale-token',
+            },
+            {'sourceModel': 'logged-out', 'key': 'isLogin', 'value': '0'},
+          ],
+        },
+        deleted: false,
+        version: version,
+        uncertain: false,
+      ).toJson(),
+    ],
+  };
+  final cipher = AesGcm.with256bits();
+  final salt = List<int>.generate(16, (index) => index);
+  final nonce = List<int>.generate(12, (index) => index + 16);
+  final iterations = 100000;
+  final key = await Pbkdf2(
+    macAlgorithm: Hmac.sha256(),
+    iterations: iterations,
+    bits: 256,
+  ).deriveKey(secretKey: SecretKey(utf8.encode(password)), nonce: salt);
+  final box = await cipher.encrypt(
+    utf8.encode(jsonEncode(body)),
+    secretKey: key,
+    nonce: nonce,
+  );
+  return Uint8List.fromList(
+    utf8.encode(
+      jsonEncode({
+        'format': 'dcomic-logical-backup',
+        'version': 1,
+        'encrypted': true,
+        'kdf': {
+          'name': 'pbkdf2-sha256',
+          'iterations': iterations,
+          'salt': base64Encode(salt),
+        },
+        'cipher': {
+          'name': 'aes-256-gcm',
+          'nonce': base64Encode(box.nonce),
+          'mac': base64Encode(box.mac.bytes),
+          'data': base64Encode(box.cipherText),
+        },
+      }),
+    ),
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -83,6 +150,44 @@ void main() {
       backup.inspect(bytes, password: 'wrong password'),
       throwsA(isA<DatabaseBackupException>()),
     );
+  });
+
+  test('legacy credential backup cannot restore account profile fields',
+      () async {
+    const password = 'legacy password';
+    final bytes = await _legacyCredentialBackup(password);
+
+    await backup.importData(
+      bytes,
+      {SyncCategory.credentials},
+      password: password,
+    );
+
+    expect(
+      await database.database.query(
+        'ModelConfigEntity',
+        columns: ['sourceModel', 'key', 'value'],
+      ),
+      [
+        {
+          'sourceModel': 'active',
+          'key': 'token',
+          'value': 'active-token',
+        },
+      ],
+    );
+    expect(await database.database.query('CookieEntity'), [
+      containsPair('value', 'cookie-value'),
+    ]);
+    final exported =
+        (await store.snapshot({SyncCategory.credentials})).single.value!;
+    expect(exported['configs'], [
+      {
+        'sourceModel': 'active',
+        'key': 'token',
+        'value': 'active-token',
+      },
+    ]);
   });
 
   test('wrong password never partially changes the target database', () async {

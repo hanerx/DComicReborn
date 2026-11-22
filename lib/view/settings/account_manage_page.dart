@@ -1,4 +1,5 @@
 import 'package:dcomic/generated/l10n.dart';
+import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/source_provider.dart';
 import 'package:dcomic/utils/layout_utils.dart';
@@ -21,14 +22,21 @@ class AccountManagePage extends StatefulWidget {
 }
 
 class _AccountManagePageState extends State<AccountManagePage> {
+  String _text(String zh, String en) =>
+      Localizations.localeOf(context).languageCode == 'zh' ? zh : en;
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return SettingsPage(
       title: Text(S.of(context).AccountSettings),
       body: EasyRefresh(
-        onRefresh: () {
-          Provider.of<ComicSourceProvider>(context, listen: false).callNotify();
+        onRefresh: () async {
+          final sources = context.read<ComicSourceProvider>();
+          await Future.wait([
+            for (final source in sources.hasAccountSettingSources)
+              source.accountModel!.initAccount(),
+          ]);
         },
         child: Center(
           child: ConstrainedBox(
@@ -42,161 +50,138 @@ class _AccountManagePageState extends State<AccountManagePage> {
                   .hasAccountSettingSources
                   .length,
               itemBuilder: (context, index) {
-                var sourceModel = Provider.of<ComicSourceProvider>(context)
+                final sourceModel = Provider.of<ComicSourceProvider>(context)
                     .hasAccountSettingSources[index];
-                return SettingsCard(
-                  key: ValueKey(sourceModel),
-                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ListTile(
-                        contentPadding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
-                        title: Text(
-                          sourceModel.type.sourceName,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        leading: SizedBox(
-                          height: 48,
-                          width: 48,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: sourceModel.accountModel?.avatar != null
-                                ? DComicImage(
-                                    sourceModel.accountModel!.avatar!,
-                                    errorMessageOverflow: TextOverflow.ellipsis,
-                                    showErrorMessage: false,
-                                    errorLogoSize: 48,
-                                    fit: BoxFit.cover,
-                                  )
-                                : const DComicMark(size: 48),
+                final account = sourceModel.accountModel!;
+                return ListenableBuilder(
+                  listenable: account,
+                  builder: (context, _) => SettingsCard(
+                    key: ValueKey(sourceModel),
+                    margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ListTile(
+                          contentPadding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+                          title: Text(
+                            sourceModel.type.sourceName,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          leading: SizedBox(
+                            height: 48,
+                            width: 48,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: account.avatar != null
+                                  ? DComicImage(
+                                      account.avatar!,
+                                      errorMessageOverflow: TextOverflow.ellipsis,
+                                      showErrorMessage: false,
+                                      errorLogoSize: 48,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : const DComicMark(size: 48),
+                            ),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(switch (account.status) {
+                                ComicAccountStatus.signedOut =>
+                                  _text('未登录', 'Not signed in'),
+                                ComicAccountStatus.checking =>
+                                  _text('正在验证账户', 'Verifying account'),
+                                ComicAccountStatus.authenticated =>
+                                  _text('已登录', 'Signed in'),
+                                ComicAccountStatus.unavailable => _text(
+                                  '账户暂时无法验证',
+                                  'Account temporarily unavailable',
+                                ),
+                              }),
+                              if (account.status == ComicAccountStatus.unavailable)
+                                TextButton.icon(
+                                  onPressed: account.initAccount,
+                                  icon: const Icon(Icons.refresh),
+                                  label: Text(_text('重试', 'Retry')),
+                                ),
+                              if (account.status == ComicAccountStatus.authenticated) ...[
+                                Text(
+                                  S.of(context).AccountManagePageSubtitleNickname(
+                                    account.nickname ?? '',
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                                ),
+                                Text(
+                                  S.of(context).AccountManagePageSubtitleUID(
+                                    account.uid ?? '',
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                                ),
+                                Text(
+                                  S.of(context).AccountManagePageSubtitleUsername(
+                                    account.username ?? '',
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                                ),
+                              ],
+                            ],
+                          ),
+                          trailing: IconButton(
+                            tooltip: account.hasCredentials
+                                ? _text('退出登录', 'Sign out')
+                                : _text('登录', 'Sign in'),
+                            onPressed: account.isLoading && !account.hasCredentials
+                                ? null
+                                : () async {
+                                    if (account.hasCredentials) {
+                                      await account.logout();
+                                    } else {
+                                      final navigator = context.read<NavigatorProvider>();
+                                      final sources = context.read<ComicSourceProvider>();
+                                      await navigator.getNavigator(
+                                        context,
+                                        NavigatorType.defaultNavigator,
+                                      )?.push(MaterialPageRoute(
+                                        builder: (context) => AccountLoginPage(
+                                          sourceModel: sourceModel,
+                                        ),
+                                        settings: const RouteSettings(
+                                          name: 'AccountLoginPage',
+                                        ),
+                                      ));
+                                      if (context.mounted) sources.callNotify();
+                                    }
+                                  },
+                            icon: Icon(
+                              account.hasCredentials ? Icons.logout : Icons.login,
+                            ),
                           ),
                         ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              S
-                                  .of(context)
-                                  .AccountManagePageSubtitleNickname(
-                                    sourceModel.accountModel!.nickname != null
-                                        ? sourceModel.accountModel!.nickname!
-                                        : "",
-                                  ),
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            Text(
-                              S
-                                  .of(context)
-                                  .AccountManagePageSubtitleUID(
-                                    sourceModel.accountModel!.uid != null
-                                        ? sourceModel.accountModel!.uid!
-                                        : "",
-                                  ),
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            Text(
-                              S
-                                  .of(context)
-                                  .AccountManagePageSubtitleUsername(
-                                    sourceModel.accountModel!.username != null
-                                        ? sourceModel.accountModel!.username!
-                                        : "",
-                                  ),
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                        Divider(
+                          height: 1,
+                          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                         ),
-                        trailing: IconButton(
-                          onPressed: () {
-                            if (sourceModel.accountModel!.isLogin) {
-                              sourceModel.accountModel!.logout().then(
-                                (value) => Provider.of<ComicSourceProvider>(
-                                  context,
-                                  listen: false,
-                                ).callNotify(),
+                        SettingsTile(
+                          leading: const Icon(Icons.token),
+                          title: Text(S.of(context).TokenCopy),
+                          enabled: account.hasCredentials,
+                          onTap: () async {
+                            final token = account.token;
+                            if (token == null || token.isEmpty) return;
+                            await Clipboard.setData(ClipboardData(text: token));
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(S.of(context).TokenCopied)),
                               );
-                            } else {
-                              Provider.of<NavigatorProvider>(
-                                    context,
-                                    listen: false,
-                                  )
-                                  .getNavigator(
-                                    context,
-                                    NavigatorType.defaultNavigator,
-                                  )
-                                  ?.push(
-                                    MaterialPageRoute(
-                                      builder: (context) => AccountLoginPage(
-                                        sourceModel: sourceModel,
-                                      ),
-                                      settings: const RouteSettings(
-                                        name: 'AccountLoginPage',
-                                      ),
-                                    ),
-                                  )
-                                  .then(
-                                    (value) => Provider.of<ComicSourceProvider>(
-                                      context,
-                                      listen: false,
-                                    ).callNotify(),
-                                  );
                             }
                           },
-                          icon: Icon(
-                            sourceModel.accountModel!.isLogin
-                                ? Icons.logout
-                                : Icons.login,
-                          ),
                         ),
-                      ),
-                      Divider(
-                        height: 1,
-                        color: colorScheme.outlineVariant.withValues(
-                          alpha: 0.3,
-                        ),
-                      ),
-                      SettingsTile(
-                        leading: const Icon(Icons.token),
-                        title: Text(S.of(context).TokenCopy),
-                        enabled: sourceModel.accountModel?.token != null,
-                        onTap: () {
-                          if (sourceModel.accountModel?.token != null) {
-                            Clipboard.setData(
-                              ClipboardData(
-                                text: sourceModel.accountModel!.token!,
-                              ),
-                            ).then((value) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(S.of(context).TokenCopied),
-                                  ),
-                                );
-                              }
-                            });
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  S.of(context).RequireLoginForToken,
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -28,17 +29,24 @@ class TestPaths extends PathProviderPlatform {
 }
 
 class ApiAdapter implements HttpClientAdapter {
-  final Object Function(RequestOptions) respond;
+  final FutureOr<Object> Function(RequestOptions) respond;
   final String contentType;
-
-  ApiAdapter(this.respond, {this.contentType = 'application/json'});
+  final int statusCode;
+  final bool encodeJson;
+  ApiAdapter(this.respond,
+      {this.contentType = 'application/json',
+      this.statusCode = 200,
+      this.encodeJson = true});
 
   @override
   Future<ResponseBody> fetch(RequestOptions options, Stream<Uint8List>? body,
       Future<void>? cancelFuture) async {
-    return ResponseBody.fromString(jsonEncode(respond(options)), 200, headers: {
-      Headers.contentTypeHeader: [contentType]
-    });
+    final response = await respond(options);
+    return ResponseBody.fromString(
+        encodeJson ? jsonEncode(response) : response.toString(), statusCode,
+        headers: {
+          Headers.contentTypeHeader: [contentType]
+        });
   }
 
   @override
@@ -87,7 +95,7 @@ void main() {
   test('account reload does not recreate deleted credentials or settings', () async {
     await source.accountModel!.initAccount();
     final dao = (await DatabaseInstance.instance).modelConfigDao;
-    for (final key in ['isLogin', 'token', 'autoSignInEnabled']) {
+    for (final key in ['isLogin', 'uid', 'token', 'autoSignInEnabled']) {
       expect(await dao.getConfigByKeyAndModel(key, 'zaimanhua'), isNull);
     }
     expect(source.accountModel!.isLogin, isFalse);
@@ -95,7 +103,6 @@ void main() {
 
   Future<void> signInForHistory() async {
     final dao = (await DatabaseInstance.instance).modelConfigDao;
-    await dao.getOrCreateConfigByKey('isLogin', 'zaimanhua', value: true);
     await dao.getOrCreateConfigByKey('token', 'zaimanhua',
         value: 'history-session');
   }
@@ -310,10 +317,9 @@ void main() {
   test('category page uses the signed-in catalog and reverts after logout',
       () async {
     final dao = (await DatabaseInstance.instance).modelConfigDao;
-    final loginState =
-        await dao.getOrCreateConfigByKey('isLogin', 'zaimanhua', value: true);
-    await dao.getOrCreateConfigByKey('token', 'zaimanhua',
-        value: 'catalog-session');
+    final token =
+        await dao.getOrCreateConfigByKey('token', 'zaimanhua',
+            value: 'catalog-session');
     mobile.dio.httpClientAdapter = ApiAdapter((request) {
       final signedIn =
           request.headers['Authorization'] == 'Bearer catalog-session';
@@ -338,8 +344,8 @@ void main() {
         ComicCategoryDetailPageController(source, '4518', categoryType: 1);
     await controller.refresh();
     expect(controller.data.single.title, '完整分类新漫画');
-    loginState.set(false);
-    await dao.updateConfig(loginState);
+    token.set('');
+    await dao.updateConfig(token);
     await controller.refresh();
     expect(controller.data.single.title, '游客旧漫画');
     controller.dispose();
@@ -369,7 +375,6 @@ void main() {
   ]) {
     test('${discovery.name} preserves the signed-in catalog', () async {
       final dao = (await DatabaseInstance.instance).modelConfigDao;
-      await dao.getOrCreateConfigByKey('isLogin', 'zaimanhua', value: true);
       await dao.getOrCreateConfigByKey('token', 'zaimanhua',
           value: 'catalog-session');
       mobile.dio.httpClientAdapter = ApiAdapter((request) {
@@ -714,6 +719,272 @@ void main() {
     expect(source.accountModel!.isLogin, isTrue);
     expect(source.accountModel!.uid, '456');
     expect(source.accountModel!.nickname, '令牌读者');
+  });
+
+  test('token-only restore verifies the profile without persisted login state',
+      () async {
+    final dao = (await DatabaseInstance.instance).modelConfigDao;
+    await dao.getOrCreateConfigByKey('token', 'zaimanhua',
+        value: 'restored-token');
+    account.dio.httpClientAdapter = ApiAdapter((request) {
+      expect(request.headers['Authorization'], 'Bearer restored-token');
+      return {
+        'errno': 0,
+        'data': {
+          'personalInfo': {
+            'uid': 789,
+            'nickname': '恢复读者',
+            'photo': '',
+          }
+        }
+      };
+    });
+
+    await source.accountModel!.initAccount();
+
+    expect(source.accountModel!.token, 'restored-token');
+    expect(source.accountModel!.isLogin, isTrue);
+    expect(await dao.getConfigByKeyAndModel('isLogin', 'zaimanhua'), isNull);
+    expect(await dao.getConfigByKeyAndModel('uid', 'zaimanhua'), isNull);
+  });
+
+  test('transient and malformed profile failures retain the token unverified',
+      () async {
+    account.dio.httpClientAdapter =
+        ApiAdapter((_) => throw DioException(requestOptions: RequestOptions()));
+    await source.accountModel!.loginWithToken('retained-token');
+    expect(source.accountModel!.token, 'retained-token');
+    expect(source.accountModel!.isLogin, isFalse);
+
+    account.dio.httpClientAdapter =
+        ApiAdapter((_) => {'errno': 0, 'data': {}});
+    await source.accountModel!.initAccount();
+    expect(source.accountModel!.token, 'retained-token');
+    expect(source.accountModel!.isLogin, isFalse);
+  });
+
+  test('explicit expired-token response clears only the captured credential',
+      () async {
+    account.dio.httpClientAdapter = ApiAdapter(
+      (_) => {'errno': 401, 'errmsg': '登录已过期', 'data': {}},
+      statusCode: 401,
+    );
+    await source.accountModel!.loginWithToken('expired-token');
+
+    expect(source.accountModel!.token, isNull);
+    expect(source.accountModel!.isLogin, isFalse);
+    final stored = await (await DatabaseInstance.instance)
+        .modelConfigDao
+        .getConfigByKeyAndModel('token', 'zaimanhua');
+    expect(stored?.get<String>() ?? '', isEmpty);
+  });
+
+  for (final response in [
+    (
+      name: 'bare HTTP 401',
+      body: '',
+      contentType: 'text/plain',
+    ),
+    (
+      name: 'non-JSON HTTP 401',
+      body: '<html>Unauthorized</html>',
+      contentType: 'text/html',
+    ),
+  ]) {
+    test('${response.name} retains the token as temporarily unverifiable',
+        () async {
+      account.dio.httpClientAdapter = ApiAdapter(
+        (_) => response.body,
+        statusCode: 401,
+        contentType: response.contentType,
+        encodeJson: false,
+      );
+      await source.accountModel!.loginWithToken('retained-token');
+
+      expect(source.accountModel!.token, 'retained-token');
+      expect(source.accountModel!.isLogin, isFalse);
+      final stored = await (await DatabaseInstance.instance)
+          .modelConfigDao
+          .getConfigByKeyAndModel('token', 'zaimanhua');
+      expect(stored?.get<String>(), 'retained-token');
+    });
+  }
+
+  test('overlapping token submissions persist only the latest account', () async {
+    account.dio.httpClientAdapter = ApiAdapter((request) => {
+      'errno': 0,
+      'data': {
+        'personalInfo': {
+          'uid': request.headers['Authorization'] == 'Bearer replacement-token'
+              ? 321
+              : 123,
+          'nickname': '读者',
+          'photo': '',
+        },
+      },
+    });
+    final first = source.accountModel!.loginWithToken('old-token');
+    final replacement = source.accountModel!.loginWithToken('replacement-token');
+    await Future.wait([first, replacement]);
+
+    expect(source.accountModel!.token, 'replacement-token');
+    expect(source.accountModel!.isLogin, isTrue);
+    expect(source.accountModel!.uid, '321');
+    final stored = await (await DatabaseInstance.instance)
+        .modelConfigDao.getConfigByKeyAndModel('token', 'zaimanhua');
+    expect(stored?.get<String>(), 'replacement-token');
+  });
+
+  test('late password login cannot restore an explicitly signed-out account',
+      () async {
+    final started = Completer<void>();
+    final response = Completer<Object>();
+    account.dio.httpClientAdapter = ApiAdapter((request) {
+      expect(request.path, '/login/passwd');
+      started.complete();
+      return response.future;
+    });
+    final login = source.accountModel!.login('reader', 'password');
+    await started.future;
+    await source.accountModel!.logout();
+    response.complete({
+      'errno': 0,
+      'data': {'user': {'token': 'late-token'}},
+    });
+
+    expect(await login, isFalse);
+    expect(source.accountModel!.token, isNull);
+    expect(source.accountModel!.isLogin, isFalse);
+    final stored = await (await DatabaseInstance.instance)
+        .modelConfigDao.getConfigByKeyAndModel('token', 'zaimanhua');
+    expect(stored?.get<String>() ?? '', isEmpty);
+  });
+
+  test('stale invalidation cannot clear a replacement token', () async {
+    final expiredResponse = Completer<Object>();
+    final started = Completer<void>();
+    account.dio.httpClientAdapter = ApiAdapter((request) {
+      if (request.headers['Authorization'] == 'Bearer expired-token') {
+        started.complete();
+        return expiredResponse.future;
+      }
+      expect(request.headers['Authorization'], 'Bearer replacement-token');
+      return {
+        'errno': 0,
+        'data': {
+          'personalInfo': {
+            'uid': 321,
+            'nickname': '新读者',
+            'photo': '',
+          }
+        }
+      };
+    });
+    final staleLogin = source.accountModel!.loginWithToken('expired-token');
+    await started.future;
+    await source.accountModel!.loginWithToken('replacement-token');
+    expiredResponse.complete(
+      {'errno': 401, 'errmsg': '登录已过期', 'data': {}},
+    );
+    await staleLogin;
+
+    expect(source.accountModel!.token, 'replacement-token');
+    expect(source.accountModel!.isLogin, isTrue);
+    expect(source.accountModel!.uid, '321');
+  });
+
+  test('logout clears immediately and stale profile cannot restore the account',
+      () async {
+    final response = Completer<Object>();
+    account.dio.httpClientAdapter = ApiAdapter((_) => response.future);
+    final login = source.accountModel!.loginWithToken('slow-token');
+    await Future<void>.delayed(Duration.zero);
+
+    await source.accountModel!.logout();
+    expect(source.accountModel!.token, isNull);
+    expect(source.accountModel!.isLogin, isFalse);
+    expect(source.accountModel!.uid, isNull);
+
+    response.complete({
+      'errno': 0,
+      'data': {
+        'personalInfo': {
+          'uid': 999,
+          'nickname': '迟到读者',
+          'photo': '',
+        }
+      }
+    });
+    await login;
+    expect(source.accountModel!.token, isNull);
+    expect(source.accountModel!.isLogin, isFalse);
+    expect(source.accountModel!.uid, isNull);
+  });
+
+  test('a new login started after logout cannot be erased by stale cleanup',
+      () async {
+    account.dio.httpClientAdapter = ApiAdapter((request) {
+      final token = request.headers['Authorization'];
+      return {
+        'errno': 0,
+        'data': {
+          'personalInfo': {
+            'uid': token == 'Bearer old-token' ? 1 : 2,
+            'nickname': token == 'Bearer old-token' ? '旧读者' : '新读者',
+            'photo': '',
+          }
+        }
+      };
+    });
+    await source.accountModel!.loginWithToken('old-token');
+
+    final logout = source.accountModel!.logout();
+    final replacement = source.accountModel!.loginWithToken('new-token');
+    await Future.wait([logout, replacement]);
+
+    expect(source.accountModel!.token, 'new-token');
+    expect(source.accountModel!.isLogin, isTrue);
+    expect(source.accountModel!.uid, '2');
+    final stored = await (await DatabaseInstance.instance)
+        .modelConfigDao
+        .getConfigByKeyAndModel('token', 'zaimanhua');
+    expect(stored?.get<String>(), 'new-token');
+  });
+
+  test('logout clears cookies only from ZaiManHua handlers', () async {
+    final handlers = [
+      (
+        handler: RequestHandlers.zaiManHuaRequestHandler,
+        uri: Uri.parse('https://manhua.zaimanhua.com'),
+      ),
+      (
+        handler: RequestHandlers.zaiManHuaMobileRequestHandler,
+        uri: Uri.parse('https://v4api.zaimanhua.com'),
+      ),
+      (
+        handler: RequestHandlers.zaiManHuaAccountRequestHandler,
+        uri: Uri.parse('https://account-api.zaimanhua.com'),
+      ),
+    ];
+    for (final entry in handlers) {
+      await entry.handler.cookieManager.cookieJar.saveFromResponse(
+        entry.uri,
+        [Cookie('session', 'credential')],
+      );
+      expect(
+        await entry.handler.cookieManager.cookieJar.loadForRequest(entry.uri),
+        isNotEmpty,
+      );
+    }
+
+    await source.accountModel!.logout();
+
+    for (final entry in handlers) {
+      expect(
+        await entry.handler.cookieManager.cookieJar.loadForRequest(entry.uri),
+        isEmpty,
+      );
+    }
   });
 
   test('login reports the API errmsg instead of throwing null', () async {

@@ -300,7 +300,6 @@ void main() {
     'ZaiManHua detail uses comic_id identity and returns all comics once',
     () async {
       final dao = (await DatabaseInstance.instance).modelConfigDao;
-      await dao.getOrCreateConfigByKey('isLogin', 'zaimanhua', value: true);
       await dao.getOrCreateConfigByKey(
         'token',
         'zaimanhua',

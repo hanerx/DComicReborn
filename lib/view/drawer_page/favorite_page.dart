@@ -1,6 +1,7 @@
 import 'package:dcomic/providers/automatic_mapping.dart';
 import 'package:dcomic/generated/l10n.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
+import 'package:dcomic/providers/models/comic_source_model.dart';
 import 'package:dcomic/providers/page_controllers/comic_favorite_page_controller.dart';
 import 'package:dcomic/providers/source_provider.dart';
 import 'package:dcomic/view/components/empty_widget.dart';
@@ -18,6 +19,9 @@ class FavoritePage extends StatefulWidget {
 }
 
 class _FavoritePageState extends State<FavoritePage> {
+  String _text(String zh, String en) =>
+      Localizations.localeOf(context).languageCode == 'zh' ? zh : en;
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -43,113 +47,126 @@ class _FavoritePageState extends State<FavoritePage> {
             for (var item in Provider.of<ComicSourceProvider>(
               context,
             ).hasAccountSettingSources)
-              item.accountModel!.isLogin
-                  ? ChangeNotifierProvider(
-                      create: (context) => ComicFavoritePageController(
-                        item,
-                        mappingQueue: context.read<AutomaticMappingQueue>(),
-                      ),
-                      builder: (context, child) => EasyRefresh(
-                        onRefresh: () async {
-                          await Provider.of<ComicFavoritePageController>(
-                            context,
-                            listen: false,
-                          ).refresh();
-                        },
-                        onLoad: () async {
-                          await Provider.of<ComicFavoritePageController>(
-                            context,
-                            listen: false,
-                          ).load();
-                        },
-                        refreshOnStart: true,
-                        child: ListenableBuilder(
-                          listenable: item,
-                          builder: (context, _) => LayoutBuilder(
-                            builder: (context, constraints) {
-                              var controller =
-                                  Provider.of<ComicFavoritePageController>(
-                                    context,
-                                  );
-                              var data = controller.data;
-                              var installedSourceIds = context
-                                  .read<ComicSourceProvider>()
-                                  .sources
-                                  .map((source) => source.type.sourceId)
-                                  .toSet();
-                              return GridView(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  16,
-                                  16,
-                                  16,
-                                ),
-                                gridDelegate: GridCardItem.coverGridDelegate(
-                                  context,
-                                  gridWidth: constraints.maxWidth - 32,
-                                  crossAxisCount: 3,
-                                  hasSubtitle: data.any(
-                                    (entity) =>
-                                        (entity.subtitle ?? '').isNotEmpty,
+              ListenableBuilder(
+                listenable: item.accountModel!,
+                builder: (context, _) => item.accountModel!.isLogin
+                    ? ChangeNotifierProvider(
+                        create: (context) => ComicFavoritePageController(
+                          item,
+                          mappingQueue: context.read<AutomaticMappingQueue>(),
+                        ),
+                        builder: (context, child) => EasyRefresh(
+                          onRefresh: () async {
+                            await Provider.of<ComicFavoritePageController>(
+                              context,
+                              listen: false,
+                            ).refresh();
+                          },
+                          onLoad: () async {
+                            await Provider.of<ComicFavoritePageController>(
+                              context,
+                              listen: false,
+                            ).load();
+                          },
+                          refreshOnStart: true,
+                          child: ListenableBuilder(
+                            listenable: item,
+                            builder: (context, _) => LayoutBuilder(
+                              builder: (context, constraints) {
+                                var controller =
+                                    Provider.of<ComicFavoritePageController>(
+                                      context,
+                                    );
+                                var data = controller.data;
+                                var installedSourceIds = context
+                                    .read<ComicSourceProvider>()
+                                    .sources
+                                    .map((source) => source.type.sourceId)
+                                    .toSet();
+                                return GridView(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    16,
+                                    16,
+                                    16,
                                   ),
-                                ),
-                                children: [
-                                  for (var item in data)
-                                    GridCardItem(
-                                      image: item.cover,
-                                      title: item.title,
-                                      subtitle: item.subtitle,
-                                      onTap: () {
-                                        if (item.onTap != null) {
-                                          item.onTap!(context);
-                                        }
-                                      },
-                                      badgeMaps: item.badges,
-                                      sourceIds: controller
-                                          .sourceIdsFor(item)
-                                          .where(installedSourceIds.contains)
-                                          .toList(growable: false),
+                                  gridDelegate: GridCardItem.coverGridDelegate(
+                                    context,
+                                    gridWidth: constraints.maxWidth - 32,
+                                    crossAxisCount: 3,
+                                    hasSubtitle: data.any(
+                                      (entity) =>
+                                          (entity.subtitle ?? '').isNotEmpty,
                                     ),
-                                ],
-                              );
-                            },
+                                  ),
+                                  children: [
+                                    for (var item in data)
+                                      GridCardItem(
+                                        image: item.cover,
+                                        title: item.title,
+                                        subtitle: item.subtitle,
+                                        onTap: () {
+                                          if (item.onTap != null) {
+                                            item.onTap!(context);
+                                          }
+                                        },
+                                        badgeMaps: item.badges,
+                                        sourceIds: controller
+                                            .sourceIdsFor(item)
+                                            .where(installedSourceIds.contains)
+                                            .toList(growable: false),
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                    )
-                  : EmptyWidget(
-                      title: S.of(context).RequireLogin,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            Provider.of<NavigatorProvider>(
-                                  context,
-                                  listen: false,
-                                )
-                                .getNavigator(
+                      )
+                    : EmptyWidget(
+                        title: switch (item.accountModel!.status) {
+                          ComicAccountStatus.checking => _text(
+                            '正在验证账户',
+                            'Verifying account',
+                          ),
+                          ComicAccountStatus.unavailable => _text(
+                            '账户暂时无法验证',
+                            'Account temporarily unavailable',
+                          ),
+                          _ => S.of(context).RequireLogin,
+                        },
+                        children: [
+                          if (item.accountModel!.status ==
+                              ComicAccountStatus.checking)
+                            const CircularProgressIndicator()
+                          else if (item.accountModel!.hasCredentials)
+                            TextButton.icon(
+                              onPressed: item.accountModel!.initAccount,
+                              icon: const Icon(Icons.refresh),
+                              label: Text(_text('重试', 'Retry')),
+                            )
+                          else
+                            TextButton(
+                              onPressed: () async {
+                                final navigator = context.read<NavigatorProvider>();
+                                final sources = context.read<ComicSourceProvider>();
+                                await navigator.getNavigator(
                                   context,
                                   NavigatorType.defaultNavigator,
-                                )
-                                ?.push(
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        AccountLoginPage(sourceModel: item),
-                                    settings: const RouteSettings(
-                                      name: 'AccountLoginPage',
-                                    ),
+                                )?.push(MaterialPageRoute(
+                                  builder: (context) =>
+                                      AccountLoginPage(sourceModel: item),
+                                  settings: const RouteSettings(
+                                    name: 'AccountLoginPage',
                                   ),
-                                )
-                                .then(
-                                  (value) => Provider.of<ComicSourceProvider>(
-                                    context,
-                                    listen: false,
-                                  ).callNotify(),
-                                );
-                          },
-                          child: Text(S.of(context).JumpToLogin),
-                        ),
-                      ],
-                    ),
+                                ));
+                                if (context.mounted) sources.callNotify();
+                              },
+                              child: Text(S.of(context).JumpToLogin),
+                            ),
+                        ],
+                      ),
+              ),
           ],
         ),
       ),

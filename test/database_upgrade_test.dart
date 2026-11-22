@@ -84,6 +84,7 @@ void main() {
         database = await $FloorDComicDatabase
             .databaseBuilder(path)
             .addMigrations(DatabaseInstance.migrations)
+            .addCallback(DatabaseInstance.databaseCallback)
             .build();
         final rules = ChapterRuleMatcher(
           await database.chapterRuleDao.loadChapterRules(),
@@ -126,8 +127,8 @@ void main() {
           'existing',
         );
         expect(
-          (await database.database.query('ModelConfigEntity')).single['value'],
-          'existing-user',
+          await database.database.query('ModelConfigEntity'),
+          isEmpty,
         );
 
         config!.value = 'light';

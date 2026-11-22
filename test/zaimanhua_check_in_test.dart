@@ -327,7 +327,8 @@ void main() {
     try {
       await model.refreshSignInStatus();
       expect(model.signInStatus, ZaiManHuaSignInStatus.queryFailed);
-      expect(model.isLogin, isTrue);
+      expect(model.isLogin, isFalse);
+      expect(model.token, 'daily-token');
     } finally {
       account.dio.httpClientAdapter = ApiAdapter(respond);
     }
@@ -395,13 +396,14 @@ void main() {
         ZaiManHuaSignInStatus.signedIn);
   });
 
-  test('logout with a retained token performs no account or sign-in request',
+  test('logout clears the token without another account or sign-in request',
       () async {
     signedToday = true;
     await source.accountModel!.loginWithToken('daily-token');
     profileRequests = 0;
     await source.accountModel!.logout();
     expect(source.accountModel!.isLogin, isFalse);
+    expect(source.accountModel!.token, isNull);
     expect(profileRequests, 0);
     expect(signRequests, 0);
     expect((source.accountModel as ZaiManHuaAccountModel).signInStatus,
@@ -412,6 +414,7 @@ void main() {
     expired = true;
     await source.accountModel!.loginWithToken('daily-token');
     expect(source.accountModel!.isLogin, isFalse);
+    expect(source.accountModel!.token, isNull);
     expect(signRequests, 0);
   });
 }

@@ -7,6 +7,7 @@ import 'package:dcomic/providers/models/zaimanhua/zaimanhua_topic_model.dart';
 import 'package:dcomic/providers/navigator_provider.dart';
 import 'package:dcomic/providers/page_controllers/comic_favorite_page_controller.dart';
 import 'package:dcomic/requests/base_request.dart';
+import 'package:dcomic/requests/zaimanhua/zaimanhua_request.dart';
 import 'package:dcomic/utils/image_utils.dart';
 import 'package:dcomic/view/category_pages/comic_category_detail_page.dart';
 import 'package:dcomic/view/comic_pages/comic_detail_page.dart';
@@ -272,7 +273,7 @@ class _ZaiManHuaSourceSettingsState extends State<_ZaiManHuaSourceSettings>
                 strings.ZaiManHuaMembershipStatus(
                   account.isLoading
                       ? 'checking'
-                      : !account.isLogin
+                      : (account.token?.isEmpty ?? true)
                       ? 'notLoggedIn'
                       : account.isMember?.toString() ?? 'unknown',
                 ),
@@ -305,6 +306,7 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
   bool _autoSignInEnabled = true;
   bool _savingAutoSignIn = false;
   int _accountGeneration = 0;
+  Future<void> _credentialPersistence = Future<void>.value();
   ZaiManHuaSignInStatus _signInStatus = ZaiManHuaSignInStatus.checking;
   bool? _isMember;
   ZaiManHuaVipRewardStatus _vipRewardStatus = ZaiManHuaVipRewardStatus.checking;
@@ -415,71 +417,88 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
 
   @override
   Future<bool> login(String username, String password) async {
-    var response = await RequestHandlers.zaiManHuaAccountRequestHandler.login(
-      username,
-      password,
-    );
+    final generation = ++_accountGeneration;
+    _isLoading = true;
+    notifyListeners();
     try {
-      if ((response.statusCode == 200 || response.statusCode == 304)) {
+      final response = await RequestHandlers.zaiManHuaAccountRequestHandler.login(
+        username,
+        password,
+      );
+      if (generation != _accountGeneration) return false;
+      if (response.statusCode == 200 || response.statusCode == 304) {
         if (response.data['errno'] == 0) {
-          var databaseInstance = await DatabaseInstance.instance;
-          var databaseIsLogin = await databaseInstance.modelConfigDao
-              .getOrCreateConfigByKey('isLogin', parent!.type.sourceId);
-          databaseIsLogin.set(true);
-          await databaseInstance.modelConfigDao.updateConfig(databaseIsLogin);
-          var databaseToken = await databaseInstance.modelConfigDao
-              .getOrCreateConfigByKey('token', parent!.type.sourceId);
-          databaseToken.set(response.data['data']['user']['token']);
-          await databaseInstance.modelConfigDao.updateConfig(databaseToken);
+          final token = response.data['data']?['user']?['token'];
+          if (token is! String || token.trim().isEmpty) {
+            throw const FormatException('登录响应缺少 token');
+          }
+          await _storeToken(token.trim(), generation);
+          if (generation != _accountGeneration) return false;
           await initAccount();
-          return true;
-        } else {
-          throw response.data['errmsg'];
+          return _isLogin;
         }
+        throw response.data['errmsg'] ?? '登录失败';
       }
+      return false;
     } catch (e, s) {
       logger.e(e, error: e, stackTrace: s);
       rethrow;
+    } finally {
+      if (generation == _accountGeneration) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
-    return false;
   }
 
   @override
   Future<bool> loginWithToken(String token) async {
+    final value = token.trim();
+    if (value.isEmpty) return false;
+    final generation = ++_accountGeneration;
     try {
-      var databaseInstance = await DatabaseInstance.instance;
-      var databaseIsLogin = await databaseInstance.modelConfigDao
-          .getOrCreateConfigByKey('isLogin', parent!.type.sourceId);
-      databaseIsLogin.set(true);
-      await databaseInstance.modelConfigDao.updateConfig(databaseIsLogin);
-      var databaseToken = await databaseInstance.modelConfigDao
-          .getOrCreateConfigByKey('token', parent!.type.sourceId);
-      databaseToken.set(token);
-      await databaseInstance.modelConfigDao.updateConfig(databaseToken);
+      await _storeToken(value, generation);
+      if (generation != _accountGeneration) return false;
       await initAccount();
-      return true;
+      return _isLogin;
     } catch (e, s) {
       logger.e(e, error: e, stackTrace: s);
       rethrow;
+    } finally {
+      if (generation == _accountGeneration) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
-    return false;
   }
 
   @override
   Future<bool> logout() async {
-    var databaseInstance = await DatabaseInstance.instance;
-    var databaseIsLogin = await databaseInstance.modelConfigDao
-        .getOrCreateConfigByKey('isLogin', parent!.type.sourceId);
-    databaseIsLogin.set(false);
-    await databaseInstance.modelConfigDao.updateConfig(databaseIsLogin);
-    var databaseUId = await databaseInstance.modelConfigDao
-        .getOrCreateConfigByKey('uid', parent!.type.sourceId);
-    databaseUId.set('');
-    await databaseInstance.modelConfigDao.updateConfig(databaseUId);
-    _avatar = null;
-    _username = null;
-    _nickname = null;
-    await initAccount();
+    final token = _token;
+    final generation = ++_accountGeneration;
+    _token = null;
+    _clearProfile();
+    _signInStatus = ZaiManHuaSignInStatus.notLoggedIn;
+    _vipRewardStatus = ZaiManHuaVipRewardStatus.notLoggedIn;
+    _isLoading = false;
+    notifyListeners();
+    await _serializeCredentialPersistence(() async {
+      if (generation != _accountGeneration || _token != null) return;
+      final dao = (await DatabaseInstance.instance).modelConfigDao;
+      final stored = await dao.getConfigByKeyAndModel(
+        'token',
+        parent!.type.sourceId,
+      );
+      if (generation != _accountGeneration ||
+          _token != null ||
+          stored == null ||
+          (token != null && stored.get<String>() != token)) {
+        return;
+      }
+      stored.set('');
+      await dao.updateConfig(stored);
+    });
+    await _clearCookies(generation);
     return true;
   }
 
@@ -532,53 +551,60 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
   Future<void> _loadAccount({required bool automaticallySignIn}) async {
     final generation = ++_accountGeneration;
     _isLoading = true;
+    _clearProfile();
     _signInStatus = ZaiManHuaSignInStatus.checking;
-    _isMember = null;
     _vipRewardStatus = ZaiManHuaVipRewardStatus.checking;
     notifyListeners();
+    String token = '';
     try {
       final dao = (await DatabaseInstance.instance).modelConfigDao;
       final enabled = (await dao.getConfigByKeyAndModel(
         'autoSignInEnabled',
         parent!.type.sourceId,
       ))?.get<bool>() ?? true;
-      final loggedIn = (await dao.getConfigByKeyAndModel(
-        'isLogin',
-        parent!.type.sourceId,
-      ))?.get<bool>() ?? false;
-      final token = (await dao.getConfigByKeyAndModel(
+      token = (await dao.getConfigByKeyAndModel(
         'token',
         parent!.type.sourceId,
       ))?.get<String>() ?? '';
       if (generation != _accountGeneration) return;
       _autoSignInEnabled = enabled;
-      _token = token;
-      _isLogin = loggedIn && token.isNotEmpty;
-      if (!_isLogin) {
+      _token = token.isEmpty ? null : token;
+      if (token.isEmpty) {
         _signInStatus = ZaiManHuaSignInStatus.notLoggedIn;
         _vipRewardStatus = ZaiManHuaVipRewardStatus.notLoggedIn;
         return;
       }
       final response = await RequestHandlers.zaiManHuaAccountRequestHandler
-          .getUserData();
-      if (generation != _accountGeneration) return;
+          .getUserData(token);
+      if (generation != _accountGeneration || _token != token) return;
+      final data = response.data;
+      if (_isExplicitAuthRejection(data)) {
+        await _invalidateToken(token, generation);
+        return;
+      }
       if (response.statusCode != 200 && response.statusCode != 304) {
         _signInStatus = ZaiManHuaSignInStatus.queryFailed;
         _vipRewardStatus = ZaiManHuaVipRewardStatus.queryFailed;
         return;
       }
-      if (response.data['errno'] != 0) {
-        _isLogin = false;
-        _signInStatus = ZaiManHuaSignInStatus.notLoggedIn;
-        _vipRewardStatus = ZaiManHuaVipRewardStatus.notLoggedIn;
+      if (data is! Map || data['errno'] != 0) {
+        _signInStatus = ZaiManHuaSignInStatus.queryFailed;
+        _vipRewardStatus = ZaiManHuaVipRewardStatus.queryFailed;
         return;
       }
-      final personalInfo = response.data['data']['personalInfo'];
+      final personalInfo = data['data']?['personalInfo'];
+      if (personalInfo is! Map ||
+          personalInfo['uid'] == null ||
+          personalInfo['nickname'] is! String ||
+          personalInfo['photo'] is! String) {
+        throw const FormatException('Invalid personalInfo payload');
+      }
       _uid = personalInfo['uid'].toString();
       _username = _uid;
       _avatar = ImageEntity(ImageType.network, personalInfo['photo']);
       _nickname = personalInfo['nickname'];
       _isMember = personalInfo['isMember'] as bool?;
+      _isLogin = true;
       _signInStatus = switch (personalInfo['is_sign']) {
         true => ZaiManHuaSignInStatus.signedIn,
         false => ZaiManHuaSignInStatus.notSignedIn,
@@ -588,7 +614,7 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
           _autoSignInEnabled &&
           _signInStatus == ZaiManHuaSignInStatus.notSignedIn) {
         final signedIn = await _signIn(token);
-        if (generation != _accountGeneration) return;
+        if (generation != _accountGeneration || _token != token) return;
         _signInStatus = signedIn
             ? ZaiManHuaSignInStatus.signedIn
             : ZaiManHuaSignInStatus.signInFailed;
@@ -604,8 +630,17 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
             ? ZaiManHuaVipRewardStatus.notMember
             : ZaiManHuaVipRewardStatus.queryFailed;
       }
+    } on DioException catch (error) {
+      if (generation == _accountGeneration && _token == token) {
+        if (_isExplicitAuthRejection(error.response?.data)) {
+          await _invalidateToken(token, generation);
+        } else {
+          _signInStatus = ZaiManHuaSignInStatus.queryFailed;
+          _vipRewardStatus = ZaiManHuaVipRewardStatus.queryFailed;
+        }
+      }
     } catch (_) {
-      if (generation == _accountGeneration) {
+      if (generation == _accountGeneration && _token == token) {
         _signInStatus = ZaiManHuaSignInStatus.queryFailed;
         _vipRewardStatus = ZaiManHuaVipRewardStatus.queryFailed;
       }
@@ -614,6 +649,100 @@ class ZaiManHuaAccountModel extends BaseComicAccountModel {
         _isLoading = false;
         notifyListeners();
       }
+    }
+  }
+
+  bool _isExplicitAuthRejection(Object? data) =>
+      data is Map &&
+      data['errno'] == 401 &&
+      data['errmsg'] == '登录已过期' &&
+      data['data'] is Map;
+
+  void _clearProfile() {
+    _isLogin = false;
+    _uid = null;
+    _username = null;
+    _avatar = null;
+    _nickname = null;
+    _isMember = null;
+  }
+
+  Future<void> _storeToken(String token, int generation) async {
+    if (generation != _accountGeneration) return;
+    _token = token;
+    _isLoading = true;
+    _clearProfile();
+    notifyListeners();
+    await _serializeCredentialPersistence(() async {
+      if (generation != _accountGeneration || _token != token) return;
+      final dao = (await DatabaseInstance.instance).modelConfigDao;
+      final stored = await dao.getOrCreateConfigByKey(
+        'token',
+        parent!.type.sourceId,
+      );
+      if (generation != _accountGeneration || _token != token) return;
+      stored.set(token);
+      await dao.updateConfig(stored);
+    });
+  }
+
+  Future<void> _invalidateToken(String token, int generation) async {
+    if (generation != _accountGeneration || _token != token) return;
+    var invalidated = false;
+    await _serializeCredentialPersistence(() async {
+      if (generation != _accountGeneration || _token != token) return;
+      final dao = (await DatabaseInstance.instance).modelConfigDao;
+      final stored = await dao.getConfigByKeyAndModel(
+        'token',
+        parent!.type.sourceId,
+      );
+      if (generation != _accountGeneration ||
+          _token != token ||
+          stored?.get<String>() != token) {
+        return;
+      }
+      stored!.set('');
+      await dao.updateConfig(stored);
+      invalidated = generation == _accountGeneration && _token == token;
+    });
+    if (!invalidated) return;
+    _token = null;
+    _clearProfile();
+    _signInStatus = ZaiManHuaSignInStatus.notLoggedIn;
+    _vipRewardStatus = ZaiManHuaVipRewardStatus.notLoggedIn;
+  }
+  Future<void> _serializeCredentialPersistence(
+    Future<void> Function() operation,
+  ) {
+    final result = _credentialPersistence.then((_) => operation());
+    _credentialPersistence = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return result;
+  }
+
+  Future<void> _clearCookies(int generation) async {
+    final handlers = [
+      (
+        handler: RequestHandlers.zaiManHuaRequestHandler,
+        endpoint: ZaiManHuaRequestHandler.endpoint,
+      ),
+      (
+        handler: RequestHandlers.zaiManHuaMobileRequestHandler,
+        endpoint: ZaiManHuaMobileRequestHandler.endpoint,
+      ),
+      (
+        handler: RequestHandlers.zaiManHuaAccountRequestHandler,
+        endpoint: ZaiManHuaAccountRequestHandler.endpoint,
+      ),
+    ];
+    for (final entry in handlers) {
+      if (generation != _accountGeneration || _token != null) return;
+      await entry.handler.cookieManager.cookieJar.delete(
+        Uri.parse(entry.endpoint),
+        true,
+      );
     }
   }
 
@@ -1329,9 +1458,10 @@ class _ZaiManHuaLoginFormState extends State<_ZaiManHuaLoginForm> {
             try {
               if (formKey.currentState!.validate()) {
                 if (await widget.account.login(
-                  usernameController.text,
-                  passwordController.text,
-                )) {
+                      usernameController.text,
+                      passwordController.text,
+                    ) ||
+                    widget.account.status == ComicAccountStatus.unavailable) {
                   if (!context.mounted) {
                     return;
                   }
@@ -1362,7 +1492,8 @@ class _ZaiManHuaLoginFormState extends State<_ZaiManHuaLoginForm> {
           onPressed: () async {
             try {
               if (formKey.currentState!.validate()) {
-                if (await widget.account.loginWithToken(tokenController.text)) {
+                if (await widget.account.loginWithToken(tokenController.text) ||
+                    widget.account.status == ComicAccountStatus.unavailable) {
                   if (!context.mounted) {
                     return;
                   }

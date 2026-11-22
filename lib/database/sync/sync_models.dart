@@ -10,7 +10,7 @@ enum SyncCategory {
   chapterRules('章节规则'),
   settings('应用设置'),
   sourceSettings('漫画源设置'),
-  credentials('登录凭据');
+  credentials('令牌与 Cookie');
 
   const SyncCategory(this.label);
 

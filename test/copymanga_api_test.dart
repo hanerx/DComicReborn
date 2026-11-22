@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -130,9 +131,7 @@ void main() {
     () async {
       await config('apiDomain', 'api.manga2025.com');
       await config('chapterCommentApiDomain', 'api.copy3000.com');
-      await config('isLogin', true);
       await config('token', 'copy-token');
-      await config('isLogin', true, model: 'hotmanga');
       await config('token', 'hot-token', model: 'hotmanga');
       handler.dio.httpClientAdapter = ApiAdapter((request) {
         if (request.uri.path.contains('/chapter/')) {
@@ -155,7 +154,7 @@ void main() {
         if (request.uri.path.endsWith('/roasts')) {
           expect(request.uri.host, 'api.copy3000.com');
           expect(request.uri.queryParameters['chapter_id'], 'shared-uuid');
-          expect(request.headers['authorization'], isNot('Token hot-token'));
+          expect(request.headers['authorization'], 'Token copy-token');
           return {
             'code': 200,
             'results': {
@@ -246,30 +245,45 @@ void main() {
   });
 
   test(
-    'switching accounts clears profile and restores each site token',
+    'token-only restoration clears profile across domains and restores each site token',
     () async {
       final account = source.accountModel!;
       account.logger = Logger(output: ConsoleOutput());
-      await config('isLogin', true);
       await config('token', 'copy-token');
-      handler.dio.httpClientAdapter = ApiAdapter(
-        (request) => {
+      handler.dio.httpClientAdapter = ApiAdapter((request) {
+        final headerToken =
+            (request.headers['authorization'] as String).substring(6);
+        expect(account.token, headerToken);
+        expect(account.isLoading, isTrue);
+        return {
           'code': 200,
           'results': {
             'user_id': 7,
-            'username': 'copy-user',
-            'nickname': 'Copy',
+            'username': request.uri.host.contains('manga2025')
+                ? 'hot-user'
+                : 'copy-user',
+            'nickname': request.uri.host.contains('manga2025') ? 'Hot' : 'Copy',
             'avatar': 'https://example.com/avatar.png',
           },
-        },
-      );
+        };
+      });
       await account.initAccount();
+      expect(account.isLogin, isTrue);
       expect(account.token, 'copy-token');
+      expect(account.nickname, 'Copy');
+
       await config('apiDomain', 'api.manga2025.com');
       await account.initAccount();
       expect(account.isLogin, isFalse);
       expect(account.token, isNull);
       expect(account.nickname, isNull);
+
+      await config('token', 'hot-token', model: 'hotmanga');
+      await account.initAccount();
+      expect(account.isLogin, isTrue);
+      expect(account.token, 'hot-token');
+      expect(account.nickname, 'Hot');
+
       await config('apiDomain', 'api.copy4000.com');
       await account.initAccount();
       expect(account.token, 'copy-token');
@@ -277,22 +291,140 @@ void main() {
     },
   );
 
+  test('stored token authenticates requests without a legacy login flag', () async {
+    await config('token', 'token-only');
+    handler.dio.httpClientAdapter = ApiAdapter(
+      (request) => {
+        'code': 200,
+        'results': {'authorization': request.headers['authorization']},
+      },
+    );
+
+    final response = await handler.search('sample');
+
+    expect(response.data['results']['authorization'], 'Token token-only');
+  });
+
+  test('profile verification never authenticates from another token cache', () async {
+    final account = source.accountModel!;
+    final cache = MemCacheStore();
+    addTearDown(cache.close);
+    handler.dio.interceptors.add(
+      InterceptorsWrapper(
+        onResponse: (response, next) {
+          response.headers.set('cache-control', 'max-age=300');
+          next.next(response);
+        },
+      ),
+    );
+    handler.dio.interceptors.add(
+      DioCacheInterceptor(
+        options: CacheOptions(
+          store: cache,
+          hitCacheOnNetworkFailure: true,
+        ),
+      ),
+    );
+    var offline = false;
+    handler.dio.httpClientAdapter = ApiAdapter((_) {
+      if (offline) throw const SocketException('offline');
+      return {
+        'code': 200,
+        'results': {
+          'user_id': 11,
+          'username': 'cached-user',
+          'nickname': 'Cached User',
+          'avatar': 'https://example.com/cached.png',
+        },
+      };
+    });
+    await handler.dio.get(
+      'https://api.copy4000.com/api/v3/member/info',
+      options: Options(
+        headers: {'authorization': 'Token cached-token'},
+      ),
+    );
+    await config('token', 'current-token');
+    offline = true;
+
+    await account.initAccount();
+
+    expect(account.isLogin, isFalse);
+    expect(account.token, 'current-token');
+    expect(account.nickname, isNull);
+  });
+
   test(
-    'logout persists only the selected site and leaves copy account intact',
+    'unavailable and malformed profiles retain credentials without authenticating',
     () async {
-      await config('isLogin', true);
+      final account = source.accountModel!;
+      final scenarios = <String, FutureOr<Object> Function(RequestOptions)>{
+        'network failure': (_) => throw const SocketException('offline'),
+        'gateway HTTP 401': (request) => throw DioException(
+              requestOptions: request,
+              response: Response<Object>(
+                requestOptions: request,
+                statusCode: 401,
+                data: '<html>gateway unauthorized</html>',
+              ),
+              type: DioExceptionType.badResponse,
+            ),
+        'server HTTP 503': (request) => throw DioException(
+              requestOptions: request,
+              response: Response<Object>(
+                requestOptions: request,
+                statusCode: 503,
+                data: {'code': 503, 'message': 'temporarily unavailable'},
+              ),
+              type: DioExceptionType.badResponse,
+            ),
+        'malformed success': (_) => {'code': 200, 'results': <Object>[]},
+        'business failure': (_) => {
+              'code': 500,
+              'message': 'temporarily unavailable',
+              'results': <String, Object>{},
+            },
+      };
+
+      for (final scenario in scenarios.entries) {
+        final retainedToken = 'retained-${scenario.key}';
+        await config('token', retainedToken);
+        handler.dio.httpClientAdapter = ApiAdapter(scenario.value);
+
+        await account.initAccount();
+
+        expect(account.isLoading, isFalse, reason: scenario.key);
+        expect(account.isLogin, isFalse, reason: scenario.key);
+        expect(account.token, retainedToken, reason: scenario.key);
+        final dao = (await DatabaseInstance.instance).modelConfigDao;
+        expect(
+          (await dao.getConfigByKeyAndModel('token', 'copymanga'))
+              ?.get<String>(),
+          retainedToken,
+          reason: scenario.key,
+        );
+      }
+    },
+  );
+
+  test(
+    'logout clears only the selected domain without writing a login flag',
+    () async {
       await config('token', 'copy-token');
       await config('apiDomain', 'api.manga2025.com');
-      await config('isLogin', true, model: 'hotmanga');
       await config('token', 'hot-token', model: 'hotmanga');
-      handler.dio.httpClientAdapter = ApiAdapter(
-        (request) => {'code': 200, 'results': {}},
-      );
-      await source.accountModel!.logout();
+      handler.dio.httpClientAdapter = ApiAdapter((request) {
+        expect(request.uri.path, endsWith('/logout'));
+        expect(request.headers['authorization'], 'Token hot-token');
+        return {'code': 200, 'results': {}};
+      });
+
+      expect(await source.accountModel!.logout(), isTrue);
+
       final dao = (await DatabaseInstance.instance).modelConfigDao;
       expect(
-        (await dao.getConfigByKeyAndModel('isLogin', 'hotmanga'))!.get<bool>(),
-        isFalse,
+        await dao.getConfigByKeyAndModel('isLogin', 'hotmanga'),
+        isNull,
       );
       expect(
         (await dao.getConfigByKeyAndModel('token', 'hotmanga'))!.get<String>(),
@@ -302,30 +434,205 @@ void main() {
         (await dao.getConfigByKeyAndModel('token', 'copymanga'))!.get<String>(),
         'copy-token',
       );
-      await source.accountModel!.initAccount();
       expect(source.accountModel!.isLogin, isFalse);
+      expect(source.accountModel!.token, isNull);
     },
   );
 
+  test('profile code 401 clears the rejected token', () async {
+    await config('apiDomain', 'api.copy4000.com');
+    await config('token', 'expired-token');
+    handler.dio.httpClientAdapter = ApiAdapter((request) {
+      if (request.uri.path.endsWith('/member/info')) {
+        return {'code': 401, 'message': 'Invalid token', 'results': {}};
+      }
+      return {
+        'code': 200,
+        'results': {'authorization': request.headers['authorization']},
+      };
+    });
+
+    await source.accountModel!.initAccount();
+
+    expect(source.accountModel!.isLogin, isFalse);
+    expect(source.accountModel!.token, isNull);
+    final dao = (await DatabaseInstance.instance).modelConfigDao;
+    expect(
+      (await dao.getConfigByKeyAndModel('token', 'copymanga'))!.get<String>(),
+      '',
+    );
+    final result = await handler.search('sample');
+    expect(result.data['results']['authorization'], isNull);
+  });
+
+  test('profile rejection clears only the token that was sent', () async {
+    final account = source.accountModel!;
+    final profileStarted = Completer<void>();
+    final profileResponse = Completer<Object>();
+    await config('token', 'sent-token');
+    handler.dio.httpClientAdapter = ApiAdapter((request) {
+      expect(request.uri.path, endsWith('/member/info'));
+      expect(request.headers['authorization'], 'Token sent-token');
+      profileStarted.complete();
+      return profileResponse.future;
+    });
+
+    final init = account.initAccount();
+    await profileStarted.future;
+    await config('token', 'concurrently-replaced-token');
+    profileResponse.complete({
+      'code': 401,
+      'message': 'Sent token rejected',
+      'results': {},
+    });
+    await init;
+
+    final dao = (await DatabaseInstance.instance).modelConfigDao;
+    expect(
+      (await dao.getConfigByKeyAndModel('token', 'copymanga'))!.get<String>(),
+      'concurrently-replaced-token',
+    );
+    expect(account.isLogin, isFalse);
+  });
+
+  test('stale profile rejection cannot clear a replacement token', () async {
+    final account = source.accountModel!;
+    final oldProfileStarted = Completer<void>();
+    final oldProfileResponse = Completer<Object>();
+    await config('token', 'old-token');
+    handler.dio.httpClientAdapter = ApiAdapter((request) {
+      if (!request.uri.path.endsWith('/member/info')) {
+        return {'code': 404, 'results': {}};
+      }
+      if (request.headers['authorization'] == 'Token old-token') {
+        oldProfileStarted.complete();
+        return oldProfileResponse.future;
+      }
+      expect(request.headers['authorization'], 'Token replacement-token');
+      return {
+        'code': 200,
+        'results': {
+          'user_id': 8,
+          'username': 'replacement',
+          'nickname': 'Replacement',
+          'avatar': 'https://example.com/replacement.png',
+        },
+      };
+    });
+
+    final staleInit = account.initAccount();
+    await oldProfileStarted.future;
+    expect(await account.loginWithToken('replacement-token'), isTrue);
+    oldProfileResponse.complete({
+      'code': 401,
+      'message': 'Old token rejected',
+      'results': {},
+    });
+    await staleInit;
+
+    final dao = (await DatabaseInstance.instance).modelConfigDao;
+    expect(
+      (await dao.getConfigByKeyAndModel('token', 'copymanga'))!.get<String>(),
+      'replacement-token',
+    );
+    expect(account.token, 'replacement-token');
+    expect(account.nickname, 'Replacement');
+    expect(account.isLogin, isTrue);
+  });
+
   test(
-    'rejected account no longer authenticates subsequent public requests',
+    'offline logout clears credentials and stale profile success stays signed out',
     () async {
-      await config('isLogin', true);
-      await config('token', 'expired-token');
+      final account = source.accountModel!;
+      final profileStarted = Completer<void>();
+      final profileResponse = Completer<Object>();
+      await config('token', 'logout-token');
       handler.dio.httpClientAdapter = ApiAdapter((request) {
         if (request.uri.path.endsWith('/member/info')) {
-          return {'code': 401, 'message': 'Invalid token', 'results': {}};
+          profileStarted.complete();
+          return profileResponse.future;
         }
-        return {
-          'code': 200,
-          'results': {'authorization': request.headers['authorization']},
-        };
+        expect(request.uri.path, endsWith('/logout'));
+        expect(request.headers['authorization'], 'Token logout-token');
+        throw const SocketException('offline');
       });
-      await source.accountModel!.initAccount();
-      final result = await handler.search('sample');
-      expect(result.data['results']['authorization'], isNull);
+
+      final staleInit = account.initAccount();
+      await profileStarted.future;
+      expect(await account.logout(), isTrue);
+
+      expect(account.isLoading, isFalse);
+      expect(account.isLogin, isFalse);
+      expect(account.token, isNull);
+      final dao = (await DatabaseInstance.instance).modelConfigDao;
+      expect(
+        (await dao.getConfigByKeyAndModel('token', 'copymanga'))!.get<String>(),
+        '',
+      );
+
+      profileResponse.complete({
+        'code': 200,
+        'results': {
+          'user_id': 9,
+          'username': 'stale',
+          'nickname': 'Stale',
+          'avatar': 'https://example.com/stale.png',
+        },
+      });
+      await staleInit;
+      expect(account.isLogin, isFalse);
+      expect(account.token, isNull);
+      expect(account.nickname, isNull);
     },
   );
+
+  test('in-flight logout never sends or clears a newer token', () async {
+    final account = source.accountModel!;
+    final logoutStarted = Completer<void>();
+    final logoutResponse = Completer<Object>();
+    String? logoutAuthorization;
+    await config('token', 'old-logout-token');
+    handler.dio.httpClientAdapter = ApiAdapter((request) {
+      if (request.uri.path.endsWith('/logout')) {
+        logoutAuthorization = request.headers['authorization'] as String?;
+        logoutStarted.complete();
+        return logoutResponse.future;
+      }
+      expect(request.uri.path, endsWith('/member/info'));
+      expect(request.headers['authorization'], 'Token newer-token');
+      return {
+        'code': 200,
+        'results': {
+          'user_id': 10,
+          'username': 'newer',
+          'nickname': 'Newer',
+          'avatar': 'https://example.com/newer.png',
+        },
+      };
+    });
+
+    final logout = account.logout();
+    await logoutStarted.future;
+    final dao = (await DatabaseInstance.instance).modelConfigDao;
+    expect(account.token, isNull);
+    expect(account.isLogin, isFalse);
+    expect(
+      (await dao.getConfigByKeyAndModel('token', 'copymanga'))!.get<String>(),
+      '',
+    );
+
+    expect(await account.loginWithToken('newer-token'), isTrue);
+    logoutResponse.completeError(const SocketException('offline'));
+    expect(await logout, isTrue);
+
+    expect(logoutAuthorization, 'Token old-logout-token');
+    expect(
+      (await dao.getConfigByKeyAndModel('token', 'copymanga'))!.get<String>(),
+      'newer-token',
+    );
+    expect(account.token, 'newer-token');
+    expect(account.isLogin, isTrue);
+  });
 
   test('copy homepage parses completed comics without theme', () async {
     handler.dio.httpClientAdapter = ApiAdapter((_) => homepageData(1));

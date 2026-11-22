@@ -63,15 +63,12 @@ class ZaiManHuaMobileRequestHandler extends RequestHandler {
 
   Future<Options> setHeader([Map<String, dynamic>? headers]) async {
     headers ??= {};
-    var databaseInstance = await DatabaseInstance.instance;
-    var isLoginEntity = await databaseInstance.modelConfigDao
-        .getConfigByKeyAndModel('isLogin', 'zaimanhua');
-    if (isLoginEntity != null && isLoginEntity.get<bool>()) {
-      String token =
-          (await (await DatabaseInstance.instance).modelConfigDao
-                  .getConfigByKeyAndModel('token', 'zaimanhua'))
-              ?.value ??
-          '';
+    final token = (await (await DatabaseInstance.instance)
+                .modelConfigDao
+                .getConfigByKeyAndModel('token', 'zaimanhua'))
+            ?.get<String>() ??
+        '';
+    if (token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
     }
     return Options(headers: headers);
@@ -327,36 +324,23 @@ class ZaiManHuaAccountRequestHandler extends RequestHandler {
     _configureAppClient(dio);
   }
 
-  Future<Options> setHeader([Map<String, dynamic>? headers]) async {
-    headers ??= {};
-    var databaseInstance = await DatabaseInstance.instance;
-    var isLoginEntity = await databaseInstance.modelConfigDao
-        .getConfigByKeyAndModel('isLogin', 'zaimanhua');
-    if (isLoginEntity != null && isLoginEntity.get<bool>()) {
-      String token =
-          (await (await DatabaseInstance.instance).modelConfigDao
-                  .getConfigByKeyAndModel('token', 'zaimanhua'))
-              ?.value ??
-          '';
-      headers['Authorization'] = 'Bearer $token';
-    }
-    return Options(headers: headers);
-  }
-
   Future<Response> login(String username, String password) {
     var pwd = md5.convert(utf8.encode(password)).toString().toLowerCase();
     Map<String, dynamic> data = {"username": username, "passwd": pwd};
     return dio.post('/login/passwd', data: data);
   }
 
-  Future<Response> getUserData() async {
-    final requestOptions = await setHeader();
-    // The daily sign-in status and login validity must come from the server.
-    requestOptions.extra = const CacheOptions(
-      store: null,
-      policy: CachePolicy.noCache,
-    ).toExtra();
-    return dio.get('/u_center/personal/info/get', options: requestOptions);
+  Future<Response> getUserData(String token) {
+    // Bind validation to the captured token, not a later database value.
+    return dio.get('/u_center/personal/info/get', options: Options(
+      headers: {'Authorization': 'Bearer $token'},
+      extra: const CacheOptions(
+        store: null,
+        policy: CachePolicy.noCache,
+        hitCacheOnNetworkFailure: false,
+        hitCacheOnErrorCodes: [],
+      ).toExtra(),
+    ));
   }
 }
 

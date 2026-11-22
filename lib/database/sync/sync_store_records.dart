@@ -9,6 +9,287 @@ class _KeyParts {
   final String key3;
 }
 
+const _legacyCredentialKeys = {
+  'islogin',
+  'username',
+  'password',
+  'userid',
+  'uid',
+  'refreshtoken',
+  'accesstoken',
+  'nickname',
+  'avatar',
+};
+
+SyncRecord _migrateLegacyCredentialRecord(SyncRecord record) {
+  if (record.category != SyncCategory.credentials ||
+      record.deleted ||
+      record.value == null) {
+    return record;
+  }
+  final rawConfigs = record.value!['configs'];
+  if (rawConfigs is! List) return record;
+
+  final loggedOutSources = <String>{};
+  for (final raw in rawConfigs) {
+    if (raw is! Map) continue;
+    final source = raw['sourceModel'];
+    final key = raw['key'];
+    if (source is String &&
+        key is String &&
+        key.toLowerCase() == 'islogin' &&
+        raw['value'] == '0') {
+      loggedOutSources.add(source);
+    }
+  }
+
+  var changed = false;
+  final configs = <Object?>[];
+  for (final raw in rawConfigs) {
+    if (raw is Map) {
+      final key = raw['key'];
+      final source = raw['sourceModel'];
+      if (key is String) {
+        final folded = key.toLowerCase();
+        if (_legacyCredentialKeys.contains(folded) ||
+            (folded == 'token' &&
+                source is String &&
+                loggedOutSources.contains(source))) {
+          changed = true;
+          continue;
+        }
+      }
+    }
+    configs.add(raw);
+  }
+  if (!changed) return record;
+
+  return SyncRecord(
+    category: record.category,
+    key: record.key,
+    value: {...record.value!, 'configs': configs},
+    deleted: record.deleted,
+    version: record.version,
+    uncertain: record.uncertain,
+    baseVersion: record.baseVersion,
+  );
+}
+
+Future<void> _migrateLegacyCredentialData(
+  sqflite.DatabaseExecutor database,
+) async {
+  final changedAccounts = <String>{};
+  final activeAccount = await _activeAccount(database);
+  await _setSuppressed(database, true);
+  try {
+    var activeChanged = false;
+    final logoutRows = await database.query(
+      'ModelConfigEntity',
+      columns: ['sourceModel'],
+      where: 'lower(key) = ? AND value = ?',
+      whereArgs: ['islogin', '0'],
+    );
+    for (final row in logoutRows) {
+      final removed = await database.delete(
+        'ModelConfigEntity',
+        where: "lower(key) = ? AND COALESCE(sourceModel, '') = ?",
+        whereArgs: ['token', (row['sourceModel'] as String?) ?? ''],
+      );
+      activeChanged = activeChanged || removed > 0;
+    }
+    final placeholders =
+        List.filled(_legacyCredentialKeys.length, '?').join(',');
+    final removedLegacy = await database.delete(
+      'ModelConfigEntity',
+      where: 'lower(key) IN ($placeholders)',
+      whereArgs: _legacyCredentialKeys.toList(growable: false),
+    );
+    activeChanged = activeChanged || removedLegacy > 0;
+    if (activeChanged) changedAccounts.add(activeAccount);
+
+    changedAccounts.addAll(await _migrateStoredAccountSnapshots(database));
+    await _migrateStoredConflictRecords(database);
+    await _migrateStoredResolutionRecords(database);
+    await _reversionPendingCredentialRecords(database, changedAccounts);
+  } finally {
+    await _setSuppressed(database, false);
+  }
+}
+
+Future<Set<String>> _migrateStoredAccountSnapshots(
+  sqflite.DatabaseExecutor database,
+) async {
+  final changedAccounts = <String>{};
+  final rows = await database.query(
+    _accountSnapshotTable,
+    columns: ['account', 'records_json'],
+  );
+  for (final row in rows) {
+    final encoded = row['records_json'];
+    if (encoded is! String) continue;
+    final migrated = _migrateSnapshotJson(encoded);
+    if (migrated == null) continue;
+    await database.update(
+      _accountSnapshotTable,
+      {'records_json': migrated},
+      where: 'account = ?',
+      whereArgs: [row['account']],
+    );
+    changedAccounts.add(row['account']! as String);
+  }
+  return changedAccounts;
+}
+
+Future<void> _migrateStoredConflictRecords(
+  sqflite.DatabaseExecutor database,
+) async {
+  final rows = await database.query(
+    _conflictTable,
+    columns: ['account', 'id', 'local_record', 'remote_record'],
+  );
+  for (final row in rows) {
+    final updates = <String, Object?>{};
+    for (final column in const ['local_record', 'remote_record']) {
+      final encoded = row[column];
+      if (encoded is! String) continue;
+      final migrated = _migrateRecordJson(encoded);
+      if (migrated != null) updates[column] = migrated;
+    }
+    if (updates.isEmpty) continue;
+    await database.update(
+      _conflictTable,
+      updates,
+      where: 'account = ? AND id = ?',
+      whereArgs: [row['account'], row['id']],
+    );
+  }
+}
+
+Future<void> _migrateStoredResolutionRecords(
+  sqflite.DatabaseExecutor database,
+) async {
+  final rows = await database.query(
+    _resolutionTable,
+    columns: ['account', 'wall', 'logical', 'device', 'record_json'],
+  );
+  for (final row in rows) {
+    final encoded = row['record_json'];
+    if (encoded is! String || _migrateRecordJson(encoded) == null) continue;
+    await database.delete(
+      _resolutionTable,
+      where:
+          'account = ? AND wall = ? AND logical = ? AND device = ?',
+      whereArgs: [
+        row['account'],
+        row['wall'],
+        row['logical'],
+        row['device'],
+      ],
+    );
+    await database.delete(
+      _recordTable,
+      where:
+          'account = ? AND category = ? AND key1 = ? '
+          'AND wall = ? AND logical = ? AND device = ?',
+      whereArgs: [
+        row['account'],
+        SyncCategory.credentials.name,
+        'accounts',
+        row['wall'],
+        row['logical'],
+        row['device'],
+      ],
+    );
+  }
+}
+
+Future<void> _reversionPendingCredentialRecords(
+  sqflite.DatabaseExecutor database,
+  Set<String> accounts,
+) async {
+  for (final account in accounts) {
+    final rows = await database.query(
+      _recordTable,
+      where:
+          'account = ? AND category = ? AND key1 = ? AND pending = 1',
+      whereArgs: [account, SyncCategory.credentials.name, 'accounts'],
+    );
+    for (final row in rows) {
+      final resolutions = await database.query(
+        _resolutionTable,
+        columns: ['conflict_id'],
+        where:
+            'account = ? AND wall = ? AND logical = ? AND device = ?',
+        whereArgs: [
+          account,
+          row['wall'],
+          row['logical'],
+          row['device'],
+        ],
+        limit: 1,
+      );
+      if (resolutions.isNotEmpty) continue;
+      final previous = _versionFromRow(row);
+      final (version, _) = await _nextVersionAfter(database, previous);
+      await _observeVersion(database, version);
+      await database.update(
+        _recordTable,
+        {
+          'wall': version.wall,
+          'logical': version.logical,
+          'device': version.device,
+          'uncertain': 1,
+          'base_wall': previous.wall,
+          'base_logical': previous.logical,
+          'base_device': previous.device,
+          'baseline': 0,
+        },
+        where:
+            'account = ? AND category = ? AND key1 = ? '
+            'AND key2 = ? AND key3 = ?',
+        whereArgs: [
+          account,
+          SyncCategory.credentials.name,
+          'accounts',
+          '',
+          '',
+        ],
+      );
+    }
+  }
+}
+
+String? _migrateSnapshotJson(String encoded) {
+  try {
+    final decoded = jsonDecode(encoded);
+    if (decoded is! List) return null;
+    var changed = false;
+    final records = <Object?>[];
+    for (final raw in decoded) {
+      if (raw is! Map) return null;
+      final record = SyncRecord.fromJson(Map<String, dynamic>.from(raw));
+      final migrated = _migrateLegacyCredentialRecord(record);
+      changed |= !identical(record, migrated);
+      records.add(migrated.toJson());
+    }
+    return changed ? jsonEncode(records) : null;
+  } on Object {
+    return null;
+  }
+}
+
+String? _migrateRecordJson(String encoded) {
+  try {
+    final decoded = jsonDecode(encoded);
+    if (decoded is! Map) return null;
+    final record = SyncRecord.fromJson(Map<String, dynamic>.from(decoded));
+    final migrated = _migrateLegacyCredentialRecord(record);
+    return identical(record, migrated) ? null : jsonEncode(migrated.toJson());
+  } on Object {
+    return null;
+  }
+}
+
 Future<String> _activeAccount(sqflite.DatabaseExecutor database) async {
   final rows = await database.query(
     _stateTable,
@@ -501,23 +782,24 @@ Future<Map<String, dynamic>?> _loadValue(
 }
 
 SyncRecord _validateRecord(SyncRecord record) {
-  _validateSyncVersion(record.version, 'version');
-  final baseVersion = record.baseVersion;
+  final migrated = _migrateLegacyCredentialRecord(record);
+  _validateSyncVersion(migrated.version, 'version');
+  final baseVersion = migrated.baseVersion;
   if (baseVersion != null) {
     _validateSyncVersion(baseVersion, 'baseVersion');
   }
-  _parseKey(record.category, record.key);
-  final value = record.deleted
+  _parseKey(migrated.category, migrated.key);
+  final value = migrated.deleted
       ? null
-      : _validateValue(record.category, record.key, record.value);
+      : _validateValue(migrated.category, migrated.key, migrated.value);
   return SyncRecord(
-    category: record.category,
-    key: record.key,
+    category: migrated.category,
+    key: migrated.key,
     value: value,
-    deleted: record.deleted,
-    version: record.version,
-    uncertain: record.uncertain,
-    baseVersion: record.baseVersion,
+    deleted: migrated.deleted,
+    version: migrated.version,
+    uncertain: migrated.uncertain,
+    baseVersion: migrated.baseVersion,
   );
 }
 

@@ -37,7 +37,7 @@ class DatabaseBackup {
     }
     final secret = _usablePassword(password);
     if (categories.contains(SyncCategory.credentials) && secret == null) {
-      throw const DatabaseBackupException('包含登录凭据的备份必须设置密码');
+      throw const DatabaseBackupException('包含漫画源令牌或 Cookie 的备份必须设置密码');
     }
     final records = await _store.snapshot(categories);
     _store.validateRecords(records);
@@ -238,7 +238,7 @@ class DatabaseBackup {
       }
     }
     if (categories.contains(SyncCategory.credentials) && !encrypted) {
-      throw const DatabaseBackupException('未加密备份不得包含登录凭据');
+      throw const DatabaseBackupException('未加密备份不得包含漫画源令牌或 Cookie');
     }
     final records = <SyncRecord>[];
     final identities = <String>{};

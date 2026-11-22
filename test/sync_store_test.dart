@@ -669,6 +669,248 @@ void main() {
     );
     expect(await store.pending({SyncCategory.settings}), isEmpty);
   });
+  test('legacy credential pulls keep only active tokens and cookies', () async {
+    const version = SyncVersion(wall: 100, logical: 0, device: 'remote');
+    final legacy = SyncRecord(
+      category: SyncCategory.credentials,
+      key: 'accounts',
+      value: const {
+        'cookies': [
+          {'key': 'session', 'value': 'cookie-value'},
+        ],
+        'configs': [
+          {'sourceModel': 'active', 'key': 'token', 'value': 'active-token'},
+          {'sourceModel': 'active', 'key': 'username', 'value': 'old-user'},
+          {'sourceModel': 'logged-out', 'key': 'token', 'value': 'stale-token'},
+          {'sourceModel': 'logged-out', 'key': 'isLogin', 'value': '0'},
+        ],
+      },
+      deleted: false,
+      version: version,
+      uncertain: false,
+    );
+
+    await store.receive([legacy]);
+
+    expect(await database.database.query('CookieEntity'), [
+      containsPair('value', 'cookie-value'),
+    ]);
+    expect(
+      await database.database.query(
+        'ModelConfigEntity',
+        columns: ['sourceModel', 'key', 'value'],
+      ),
+      [
+        {
+          'sourceModel': 'active',
+          'key': 'token',
+          'value': 'active-token',
+        },
+      ],
+    );
+
+    final migratedReplay = SyncRecord(
+      category: SyncCategory.credentials,
+      key: 'accounts',
+      value: const {
+        'cookies': [
+          {'key': 'session', 'value': 'cookie-value'},
+        ],
+        'configs': [
+          {'sourceModel': 'active', 'key': 'token', 'value': 'active-token'},
+        ],
+      },
+      deleted: false,
+      version: version,
+      uncertain: false,
+    );
+    await expectLater(store.receive([migratedReplay]), completes);
+  });
+
+  test('pending legacy credentials receive a new causal version', () async {
+    await database.database.update(
+      '_dcomic_sync_state',
+      {'suppress': 1},
+      where: 'id = 1',
+    );
+    await database.database.execute(
+      'DROP TRIGGER dcomic_setting_policy_ModelConfigEntity_insert',
+    );
+    await database.database.insert('ModelConfigEntity', {
+      'sourceModel': 'active',
+      'key': 'token',
+      'value': 'active-token',
+    });
+    await database.database.insert('ModelConfigEntity', {
+      'sourceModel': 'active',
+      'key': 'username',
+      'value': 'old-user',
+    });
+    await database.database.update(
+      '_dcomic_sync_records',
+      {
+        'wall': 200,
+        'logical': 0,
+        'device': 'legacy-pending',
+        'pending': 1,
+        'uncertain': 0,
+        'base_wall': null,
+        'base_logical': null,
+        'base_device': null,
+      },
+      where: 'account = ? AND category = ? AND key1 = ?',
+      whereArgs: ['', SyncCategory.credentials.name, 'accounts'],
+    );
+    await database.database.update(
+      '_dcomic_sync_state',
+      {'suppress': 0},
+      where: 'id = 1',
+    );
+
+    await SyncStore.installSchema(database.database as sqflite.Database);
+
+    final pending =
+        (await store.pending({SyncCategory.credentials})).single;
+    expect(
+      pending.baseVersion,
+      const SyncVersion(wall: 200, logical: 0, device: 'legacy-pending'),
+    );
+    expect(pending.version, isNot(pending.baseVersion));
+    expect(pending.uncertain, isTrue);
+    expect(pending.value!['configs'], [
+      {
+        'sourceModel': 'active',
+        'key': 'token',
+        'value': 'active-token',
+      },
+    ]);
+  });
+
+  test('stored credential snapshots conflicts and resolutions are migrated',
+      () async {
+    const version = SyncVersion(wall: 120, logical: 3, device: 'legacy');
+    final legacy = SyncRecord(
+      category: SyncCategory.credentials,
+      key: 'accounts',
+      value: const {
+        'cookies': <Object>[],
+        'configs': [
+          {'sourceModel': 'active', 'key': 'token', 'value': 'active-token'},
+          {'sourceModel': 'active', 'key': 'uid', 'value': '42'},
+          {'sourceModel': 'logged-out', 'key': 'token', 'value': 'stale-token'},
+          {'sourceModel': 'logged-out', 'key': 'isLogin', 'value': '0'},
+        ],
+      },
+      deleted: false,
+      version: version,
+      uncertain: false,
+    );
+    final encoded = jsonEncode(legacy.toJson());
+    await database.database.insert('_dcomic_sync_account_snapshots', {
+      'account': 'legacy-account',
+      'records_json': jsonEncode([legacy.toJson()]),
+    });
+    await database.database.insert('_dcomic_sync_conflicts', {
+      'account': '',
+      'id': 'legacy-conflict',
+      'local_record': encoded,
+      'remote_record': encoded,
+      'created_at': 1,
+    });
+    await database.database.insert('_dcomic_sync_resolutions', {
+      'account': '',
+      'wall': version.wall,
+      'logical': version.logical,
+      'device': version.device,
+      'conflict_id': 'legacy-conflict',
+      'record_json': encoded,
+    });
+    await database.database.update(
+      '_dcomic_sync_records',
+      {
+        'wall': version.wall,
+        'logical': version.logical,
+        'device': version.device,
+        'pending': 1,
+      },
+      where: 'account = ? AND category = ? AND key1 = ?',
+      whereArgs: ['', SyncCategory.credentials.name, 'accounts'],
+    );
+
+    await SyncStore.installSchema(database.database as sqflite.Database);
+
+    for (final tableAndColumn in const {
+      '_dcomic_sync_account_snapshots': 'records_json',
+      '_dcomic_sync_conflicts': 'local_record',
+    }.entries) {
+      final rows = await database.database.query(
+        tableAndColumn.key,
+        columns: [tableAndColumn.value],
+      );
+      final migrated = rows.single[tableAndColumn.value]! as String;
+      expect(migrated, contains('active-token'));
+      expect(migrated, isNot(contains('stale-token')));
+      expect(migrated, isNot(contains('"uid"')));
+      expect(migrated, isNot(contains('"isLogin"')));
+      expect(migrated, contains('"wall":120'));
+      expect(migrated, contains('"logical":3'));
+      expect(migrated, contains('"device":"legacy"'));
+    }
+    final conflictRows =
+        await database.database.query('_dcomic_sync_conflicts');
+    expect(
+      conflictRows.single['remote_record'],
+      conflictRows.single['local_record'],
+    );
+    expect(
+      await database.database.query('_dcomic_sync_resolutions'),
+      isEmpty,
+    );
+    expect(
+      await database.database.query(
+        '_dcomic_sync_records',
+        where: 'account = ? AND category = ? AND key1 = ?',
+        whereArgs: ['', SyncCategory.credentials.name, 'accounts'],
+      ),
+      isEmpty,
+    );
+    final conflict = (await store.conflicts()).single;
+    expect(conflict.local.value!['configs'], [
+      {
+        'sourceModel': 'active',
+        'key': 'token',
+        'value': 'active-token',
+      },
+    ]);
+    await store.calibrate(1000, roundTrip: Duration.zero);
+    await store.resolveConflict(conflict.id, useLocal: true);
+    final replacement = await store.pendingResolution(conflict.id);
+    expect(replacement, isNotNull);
+    expect(replacement!.version, isNot(version));
+    expect(replacement.value!['configs'], [
+      {
+        'sourceModel': 'active',
+        'key': 'token',
+        'value': 'active-token',
+      },
+    ]);
+
+    await store.bindAccount('legacy-account', migrateLocal: false);
+    expect(
+      await database.database.query(
+        'ModelConfigEntity',
+        columns: ['sourceModel', 'key', 'value'],
+      ),
+      [
+        {
+          'sourceModel': 'active',
+          'key': 'token',
+          'value': 'active-token',
+        },
+      ],
+    );
+  });
+
   test('calibrated writes refresh their anchor at mutation time', () async {
     await store.calibrate(100000, roundTrip: Duration.zero);
     await Future<void>.delayed(const Duration(milliseconds: 50));

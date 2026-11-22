@@ -489,9 +489,11 @@ class SyncStore {
         whereArgs: [account],
       );
       for (final row in existing) {
-        final candidate = SyncRecord.fromJson(
-          Map<String, dynamic>.from(
-            jsonDecode(row['local_record']! as String) as Map,
+        final candidate = _validateRecord(
+          SyncRecord.fromJson(
+            Map<String, dynamic>.from(
+              jsonDecode(row['local_record']! as String) as Map,
+            ),
           ),
         );
         if (candidate.category != checkedLocal.category ||
@@ -585,14 +587,18 @@ class SyncStore {
       for (final row in rows)
         SyncConflict(
           id: row['id']! as String,
-          local: SyncRecord.fromJson(
-            Map<String, dynamic>.from(
-              jsonDecode(row['local_record']! as String) as Map,
+          local: _validateRecord(
+            SyncRecord.fromJson(
+              Map<String, dynamic>.from(
+                jsonDecode(row['local_record']! as String) as Map,
+              ),
             ),
           ),
-          remote: SyncRecord.fromJson(
-            Map<String, dynamic>.from(
-              jsonDecode(row['remote_record']! as String) as Map,
+          remote: _validateRecord(
+            SyncRecord.fromJson(
+              Map<String, dynamic>.from(
+                jsonDecode(row['remote_record']! as String) as Map,
+              ),
             ),
           ),
         ),
@@ -613,14 +619,18 @@ class SyncStore {
         limit: 1,
       );
       if (conflicts.isEmpty) return;
-      final local = SyncRecord.fromJson(
-        Map<String, dynamic>.from(
-          jsonDecode(conflicts.single['local_record']! as String) as Map,
+      final local = _validateRecord(
+        SyncRecord.fromJson(
+          Map<String, dynamic>.from(
+            jsonDecode(conflicts.single['local_record']! as String) as Map,
+          ),
         ),
       );
-      final remote = SyncRecord.fromJson(
-        Map<String, dynamic>.from(
-          jsonDecode(conflicts.single['remote_record']! as String) as Map,
+      final remote = _validateRecord(
+        SyncRecord.fromJson(
+          Map<String, dynamic>.from(
+            jsonDecode(conflicts.single['remote_record']! as String) as Map,
+          ),
         ),
       );
       _validateTrustedVersions([remote], versionLimit);
@@ -690,14 +700,18 @@ class SyncStore {
         limit: 1,
       );
       if (rows.isEmpty) throw StateError('sync conflict no longer exists');
-      final local = SyncRecord.fromJson(
-        Map<String, dynamic>.from(
-          jsonDecode(rows.single['local_record']! as String) as Map,
+      final local = _validateRecord(
+        SyncRecord.fromJson(
+          Map<String, dynamic>.from(
+            jsonDecode(rows.single['local_record']! as String) as Map,
+          ),
         ),
       );
-      final remote = SyncRecord.fromJson(
-        Map<String, dynamic>.from(
-          jsonDecode(rows.single['remote_record']! as String) as Map,
+      final remote = _validateRecord(
+        SyncRecord.fromJson(
+          Map<String, dynamic>.from(
+            jsonDecode(rows.single['remote_record']! as String) as Map,
+          ),
         ),
       );
       changedCategory = local.category;

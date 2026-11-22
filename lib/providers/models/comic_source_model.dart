@@ -461,10 +461,22 @@ abstract class BaseComicChapterDetailModel extends BaseModel {
   ChapterProvenance? get provenance => null;
 }
 
+enum ComicAccountStatus { signedOut, checking, authenticated, unavailable }
+
 abstract class BaseComicAccountModel extends BaseModel {
   bool get isLogin => false;
 
   bool get isLoading => false;
+
+  bool get hasCredentials => token?.isNotEmpty ?? false;
+
+  ComicAccountStatus get status {
+    if (isLoading) return ComicAccountStatus.checking;
+    if (isLogin) return ComicAccountStatus.authenticated;
+    return hasCredentials
+        ? ComicAccountStatus.unavailable
+        : ComicAccountStatus.signedOut;
+  }
 
   String? get uid;
 

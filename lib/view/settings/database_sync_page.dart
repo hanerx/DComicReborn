@@ -435,8 +435,8 @@ class _DatabaseSyncPageState extends State<DatabaseSyncPage> {
         icon: Icons.security_outlined,
         child: Text(
           _text(
-            '备份是逻辑数据文件，不包含同步令牌和设备游标。包含登录凭据时必须加密，并应只保存到可信位置。',
-            'Backups contain logical data, never sync tokens or device cursors. Backups containing source credentials must be encrypted and kept in a trusted location.',
+            '备份是逻辑数据文件，不包含同步令牌和设备游标。包含漫画源令牌或 Cookie 时必须加密，并应只保存到可信位置。',
+            'Backups contain logical data, never sync tokens or device cursors. Backups containing source tokens or cookies must be encrypted and kept in a trusted location.',
           ),
         ),
       ),
@@ -520,10 +520,10 @@ class _DatabaseSyncPageState extends State<DatabaseSyncPage> {
   ) async {
     if (selected && category == SyncCategory.credentials) {
       final confirmed = await _confirm(
-        _text('同步登录凭据？', 'Sync source credentials?'),
+        _text('同步漫画源令牌与 Cookie？', 'Sync source tokens and cookies?'),
         _text(
-          '这会把漫画源 Cookie、令牌及相关登录配置发送到你的同步服务器，并分发到其他设备。只有在完全信任服务器及其管理员时才启用。',
-          'This sends source cookies, tokens, and related login settings to your sync server and other devices. Enable only if you fully trust the server and its administrator.',
+          '这会把漫画源令牌与 Cookie 发送到你的同步服务器，并分发到其他设备。只有在完全信任服务器及其管理员时才启用。',
+          'This sends source tokens and cookies to your sync server and other devices. Enable only if you fully trust the server and its administrator.',
         ),
         destructive: true,
       );
@@ -784,8 +784,8 @@ class _DatabaseSyncPageState extends State<DatabaseSyncPage> {
   String _recordPreview(SyncRecord record) {
     if (record.category == SyncCategory.credentials) {
       return _text(
-        '内容：[敏感凭据已隐藏]',
-        'Content: [sensitive credentials hidden]',
+        '内容：[敏感令牌与 Cookie 已隐藏]',
+        'Content: [sensitive tokens and cookies hidden]',
       );
     }
     if (record.deleted) {
@@ -836,7 +836,9 @@ class _DatabaseSyncPageState extends State<DatabaseSyncPage> {
 
   String _categoryName(SyncCategory category) {
     if (Localizations.localeOf(context).languageCode == 'zh') {
-      return category.label;
+      return category == SyncCategory.credentials
+          ? '令牌与 Cookie'
+          : category.label;
     }
     return switch (category) {
       SyncCategory.history => 'Reading history & subscriptions',
@@ -844,7 +846,7 @@ class _DatabaseSyncPageState extends State<DatabaseSyncPage> {
       SyncCategory.chapterRules => 'Chapter matching rules',
       SyncCategory.settings => 'App settings',
       SyncCategory.sourceSettings => 'Source settings',
-      SyncCategory.credentials => 'Source credentials',
+      SyncCategory.credentials => 'Tokens & cookies',
     };
   }
 
@@ -870,8 +872,8 @@ class _DatabaseSyncPageState extends State<DatabaseSyncPage> {
       'Comic-source settings without login secrets',
     ),
     SyncCategory.credentials => _text(
-      'Cookie、令牌和登录配置（敏感，默认关闭）',
-      'Cookies, tokens, and login configuration (sensitive; off by default)',
+      '漫画源令牌与 Cookie（敏感，默认关闭）',
+      'Comic-source tokens and cookies (sensitive; off by default)',
     ),
   };
 
@@ -1205,8 +1207,8 @@ class _BackupPasswordDialogState extends State<_BackupPasswordDialog> {
                 )
               : widget.credentialsRequired
               ? _text(
-                  '所选内容包含登录凭据，必须设置备份密码。密码丢失后无法恢复。',
-                  'The selection contains credentials, so a backup password is required. A lost password cannot be recovered.',
+                  '所选内容包含漫画源令牌或 Cookie，必须设置备份密码。密码丢失后无法恢复。',
+                  'The selection contains source tokens or cookies, so a backup password is required. A lost password cannot be recovered.',
                 )
               : _text(
                   '设置密码可加密整个备份；留空则创建未加密备份。',
@@ -1256,8 +1258,8 @@ class _BackupPasswordDialogState extends State<_BackupPasswordDialog> {
           if (widget.credentialsRequired && _password.text.isEmpty) {
             setState(() {
               _validation = _text(
-                '包含凭据的备份必须设置密码。',
-                'A password is required when credentials are included.',
+                '包含漫画源令牌或 Cookie 的备份必须设置密码。',
+                'A password is required when source tokens or cookies are included.',
               );
             });
             return;

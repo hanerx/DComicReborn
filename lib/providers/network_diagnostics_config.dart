@@ -58,11 +58,14 @@ Future<List<String>> readNetworkDiagnosticAccounts(
     final account = source.accountModel;
     final state = account == null
         ? text('不支持登录', 'Login not supported')
-        : account.isLoading
-        ? text('正在加载，状态未确定', 'Loading; state unknown')
-        : account.isLogin
-        ? text('已登录', 'Logged in')
-        : text('未登录', 'Not logged in');
+        : switch (account.status) {
+            ComicAccountStatus.checking =>
+              text('正在验证账户', 'Verifying account'),
+            ComicAccountStatus.authenticated => text('已登录', 'Signed in'),
+            ComicAccountStatus.unavailable =>
+              text('账户暂时无法验证', 'Account temporarily unavailable'),
+            ComicAccountStatus.signedOut => text('未登录', 'Not signed in'),
+          };
     lines.add('${source.type.sourceName} (${source.type.sourceId}): $state');
   }
 
@@ -98,10 +101,10 @@ Future<List<String>> readNetworkDiagnosticAccounts(
       'hotmanga': 'HotManga',
       'zaimanhua': 'ZaiManHua',
     }.entries) {
-      final saved = await dao.getConfigByKeyAndModel('isLogin', entry.key);
-      final state = saved?.get<bool>() == true
-          ? text('已保存登录标记（未在线验证）', 'Saved login flag (not verified online)')
-          : text('未保存登录标记', 'No saved login flag');
+      final saved = await dao.getConfigByKeyAndModel('token', entry.key);
+      final state = saved?.get<String>()?.isNotEmpty == true
+          ? text('已保存凭据（未在线验证）', 'Saved credentials (not verified online)')
+          : text('未保存凭据', 'No saved credentials');
       lines.add('${entry.value}: $state');
     }
   } catch (_) {

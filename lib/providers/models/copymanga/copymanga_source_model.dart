@@ -856,70 +856,132 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
     return data;
   }
 
-  @override
-  Future<bool> login(String username, String password) async {
-    final handler = RequestHandlers.copyMangaRequestHandler;
-    final domain = await handler.apiDomain;
-    final response = await handler.login(username, password, domain: domain);
-    if ((response.statusCode == 200 || response.statusCode == 304) &&
-        response.data['code'] == 200) {
-      return _saveLogin(domain, response.data['results']['token'] as String);
-    }
-    throw StateError('${response.data['message'] ?? response.data['results']}');
+  void _clearProfile() {
+    _isLogin = false;
+    _uid = null;
+    _username = null;
+    _nickname = null;
+    _avatar = null;
   }
 
-  Future<bool> _saveLogin(CopyMangaApiDomain domain, String token) async {
-    if (token.trim().isEmpty) return false;
+  int _beginVerification({bool retainToken = false}) {
+    final generation = ++_accountGeneration;
+    _isLoading = true;
+    _clearProfile();
+    if (!retainToken) _token = null;
+    notifyListeners();
+    return generation;
+  }
+
+  void _finishVerification(int generation) {
+    if (generation != _accountGeneration) return;
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  @override
+  Future<bool> login(String username, String password) async {
+    final generation = _beginVerification(retainToken: true);
+    try {
+      final handler = RequestHandlers.copyMangaRequestHandler;
+      final domain = await handler.apiDomain;
+      if (generation != _accountGeneration) return false;
+      final response = await handler.login(username, password, domain: domain);
+      if (generation != _accountGeneration) return false;
+      final responseData = response.data;
+      if ((response.statusCode == 200 || response.statusCode == 304) &&
+          responseData is Map &&
+          responseData['code'] == 200) {
+        final results = responseData['results'];
+        final token = results is Map ? results['token'] : null;
+        if (token is String && token.trim().isNotEmpty) {
+          return await _saveLogin(domain, token, generation);
+        }
+        throw StateError('Invalid login response');
+      }
+      final message = responseData is Map
+          ? responseData['message'] ?? responseData['results']
+          : 'Invalid login response';
+      throw StateError('$message');
+    } finally {
+      _finishVerification(generation);
+    }
+  }
+
+  Future<bool> _saveLogin(
+    CopyMangaApiDomain domain,
+    String token,
+    int generation,
+  ) async {
+    final normalizedToken = token.trim();
+    if (normalizedToken.isEmpty || generation != _accountGeneration) {
+      return false;
+    }
     final dao = (await DatabaseInstance.instance).modelConfigDao;
     final savedToken = await dao.getOrCreateConfigByKey(
       'token',
       domain.accountSourceId,
     );
-    savedToken.set(token.trim());
+    if (generation != _accountGeneration) return false;
+    savedToken.set(normalizedToken);
     await dao.updateConfig(savedToken);
-    final state = await dao.getOrCreateConfigByKey(
-      'isLogin',
-      domain.accountSourceId,
-    );
-    state.set(true);
-    await dao.updateConfig(state);
-    await initAccount();
-    return _isLogin;
+    if (generation != _accountGeneration) return false;
+    _token = normalizedToken;
+    notifyListeners();
+    await _fetchProfile(domain, normalizedToken, generation);
+    return generation == _accountGeneration && _isLogin;
   }
 
   @override
   Future<bool> loginWithToken(String token) async {
-    final domain = await RequestHandlers.copyMangaRequestHandler.apiDomain;
-    return _saveLogin(domain, token);
+    if (token.trim().isEmpty) return false;
+    final generation = _beginVerification(retainToken: true);
+    try {
+      final domain = await RequestHandlers.copyMangaRequestHandler.apiDomain;
+      if (generation != _accountGeneration) return false;
+      return await _saveLogin(domain, token, generation);
+    } finally {
+      _finishVerification(generation);
+    }
   }
 
   @override
   Future<bool> logout() async {
+    final generation = ++_accountGeneration;
+    _isLoading = false;
+    _clearProfile();
+    _token = null;
+    notifyListeners();
+
     final handler = RequestHandlers.copyMangaRequestHandler;
-    final domain = await handler.apiDomain;
     try {
-      await handler.logout(domain: domain);
-    } finally {
-      await _clearCredentials(domain);
-      await initAccount();
+      final domain = await handler.apiDomain;
+      if (generation != _accountGeneration) return true;
+      final dao = (await DatabaseInstance.instance).modelConfigDao;
+      final tokenConfig = await dao.getConfigByKeyAndModel(
+        'token',
+        domain.accountSourceId,
+      );
+      if (generation != _accountGeneration) return true;
+      final capturedToken = tokenConfig?.get<String>();
+      if (capturedToken != null) {
+        await _clearStoredTokenIfMatching(
+          domain,
+          capturedToken,
+          generation,
+        );
+      }
+      if (capturedToken != null && capturedToken.trim().isNotEmpty) {
+        try {
+          await handler.logout(domain: domain, token: capturedToken);
+        } catch (e, s) {
+          logger.e('$e', error: e, stackTrace: s);
+        }
+      }
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
     }
     return true;
-  }
-
-  Future<void> _clearCredentials(CopyMangaApiDomain domain) async {
-    final dao = (await DatabaseInstance.instance).modelConfigDao;
-    final state = await dao.getOrCreateConfigByKey(
-      'isLogin',
-      domain.accountSourceId,
-    );
-    state.set(false);
-    await dao.updateConfig(state);
-    final token = await dao.getOrCreateConfigByKey(
-      'token',
-      domain.accountSourceId,
-    );
-    token.set('');
-    await dao.updateConfig(token);
   }
 
   @override
@@ -961,61 +1023,145 @@ class CopyMangaAccountModel extends BaseComicAccountModel {
   @override
   String? get username => _username;
 
-  @override
-  Future<void> initAccount() async {
-    final generation = ++_accountGeneration;
-    _isLoading = true;
-    _isLogin = false;
-    _uid = null;
-    _username = null;
-    _nickname = null;
-    _avatar = null;
-    _token = null;
-    notifyListeners();
-    CopyMangaApiDomain? domain;
+  bool _isExplicitAuthRejection(Object? data) {
+    return data is Map && data['code'] == 401;
+  }
+
+  Future<bool> _storedTokenMatches(
+    CopyMangaApiDomain domain,
+    String expectedToken,
+    int generation,
+  ) async {
+    if (generation != _accountGeneration) return false;
+    final dao = (await DatabaseInstance.instance).modelConfigDao;
+    final tokenConfig = await dao.getConfigByKeyAndModel(
+      'token',
+      domain.accountSourceId,
+    );
+    return generation == _accountGeneration &&
+        tokenConfig?.get<String>() == expectedToken;
+  }
+
+  Future<bool> _clearStoredTokenIfMatching(
+    CopyMangaApiDomain domain,
+    String expectedToken,
+    int generation,
+  ) async {
+    if (generation != _accountGeneration) return false;
+    final database = (await DatabaseInstance.instance).database;
+    if (generation != _accountGeneration) return false;
+    final updated = await database.rawUpdate(
+      'UPDATE ModelConfigEntity '
+      'SET value = ? '
+      'WHERE `key` = ? AND sourceModel = ? AND value = ?',
+      ['', 'token', domain.accountSourceId, expectedToken],
+    );
+    return generation == _accountGeneration && updated == 1;
+  }
+
+  Future<void> _fetchProfile(
+    CopyMangaApiDomain domain,
+    String expectedToken,
+    int generation,
+  ) async {
+    Response response;
     try {
-      final handler = RequestHandlers.copyMangaRequestHandler;
-      domain = await handler.apiDomain;
-      final dao = (await DatabaseInstance.instance).modelConfigDao;
-      final state = await dao.getConfigByKeyAndModel(
-        'isLogin',
-        domain.accountSourceId,
+      response = await RequestHandlers.copyMangaRequestHandler.getUserInfo(
+        domain: domain,
+        token: expectedToken,
       );
-      if (state?.get<bool>() != true) return;
-      final token = (await dao.getConfigByKeyAndModel(
-        'token',
-        domain.accountSourceId,
-      ))?.get<String>();
-      final response = await handler.getUserInfo(domain: domain);
-      if (generation != _accountGeneration) return;
-      if (response.statusCode == 200 && response.data['code'] == 200) {
-        final data = response.data['results'];
-        _uid = data['user_id'].toString();
-        _nickname = data['nickname'];
-        _username = data['username'];
-        _avatar = ImageEntity(
-          ImageType.network,
-          data['avatar'],
-          imageHeaders: CopyMangaRequestHandler.imageHeaders,
-        );
-        _token = token;
-        _isLogin = true;
-      } else if (response.data['code'] == 401) {
-        await _clearCredentials(domain);
-      }
     } catch (e, s) {
       if (generation == _accountGeneration &&
           e is DioException &&
-          e.response?.statusCode == 401 &&
-          domain != null) {
-        await _clearCredentials(domain);
+          _isExplicitAuthRejection(e.response?.data)) {
+        final cleared = await _clearStoredTokenIfMatching(
+          domain,
+          expectedToken,
+          generation,
+        );
+        if (cleared && generation == _accountGeneration) {
+          _token = null;
+          _clearProfile();
+        }
       }
       logger.e('$e', error: e, stackTrace: s);
-    } finally {
-      if (generation == _accountGeneration) {
-        _isLoading = false;
-        notifyListeners();
+      return;
+    }
+    if (generation != _accountGeneration) return;
+
+    final responseData = response.data;
+    if (_isExplicitAuthRejection(responseData)) {
+      final cleared = await _clearStoredTokenIfMatching(
+        domain,
+        expectedToken,
+        generation,
+      );
+      if (cleared && generation == _accountGeneration) {
+        _token = null;
+        _clearProfile();
       }
+      return;
+    }
+    if (response.statusCode != 200 ||
+        responseData is! Map ||
+        responseData['code'] != 200) {
+      return;
+    }
+    final data = responseData['results'];
+    if (data is! Map) return;
+    final userId = data['user_id'];
+    final username = data['username'];
+    final nickname = data['nickname'];
+    final avatar = data['avatar'];
+    if ((userId is! String && userId is! num) ||
+        userId.toString().trim().isEmpty ||
+        username is! String ||
+        username.trim().isEmpty ||
+        nickname is! String ||
+        avatar is! String ||
+        avatar.trim().isEmpty) {
+      return;
+    }
+    if (!await _storedTokenMatches(domain, expectedToken, generation)) return;
+    if (generation != _accountGeneration) return;
+
+    _uid = userId.toString();
+    _username = username;
+    _nickname = nickname;
+    _avatar = ImageEntity(
+      ImageType.network,
+      avatar,
+      imageHeaders: CopyMangaRequestHandler.imageHeaders,
+    );
+    _token = expectedToken;
+    _isLogin = true;
+  }
+
+  @override
+  Future<void> initAccount() async {
+    final generation = _beginVerification();
+    try {
+      final handler = RequestHandlers.copyMangaRequestHandler;
+      final domain = await handler.apiDomain;
+      if (generation != _accountGeneration) return;
+      final dao = (await DatabaseInstance.instance).modelConfigDao;
+      final storedToken = (await dao.getConfigByKeyAndModel(
+        'token',
+        domain.accountSourceId,
+      ))
+          ?.get<String>();
+      if (generation != _accountGeneration ||
+          storedToken == null ||
+          storedToken.trim().isEmpty) {
+        return;
+      }
+      _token = storedToken;
+      notifyListeners();
+      await _fetchProfile(domain, storedToken, generation);
+    } catch (e, s) {
+      logger.e('$e', error: e, stackTrace: s);
+    } finally {
+      _finishVerification(generation);
     }
   }
 
@@ -1616,10 +1762,13 @@ class _CopyMangaLoginFormState extends State<_CopyMangaLoginForm> {
           onPressed: () async {
             try {
               if (formKey.currentState!.validate()) {
-                if (await widget.account.login(
+                final loggedIn = await widget.account.login(
                   usernameController.text,
                   passwordController.text,
-                )) {
+                );
+                if (!context.mounted) return;
+                if (loggedIn ||
+                    widget.account.status == ComicAccountStatus.unavailable) {
                   Provider.of<NavigatorProvider>(context, listen: false)
                       .getNavigator(context, NavigatorType.defaultNavigator)
                       ?.pop();
@@ -1627,6 +1776,7 @@ class _CopyMangaLoginFormState extends State<_CopyMangaLoginForm> {
               }
             } catch (e, s) {
               widget.account.logger.e(e, error: e, stackTrace: s);
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(strings.CommonLoginLoginFailed(e))),
               );
@@ -1644,10 +1794,12 @@ class _CopyMangaLoginFormState extends State<_CopyMangaLoginForm> {
           onPressed: () async {
             try {
               if (formKey.currentState!.validate()) {
-                if (await widget.account.loginWithToken(tokenController.text)) {
-                  if (!context.mounted) {
-                    return;
-                  }
+                final loggedIn = await widget.account.loginWithToken(
+                  tokenController.text,
+                );
+                if (!context.mounted) return;
+                if (loggedIn ||
+                    widget.account.status == ComicAccountStatus.unavailable) {
                   Provider.of<NavigatorProvider>(context, listen: false)
                       .getNavigator(context, NavigatorType.defaultNavigator)
                       ?.pop();
@@ -1655,9 +1807,7 @@ class _CopyMangaLoginFormState extends State<_CopyMangaLoginForm> {
               }
             } catch (e, s) {
               widget.account.logger.e(e, error: e, stackTrace: s);
-              if (!context.mounted) {
-                return;
-              }
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(strings.CommonLoginLoginFailed(e))),
               );

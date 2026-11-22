@@ -286,79 +286,90 @@ void main() {
   });
 
   for (final version in [8, 9]) {
-    test('v$version upgrade retires profile caches but preserves account data',
-        () async {
-      final path = '${directory.path}/legacy_profile_$version.db';
-      final legacy = await $FloorDComicDatabase.databaseBuilder(path).build();
-      await _restorePreDownloadSchema(legacy.database as Database, version);
-      for (final key in ['nickname', 'avatar']) {
-        await legacy.database.insert('ModelConfigEntity', {
-          'key': key,
-          'value': 'obsolete-profile-cache',
-          'sourceModel': 'zaimanhua',
-        });
-      }
-      final retained = [
-        {'key': 'token', 'value': 'existing-token'},
-        {'key': 'isLogin', 'value': '1'},
-        {'key': 'username', 'value': 'existing-user'},
-        {'key': 'uid', 'value': '123'},
-        {'key': 'apiDomain', 'value': 'example.com'},
-      ];
-      for (final row in retained) {
-        await legacy.database.insert('ModelConfigEntity', {
-          ...row,
-          'sourceModel': 'zaimanhua',
-        });
-      }
-      await legacy.close();
+    test(
+      'v$version upgrade keeps active tokens and removes legacy account state',
+      () async {
+        final path = '${directory.path}/legacy_profile_$version.db';
+        final legacy = await $FloorDComicDatabase.databaseBuilder(path).build();
+        await _restorePreDownloadSchema(legacy.database as Database, version);
+        final rows = [
+          {'sourceModel': 'active', 'key': 'token', 'value': 'active-token'},
+          {'sourceModel': 'active', 'key': 'isLogin', 'value': '1'},
+          {'sourceModel': 'active', 'key': 'username', 'value': 'old-user'},
+          {'sourceModel': 'active', 'key': 'uid', 'value': '123'},
+          {'sourceModel': 'active', 'key': 'nickname', 'value': 'old-name'},
+          {'sourceModel': 'active', 'key': 'avatar', 'value': 'old-avatar'},
+          {'sourceModel': 'logged-out', 'key': 'token', 'value': 'stale-token'},
+          {'sourceModel': 'logged-out', 'key': 'isLogin', 'value': '0'},
+          {'sourceModel': 'token-only', 'key': 'Token', 'value': 'valid-token'},
+          {
+            'sourceModel': 'active',
+            'key': 'apiDomain',
+            'value': 'example.com',
+          },
+        ];
+        for (final row in rows) {
+          await legacy.database.insert('ModelConfigEntity', row);
+        }
+        await legacy.close();
 
-      final upgraded = await $FloorDComicDatabase
-          .databaseBuilder(path)
-          .addMigrations(DatabaseInstance.migrations)
-          .addCallback(DatabaseInstance.databaseCallback)
-          .build();
-      try {
-        final configs = await upgraded.modelConfigDao.getAllConfig();
-        expect(
-          configs.map((row) => {'key': row.key, 'value': row.value}),
-          retained,
-        );
-        final store = await SyncStore.attach(upgraded);
+        final upgraded = await $FloorDComicDatabase
+            .databaseBuilder(path)
+            .addMigrations(DatabaseInstance.migrations)
+            .addCallback(DatabaseInstance.databaseCallback)
+            .build();
         try {
-          final publicRecords = await store.snapshot(SyncCategory.defaults);
+          final configs = await upgraded.modelConfigDao.getAllConfig();
           expect(
-            publicRecords.where((record) =>
-                record.category == SyncCategory.sourceSettings).single.value,
-            {'value': 'example.com'},
+            configs
+                .map((row) => {
+                      'sourceModel': row.sourceModel,
+                      'key': row.key,
+                      'value': row.value,
+                    })
+                .toList(),
+            [
+              {
+                'sourceModel': 'active',
+                'key': 'token',
+                'value': 'active-token',
+              },
+              {
+                'sourceModel': 'token-only',
+                'key': 'Token',
+                'value': 'valid-token',
+              },
+              {
+                'sourceModel': 'active',
+                'key': 'apiDomain',
+                'value': 'example.com',
+              },
+            ],
           );
-          final credentials =
-              (await store.snapshot({SyncCategory.credentials})).single;
-          expect(
-            credentials.value!['configs'],
-            contains(equals({
-              'sourceModel': 'zaimanhua',
-              'key': 'token',
-              'value': 'existing-token',
-            })),
-          );
+          final store = await SyncStore.attach(upgraded);
+          try {
+            final credentials =
+                (await store.snapshot({SyncCategory.credentials})).single;
+            expect(credentials.value!['configs'], [
+              {
+                'sourceModel': 'active',
+                'key': 'token',
+                'value': 'active-token',
+              },
+              {
+                'sourceModel': 'token-only',
+                'key': 'Token',
+                'value': 'valid-token',
+              },
+            ]);
+          } finally {
+            await store.close();
+          }
         } finally {
-          await store.close();
+          await upgraded.close();
         }
-        for (final key in ['nickname', 'avatar']) {
-          await expectLater(
-            upgraded.database.insert('ModelConfigEntity', {
-              'key': key,
-              'value': 'obsolete-profile-cache',
-              'sourceModel': 'zaimanhua',
-            }),
-            throwsA(isA<DatabaseException>()),
-          );
-        }
-      } finally {
-        await upgraded.close();
-      }
-    });
+      },
+    );
   }
 
   test(
@@ -437,6 +448,30 @@ void main() {
       expect((await raw.query('ConfigEntity')).single['key'], 'SearchHistory');
     },
   );
+
+  test('obsolete account settings are rejected as new writes', () async {
+    for (final key in const [
+      'isLogin',
+      'username',
+      'password',
+      'userId',
+      'uid',
+      'refreshToken',
+      'accessToken',
+      'nickname',
+      'avatar',
+    ]) {
+      await expectLater(
+        raw.insert('ModelConfigEntity', {
+          'key': key,
+          'value': 'obsolete',
+          'sourceModel': 'source',
+        }),
+        throwsA(isA<DatabaseException>()),
+        reason: key,
+      );
+    }
+  });
 
   test('explicit local keys stay local and credentials stay opt-in', () async {
     final store = await SyncStore.attach(database);

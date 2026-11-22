@@ -60,8 +60,11 @@ class CopyMangaRequestHandler extends RequestHandler {
     return domain.isHotManga ? CopyMangaApiDomain.defaultDomain : domain;
   }
 
-  Future<Options> _options(CopyMangaApiDomain domain,
-      {bool login = true}) async {
+  Future<Options> _options(
+    CopyMangaApiDomain domain, {
+    bool login = true,
+    String? authorizationToken,
+  }) async {
     final headers = <String, dynamic>{
       ...imageHeaders,
       'accept': 'application/json',
@@ -80,16 +83,18 @@ class CopyMangaRequestHandler extends RequestHandler {
       'upgrade-insecure-requests': '1',
     };
     if (login) {
-      final dao = (await DatabaseInstance.instance).modelConfigDao;
-      final state =
-          await dao.getConfigByKeyAndModel('isLogin', domain.accountSourceId);
-      if (state?.get<bool>() == true) {
-        final token =
-            (await dao.getConfigByKeyAndModel('token', domain.accountSourceId))
-                ?.get<String>();
-        if (token != null && token.isNotEmpty) {
-          headers['authorization'] = 'Token $token';
-        }
+      var token = authorizationToken;
+      if (token == null) {
+        final dao = (await DatabaseInstance.instance).modelConfigDao;
+        token = (await dao.getConfigByKeyAndModel(
+          'token',
+          domain.accountSourceId,
+        ))
+            ?.get<String>();
+      }
+      final normalizedToken = token?.trim();
+      if (normalizedToken != null && normalizedToken.isNotEmpty) {
+        headers['authorization'] = 'Token $normalizedToken';
       }
     }
     return Options(headers: headers);
@@ -114,11 +119,23 @@ class CopyMangaRequestHandler extends RequestHandler {
     return response;
   }
 
-  Future<Response> _post(String path,
-      {Object? data, CopyMangaApiDomain? domain, bool login = true}) async {
+  Future<Response> _post(
+    String path, {
+    Object? data,
+    CopyMangaApiDomain? domain,
+    bool login = true,
+    String? authorizationToken,
+  }) async {
     final target = domain ?? await apiDomain;
-    return dio.post('https://${target.host}/api/v3/$path',
-        data: data, options: await _options(target, login: login));
+    return dio.post(
+      'https://${target.host}/api/v3/$path',
+      data: data,
+      options: await _options(
+        target,
+        login: login,
+        authorizationToken: authorizationToken,
+      ),
+    );
   }
 
   Future<Response> getComicDetail(String comicId) =>
@@ -165,8 +182,11 @@ class CopyMangaRequestHandler extends RequestHandler {
         }));
   }
 
-  Future<Response> logout({CopyMangaApiDomain? domain}) =>
-      _post('logout', domain: domain);
+  Future<Response> logout({
+    CopyMangaApiDomain? domain,
+    required String token,
+  }) =>
+      _post('logout', domain: domain, authorizationToken: token);
 
   Future<Response> getSubscribe({int page = 0, int limit = 21}) =>
       _get('member/collect/comics', query: {
@@ -214,8 +234,24 @@ class CopyMangaRequestHandler extends RequestHandler {
   Future<Response> getLatestList({int limit = 21, int page = 0}) =>
       _get('update/newest', query: {'limit': limit, 'offset': page * limit});
 
-  Future<Response> getUserInfo({CopyMangaApiDomain? domain}) =>
-      _get('member/info', domain: domain);
+  Future<Response> getUserInfo({
+    CopyMangaApiDomain? domain,
+    required String token,
+  }) async {
+    final target = domain ?? await apiDomain;
+    final requestOptions = await _options(
+      target,
+      authorizationToken: token,
+    );
+    requestOptions.extra = const CacheOptions(
+      store: null,
+      policy: CachePolicy.noCache,
+    ).toExtra();
+    return dio.get(
+      'https://${target.host}/api/v3/member/info',
+      options: requestOptions,
+    );
+  }
 
   Future<Response> getIfSubscribe(String comicId) =>
       _get('comic2/query/${Uri.encodeComponent(comicId)}');

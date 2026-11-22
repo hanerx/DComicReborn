@@ -122,6 +122,7 @@ Future<void> _installSyncSchema(sqflite.Database database) async {
       'CREATE TABLE IF NOT EXISTS $_notificationTable ('
       'id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT NOT NULL)',
     );
+    await _migrateLegacyCredentialData(transaction);
     await validateDatabaseSyncContract(transaction);
     await validateStoredSettingPolicies(transaction);
     await _createCaptureTriggers(transaction);
