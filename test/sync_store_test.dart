@@ -266,6 +266,70 @@ void main() {
     );
   });
 
+  test('colliding pending versions retain the local edit for arbitration',
+      () async {
+    await database.configDao.insertConfig(
+      ConfigEntity.createConfigEntity('ThemeColor', 'Blue'),
+    );
+    final local = (await store.pending({SyncCategory.settings})).single;
+    final remote = SyncRecord(
+      category: local.category,
+      key: local.key,
+      value: const {'value': 'Red'},
+      deleted: false,
+      version: local.version,
+      uncertain: local.uncertain,
+      baseVersion: local.baseVersion,
+    );
+    await store.calibrate(1000, roundTrip: Duration.zero);
+
+    await store.receive([remote]);
+
+    final rebased = (await store.pending({SyncCategory.settings})).single;
+    expect(rebased.version.compareTo(remote.version), greaterThan(0));
+    expect(rebased.version.device, store.deviceId);
+    expect(rebased.value, local.value);
+    expect(rebased.baseVersion, local.baseVersion);
+    expect(rebased.uncertain, isTrue);
+    expect(
+      (await database.configDao.getConfigByKey('ThemeColor'))?.get<String>(),
+      'Blue',
+    );
+    await store.receive([remote]);
+    expect((await store.pending({SyncCategory.settings})).single, rebased);
+  });
+
+  test('replayed uncertain server history never becomes a local upload',
+      () async {
+    final older = SyncRecord(
+      category: SyncCategory.settings,
+      key: 'ThemeColor',
+      value: const {'value': 'Blue'},
+      deleted: false,
+      version: const SyncVersion(wall: 0, logical: 1, device: 'remote'),
+      uncertain: true,
+    );
+    final newer = SyncRecord(
+      category: older.category,
+      key: older.key,
+      value: const {'value': 'Red'},
+      deleted: false,
+      version: const SyncVersion(wall: 0, logical: 2, device: 'remote'),
+      uncertain: true,
+      baseVersion: older.version,
+    );
+
+    await store.receive([older, newer]);
+    await store.receive([older]);
+
+    expect(await store.pending({SyncCategory.settings}), isEmpty);
+    expect((await store.snapshot({SyncCategory.settings})).single, newer);
+    expect(
+      (await database.configDao.getConfigByKey('ThemeColor'))?.get<String>(),
+      'Red',
+    );
+  });
+
   test('pending categories are filtered without discarding disabled edits', () async {
     await database.configDao.insertConfig(
       ConfigEntity.createConfigEntity('ThemeColor', 'Blue'),

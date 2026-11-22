@@ -130,6 +130,106 @@ void main() {
     expect(service.lastSuccess, isNotNull);
   });
 
+  test('login reconciles all pull pages before uploading colliding offline edits',
+      () async {
+    await database.configDao.insertConfig(
+      ConfigEntity.createConfigEntity('ThemeColor', 'Blue'),
+    );
+    final local = (await store.pending({SyncCategory.settings})).single;
+    final remote = SyncRecord(
+      category: local.category,
+      key: local.key,
+      value: const {'value': 'Red'},
+      deleted: false,
+      version: local.version,
+      uncertain: local.uncertain,
+      baseVersion: local.baseVersion,
+    );
+    final firstPage = SyncRecord(
+      category: SyncCategory.settings,
+      key: 'ThemeMode',
+      value: const {'value': '2'},
+      deleted: false,
+      version: const SyncVersion(wall: 1, logical: 0, device: 'remote'),
+      uncertain: false,
+    );
+    server.onSync = (body) async {
+      final changes = (body['changes'] as List<dynamic>)
+          .cast<Map<String, dynamic>>();
+      server.syncStatusCode = HttpStatus.ok;
+      if (changes.isEmpty) {
+        final cursor = body['cursor']! as int;
+        return {
+          ...server.responseFor(body, cursor: cursor == 0 ? 1 : 2),
+          'hasMore': cursor == 0,
+          'records': [
+            if (cursor == 0) firstPage.toJson(),
+            if (cursor == 1) remote.toJson(),
+          ],
+        };
+      }
+      final response = server.responseFor(body, cursor: 2);
+      final results = <Map<String, dynamic>>[];
+      for (final change in changes) {
+        final candidate = SyncRecord.fromJson(change);
+        if (candidate.category == remote.category &&
+            candidate.key == remote.key) {
+          if (candidate.version == remote.version) {
+            server.syncStatusCode = HttpStatus.conflict;
+            return {
+              'error': {
+                'code': 'version_reuse',
+                'message': 'record version was reused with different content',
+              },
+            };
+          }
+          server.conflicts.add({
+            'local': candidate.toJson(),
+            'remote': remote.toJson(),
+          });
+          results.add({
+            'category': candidate.category.name,
+            'key': candidate.key,
+            'status': 'conflict',
+            'record': remote.toJson(),
+          });
+        } else {
+          results.add({
+            'category': candidate.category.name,
+            'key': candidate.key,
+            'status': 'accepted',
+            'record': change,
+          });
+        }
+      }
+      return {...response, 'results': results};
+    };
+
+    await service.login(
+      serverUrl: server.url,
+      username: 'alice',
+      password: 'correct-password',
+      migrateLocal: true,
+    );
+    await service.setEnabled(true);
+    await _waitFor(
+      () => !service.busy &&
+          (service.error != null || service.conflicts.isNotEmpty),
+    );
+
+    expect(service.error, isNull);
+    final conflict = service.conflicts.single;
+    expect(conflict.local.value, local.value);
+    expect(conflict.local.version.compareTo(remote.version), greaterThan(0));
+    expect(conflict.local.baseVersion, local.baseVersion);
+    expect(conflict.local.uncertain, isTrue);
+    expect(conflict.remote, remote);
+    expect(
+      (await database.configDao.getConfigByKey('ThemeMode'))?.get<int>(),
+      2,
+    );
+  });
+
   test('a category enabled during a request resets the next pull cursor', () async {
     server.nextCursor = 23;
     await _loginAndEnable(service, server.url);
@@ -172,10 +272,10 @@ void main() {
     expect(server.syncBodies.length, requestsBeforePause);
 
     service.didChangeAppLifecycleState(AppLifecycleState.resumed);
-    await _waitFor(() => server.syncBodies.length > requestsBeforePause);
-    expect(
-      (server.syncBodies.last['changes'] as List<dynamic>),
-      isNotEmpty,
+    await _waitFor(
+      () => server.syncBodies.skip(requestsBeforePause).any(
+        (body) => (body['changes'] as List<dynamic>).isNotEmpty,
+      ),
     );
   });
 
@@ -505,6 +605,7 @@ class _SyncServer {
   final List<Map<String, dynamic>> conflicts = [];
   final Map<String, String> deviceNames = {};
   bool rejectLogin = false;
+  int syncStatusCode = HttpStatus.ok;
   String userId = 'user-1';
   int eventRequests = 0;
   int nextCursor = 1;
@@ -547,10 +648,10 @@ class _SyncServer {
         final body = await _body(request);
         syncBodies.add(body);
         final handler = onSync;
-        _json(
-          request,
-          handler == null ? responseFor(body) : await handler(body),
-        );
+        final response =
+            handler == null ? responseFor(body) : await handler(body);
+        request.response.statusCode = syncStatusCode;
+        _json(request, response);
         return;
       case '/api/v1/events':
         eventRequests++;

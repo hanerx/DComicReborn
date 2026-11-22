@@ -587,11 +587,15 @@ class DatabaseSyncService extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _syncUntilSettled() async {
     await _retryPendingResolutions();
+    // Reconcile persisted/offline versions before the server validates uploads.
+    var pulling = true;
     while (_canTransport) {
       final revision = _categoryRevision;
       final requestedCategories = Set<SyncCategory>.of(_categories);
       final requestedCursor = _cursor;
-      final sent = await _store!.pending(requestedCategories, limit: 200);
+      final sent = pulling
+          ? const <SyncRecord>[]
+          : await _store!.pending(requestedCategories, limit: 200);
       final stopwatch = Stopwatch()..start();
       final response = await _post(
         _serverUrl!,
@@ -647,7 +651,11 @@ class DatabaseSyncService extends ChangeNotifier with WidgetsBindingObserver {
       });
       if (!applied || categoriesChanged) return;
 
-      if (hasMore) continue;
+      if (hasMore) {
+        pulling = true;
+        continue;
+      }
+      pulling = false;
       final remaining = await _store!.pendingCount(requestedCategories);
       if (remaining == 0) break;
     }

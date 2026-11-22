@@ -316,9 +316,48 @@ class SyncStore {
           }
           if (local.version == incoming.version) {
             if (!_sameRecordContent(local, incoming)) {
-              throw const FormatException(
-                'one sync version was reused for different content',
+              final resolutions = localRow!['pending'] == 1
+                  ? await transaction.query(
+                      _resolutionTable,
+                      columns: ['conflict_id'],
+                      where:
+                          'account = ? AND wall = ? AND logical = ? AND device = ?',
+                      whereArgs: [
+                        account,
+                        local.version.wall,
+                        local.version.logical,
+                        local.version.device,
+                      ],
+                      limit: 1,
+                    )
+                  : null;
+              if (resolutions == null || resolutions.isNotEmpty) {
+                throw const FormatException(
+                  'one sync version was reused for different content',
+                );
+              }
+              final (version, _) = await _nextVersionAfter(
+                transaction,
+                local.version,
               );
+              // A new identifier is not evidence that this edit followed the
+              // server's change. Preserve its base and require arbitration.
+              await _putMetadata(
+                transaction,
+                account,
+                SyncRecord(
+                  category: local.category,
+                  key: local.key,
+                  value: local.value,
+                  deleted: local.deleted,
+                  version: version,
+                  uncertain: true,
+                  baseVersion: local.baseVersion,
+                ),
+                pending: true,
+              );
+              newlyPending.add(local.category);
+              continue;
             }
             if (localRow!['pending'] == 1) {
               await _putMetadata(
@@ -346,19 +385,9 @@ class SyncStore {
               localRow['pending'] == 1) {
             continue;
           }
-          if ((local.uncertain || incoming.uncertain) &&
-              !_sameRecordContent(local, incoming) &&
-              !(localRow['pending'] == 0 && _emptyAggregate(local))) {
-            if (localRow['pending'] == 0) {
-              await _setPending(
-                transaction,
-                account,
-                local.category,
-                _parseKey(local.category, local.key),
-                true,
-              );
-              newlyPending.add(local.category);
-            }
+          if (localRow['pending'] == 1 &&
+              (local.uncertain || incoming.uncertain) &&
+              !_sameRecordContent(local, incoming)) {
             continue;
           }
           if (incoming.version.compareTo(local.version) > 0) {
