@@ -33,12 +33,13 @@ type overviewView struct {
 }
 
 type userView struct {
-	Admin   store.User
-	CSRF    string
-	User    store.UserSummary
-	Devices []store.Device
-	Notice  string
-	Error   string
+	Admin     store.User
+	CSRF      string
+	User      store.UserSummary
+	Devices   []store.Device
+	Conflicts []syncConflictView
+	Notice    string
+	Error     string
 }
 
 func browserToken(bytes int) (string, error) {
@@ -167,7 +168,7 @@ func (s *Server) redirectLogin(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleStyles(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/css; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=3600")
-	_, _ = w.Write([]byte(dashboardCSS))
+	_, _ = w.Write([]byte(dashboardCSS + dashboardSyncCSS))
 }
 
 func (s *Server) handleAdminLoginPage(w http.ResponseWriter, r *http.Request) {
@@ -299,13 +300,18 @@ func (s *Server) renderUser(w http.ResponseWriter, r *http.Request, notice, mess
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+	conflicts, err := s.store.ListConflicts(r.Context(), user.ID)
+	if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 	if notice == "" {
 		notice = r.URL.Query().Get("notice")
 	}
 	if message == "" {
 		message = r.URL.Query().Get("error")
 	}
-	view := userView{Admin: r.Context().Value(adminUserKey).(store.User), CSRF: r.Context().Value(adminCSRFKey).(string), User: user, Devices: devices, Notice: notice, Error: message}
+	view := userView{Admin: r.Context().Value(adminUserKey).(store.User), CSRF: r.Context().Value(adminCSRFKey).(string), User: user, Devices: devices, Conflicts: dashboardConflictViews(conflicts, devices), Notice: notice, Error: message}
 	s.render(w, "user", view)
 }
 

@@ -197,7 +197,9 @@ class _DatabaseSyncPageState extends State<DatabaseSyncPage> {
         children: [
           Icon(icon, size: 16, color: accent),
           const SizedBox(width: 6),
-          Text(label, style: Theme.of(context).textTheme.labelMedium),
+          Flexible(
+            child: Text(label, style: Theme.of(context).textTheme.labelMedium),
+          ),
         ],
       ),
     );
@@ -365,7 +367,7 @@ class _DatabaseSyncPageState extends State<DatabaseSyncPage> {
     required bool candidate,
   }) {
     final colors = Theme.of(context).colorScheme;
-    final device = _shortDevice(record.version.device);
+    final device = service.sourceDeviceName(record.version.device);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -805,9 +807,6 @@ class _DatabaseSyncPageState extends State<DatabaseSyncPage> {
       'Device: ${version.device}\nVersion time: $time · logical: ${version.logical}',
     );
   }
-
-  String _shortDevice(String device) =>
-      device.length <= 24 ? device : '${device.substring(0, 24)}…';
 
   String _backupError(Object failure) {
     final lower = failure.toString().toLowerCase();

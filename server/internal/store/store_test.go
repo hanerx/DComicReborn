@@ -310,3 +310,231 @@ func TestDeviceSessionReplacementRevocationAndPasswordChange(t *testing.T) {
 		t.Fatalf("password-change token auth error = %v", err)
 	}
 }
+
+func TestGetSyncDetailsIsTenantScopedPagedAndIncludesOrigins(t *testing.T) {
+	s := openTestStore(t)
+	ctx := context.Background()
+	alice := createTestUser(t, s, "alice")
+	bob := createTestUser(t, s, "bob")
+	if _, _, err := s.LoginDevice(ctx, "alice", "correct horse battery staple", "shared-phone", "Alice phone", time.Hour); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := s.LoginDevice(ctx, "bob", "correct horse battery staple", "shared-phone", "Bob phone", time.Hour); err != nil {
+		t.Fatal(err)
+	}
+	now := time.UnixMilli(2_000_000)
+	for i := range 52 {
+		change := record("settings", fmt.Sprintf("key-%02d", i), "shared-phone", int64(1_000_000+i), fmt.Sprint(i))
+		if _, err := s.Sync(ctx, alice.ID, SyncRequest{Categories: []string{"settings"}, Changes: []SyncRecord{change}}, now.Add(time.Duration(i)*time.Millisecond)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	deleted := record("history", "removed", "shared-phone", 1_100_000, "")
+	deleted.Value, deleted.Deleted = nil, true
+	if _, err := s.Sync(ctx, alice.ID, SyncRequest{Categories: []string{"history"}, Changes: []SyncRecord{deleted}}, now); err != nil {
+		t.Fatal(err)
+	}
+	bobOnly := record("settings", "bob-only", "shared-phone", 1_200_000, "secret")
+	if _, err := s.Sync(ctx, bob.ID, SyncRequest{Categories: []string{"settings"}, Changes: []SyncRecord{bobOnly}}, now); err != nil {
+		t.Fatal(err)
+	}
+
+	first, err := s.GetSyncDetails(ctx, alice.ID, "settings", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first.Categories) != len(validCategories) {
+		t.Fatalf("category count = %d, want %d", len(first.Categories), len(validCategories))
+	}
+	stats := make(map[string]CategoryStats, len(first.Categories))
+	for _, category := range first.Categories {
+		stats[category.Category] = category
+	}
+	if stats["settings"].Records != 52 || stats["settings"].Deleted != 0 {
+		t.Fatalf("settings stats = %#v", stats["settings"])
+	}
+	if stats["history"].Records != 1 || stats["history"].Deleted != 1 {
+		t.Fatalf("history stats = %#v", stats["history"])
+	}
+	if len(first.Changes) != 50 || first.NextBefore == 0 {
+		t.Fatalf("first page has %d changes and nextBefore %d", len(first.Changes), first.NextBefore)
+	}
+	for _, change := range first.Changes {
+		if change.Category != "settings" || change.Key == "bob-only" {
+			t.Fatalf("leaked or unfiltered change: %#v", change)
+		}
+		if change.DeviceName != "Alice phone" || change.Version.Device != "shared-phone" {
+			t.Fatalf("origin = %q/%q", change.DeviceName, change.Version.Device)
+		}
+		if !change.ReceivedAt.Equal(now.Add(time.Duration(change.Sequence-1) * time.Millisecond)) {
+			t.Fatalf("receipt time for sequence %d = %v", change.Sequence, change.ReceivedAt)
+		}
+	}
+	second, err := s.GetSyncDetails(ctx, alice.ID, "settings", first.NextBefore)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(second.Changes) != 2 || second.NextBefore != 0 {
+		t.Fatalf("second page has %d changes and nextBefore %d", len(second.Changes), second.NextBefore)
+	}
+}
+
+func TestGetSyncDetailsCountsConflictsPerTenant(t *testing.T) {
+	s := openTestStore(t)
+	ctx := context.Background()
+	alice := createTestUser(t, s, "alice")
+	bob := createTestUser(t, s, "bob")
+	now := time.UnixMilli(2_000_000)
+	for _, user := range []User{alice, bob} {
+		current := record("settings", "reader", "tablet", 1_000_000, "paged")
+		current.Uncertain = true
+		if _, err := s.Sync(ctx, user.ID, SyncRequest{Categories: []string{"settings"}, Changes: []SyncRecord{current}}, now); err != nil {
+			t.Fatal(err)
+		}
+		candidate := record("settings", "reader", "phone", 1_100_000, "scroll")
+		if _, err := s.Sync(ctx, user.ID, SyncRequest{Categories: []string{"settings"}, Changes: []SyncRecord{candidate}}, now); err != nil {
+			t.Fatal(err)
+		}
+	}
+	details, err := s.GetSyncDetails(ctx, alice.ID, "", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, stats := range details.Categories {
+		want := 0
+		if stats.Category == "settings" {
+			want = 1
+		}
+		if stats.Conflicts != want {
+			t.Fatalf("%s conflicts = %d, want %d", stats.Category, stats.Conflicts, want)
+		}
+	}
+}
+
+func TestResolveDashboardConflictIsDurableAndVisibleToMobile(t *testing.T) {
+	s := openTestStore(t)
+	ctx := context.Background()
+	user := createTestUser(t, s, "alice")
+	now := time.UnixMilli(2_000_000)
+	current := record("settings", "reader", "tablet", 1_000_000, "paged")
+	current.Uncertain = true
+	if _, err := s.Sync(ctx, user.ID, SyncRequest{Categories: []string{"settings"}, Changes: []SyncRecord{current}}, now); err != nil {
+		t.Fatal(err)
+	}
+	candidate := record("settings", "reader", "phone", 1_100_000, "scroll")
+	if _, err := s.Sync(ctx, user.ID, SyncRequest{Categories: []string{"settings"}, Changes: []SyncRecord{candidate}}, now); err != nil {
+		t.Fatal(err)
+	}
+	conflicts, err := s.ListConflicts(ctx, user.ID)
+	if err != nil || len(conflicts) != 1 {
+		t.Fatalf("conflicts=%#v err=%v", conflicts, err)
+	}
+	resolved, err := s.ResolveDashboardConflict(ctx, user.ID, conflicts[0].ID, "candidate", current.Version, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(resolved.Value) != string(candidate.Value) || resolved.Version.Device != "server-dashboard" || resolved.BaseVersion == nil || !resolved.BaseVersion.Equal(current.Version) {
+		t.Fatalf("resolved record = %#v", resolved)
+	}
+	pulled, err := s.Sync(ctx, user.ID, SyncRequest{Cursor: 1, Categories: []string{"settings"}}, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pulled.Records) != 1 || !pulled.Records[0].Version.Equal(resolved.Version) {
+		t.Fatalf("mobile changes = %#v", pulled.Records)
+	}
+	if left, err := s.ListConflicts(ctx, user.ID); err != nil || len(left) != 0 {
+		t.Fatalf("remaining conflicts=%#v err=%v", left, err)
+	}
+	if _, err := s.ResolveConflict(ctx, user.ID, candidate, candidate.Version, now); !IsCode(err, CodeConflict) {
+		t.Fatalf("mobile replay error = %v", err)
+	}
+}
+
+func TestResolveDashboardConflictRejectsStaleCanonicalAndOtherTenant(t *testing.T) {
+	s := openTestStore(t)
+	ctx := context.Background()
+	alice := createTestUser(t, s, "alice")
+	bob := createTestUser(t, s, "bob")
+	now := time.UnixMilli(2_000_000)
+	current := record("settings", "reader", "tablet", 1_000_000, "paged")
+	current.Uncertain = true
+	if _, err := s.Sync(ctx, alice.ID, SyncRequest{Categories: []string{"settings"}, Changes: []SyncRecord{current}}, now); err != nil {
+		t.Fatal(err)
+	}
+	candidate := record("settings", "reader", "phone", 1_100_000, "scroll")
+	if _, err := s.Sync(ctx, alice.ID, SyncRequest{Categories: []string{"settings"}, Changes: []SyncRecord{candidate}}, now); err != nil {
+		t.Fatal(err)
+	}
+	conflicts, _ := s.ListConflicts(ctx, alice.ID)
+	if _, err := s.ResolveDashboardConflict(ctx, bob.ID, conflicts[0].ID, "candidate", current.Version, now); !IsCode(err, CodeNotFound) {
+		t.Fatalf("cross-tenant resolution error = %v", err)
+	}
+	advanced := record("settings", "reader", "tablet", 1_200_000, "newest")
+	advanced.BaseVersion = &current.Version
+	if _, err := s.Sync(ctx, alice.ID, SyncRequest{Categories: []string{"settings"}, Changes: []SyncRecord{advanced}}, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ResolveDashboardConflict(ctx, alice.ID, conflicts[0].ID, "candidate", current.Version, now); !IsCode(err, CodeConflict) {
+		t.Fatalf("stale resolution error = %v", err)
+	}
+	pulled, err := s.Sync(ctx, alice.ID, SyncRequest{Categories: []string{"settings"}}, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pulled.Records) == 0 || !pulled.Records[len(pulled.Records)-1].Version.Equal(advanced.Version) {
+		t.Fatalf("stale resolution overwrote newest record: %#v", pulled.Records)
+	}
+}
+
+func TestDashboardResolutionVersionHandlesLogicalOverflow(t *testing.T) {
+	maxLogical := int64(^uint64(0) >> 1)
+	version, err := dashboardResolutionVersion(
+		time.UnixMilli(2_000_000),
+		SyncVersion{Wall: 2_000_000, Logical: maxLogical, Device: "tablet"},
+		SyncVersion{Wall: 1_000_000, Device: "phone"},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version.Wall != 2_000_001 || version.Logical != 0 || version.Device != "server-dashboard" {
+		t.Fatalf("overflow version = %#v", version)
+	}
+}
+
+func TestUpdateDeviceNameUsesAuthenticatedSessionOnly(t *testing.T) {
+	s := openTestStore(t)
+	ctx := context.Background()
+	user := createTestUser(t, s, "alice")
+	first, _, err := s.LoginDevice(ctx, "alice", "correct horse battery staple", "phone", "localhost", time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := DeviceDisplayName(" localhost.localdomain ", "phone"); got != "Unknown device" {
+		t.Fatalf("localhost display name = %q", got)
+	}
+	second, _, err := s.LoginDevice(ctx, "alice", "correct horse battery staple", "tablet", "Tablet", time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpdateDeviceName(ctx, first, " Alice's phone "); err != nil {
+		t.Fatal(err)
+	}
+	devices, err := s.ListDevices(ctx, user.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := make(map[string]string, len(devices))
+	for _, device := range devices {
+		names[device.DeviceID] = device.Name
+	}
+	if names["phone"] != "Alice's phone" || names["tablet"] != "Tablet" {
+		t.Fatalf("device names = %#v", names)
+	}
+	if err := s.UpdateDeviceName(ctx, second, " "); !IsCode(err, CodeBadRequest) {
+		t.Fatalf("blank rename error = %v", err)
+	}
+	if err := s.UpdateDeviceName(ctx, "not-a-token", "Intruder"); !IsCode(err, CodeUnauthorized) {
+		t.Fatalf("unauthenticated rename error = %v", err)
+	}
+}

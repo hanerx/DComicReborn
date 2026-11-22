@@ -108,6 +108,8 @@ func New(data *store.Store, config Config) (*Server, error) {
 	mux.HandleFunc("GET /dashboard", s.withAdmin(s.handleDashboard))
 	mux.HandleFunc("POST /dashboard/users", s.withAdmin(s.handleCreateUser))
 	mux.HandleFunc("GET /dashboard/users/{userID}", s.withAdmin(s.handleUser))
+	mux.HandleFunc("GET /dashboard/users/{userID}/sync", s.withAdmin(s.handleSyncDetails))
+	mux.HandleFunc("POST /dashboard/users/{userID}/conflicts/{conflictID}/resolve", s.withAdmin(s.handleDashboardResolveConflict))
 	mux.HandleFunc("POST /dashboard/users/{userID}/disable", s.withAdmin(s.handleDisableUser))
 	mux.HandleFunc("POST /dashboard/users/{userID}/enable", s.withAdmin(s.handleEnableUser))
 	mux.HandleFunc("POST /dashboard/users/{userID}/password", s.withAdmin(s.handleResetPassword))
@@ -375,13 +377,20 @@ func (s *Server) handleSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := r.Context().Value(deviceUserKey).(store.User)
+	if request.DeviceName != "" {
+		token := r.Context().Value(deviceTokenKey).(string)
+		if err := s.store.UpdateDeviceName(r.Context(), token, request.DeviceName); err != nil {
+			s.writeError(w, err)
+			return
+		}
+	}
 	response, err := s.store.Sync(r.Context(), user.ID, request, time.Now())
 	if err != nil {
 		s.writeError(w, err)
 		return
 	}
 	for _, result := range response.Results {
-		if result.Status == "accepted" {
+		if result.Status == "accepted" || result.Status == "conflict" {
 			s.hub.Notify(user.ID)
 			break
 		}
@@ -396,7 +405,16 @@ func (s *Server) handleConflicts(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, err)
 		return
 	}
-	s.writeJSON(w, http.StatusOK, map[string]any{"conflicts": conflicts})
+	devices, err := s.store.ListDevices(r.Context(), user.ID)
+	if err != nil {
+		s.writeError(w, err)
+		return
+	}
+	names := make(map[string]string, len(devices))
+	for _, device := range devices {
+		names[device.DeviceID] = store.DeviceDisplayName(device.Name, device.DeviceID)
+	}
+	s.writeJSON(w, http.StatusOK, map[string]any{"conflicts": conflicts, "devices": names})
 }
 
 func (s *Server) handleResolveConflict(w http.ResponseWriter, r *http.Request) {

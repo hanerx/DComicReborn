@@ -144,3 +144,103 @@ func (s *Store) RevokeDevice(ctx context.Context, userID, sessionID string) erro
 	}
 	return nil
 }
+
+func (s *Store) GetSyncDetails(ctx context.Context, userID, category string, before int64) (SyncDetails, error) {
+	if category != "" {
+		if _, ok := validCategories[category]; !ok {
+			return SyncDetails{}, errCode(CodeBadRequest, "unknown category %q", category)
+		}
+	}
+	if before < 0 {
+		return SyncDetails{}, errCode(CodeBadRequest, "before cannot be negative")
+	}
+
+	const statsQuery = `WITH categories(category,position) AS (VALUES
+('history',1),('bindings',2),('chapterRules',3),('settings',4),('sourceSettings',5),('credentials',6))
+SELECT category,
+ (SELECT COUNT(*) FROM records r WHERE r.user_id=? AND r.category=categories.category),
+ (SELECT COUNT(*) FROM records r WHERE r.user_id=? AND r.category=categories.category AND r.deleted=1),
+ (SELECT COUNT(*) FROM conflicts c WHERE c.user_id=? AND c.category=categories.category)
+FROM categories ORDER BY position`
+	rows, err := s.db.QueryContext(ctx, statsQuery, userID, userID, userID)
+	if err != nil {
+		return SyncDetails{}, fmt.Errorf("read sync category statistics: %w", err)
+	}
+	details := SyncDetails{
+		Categories: make([]CategoryStats, 0, len(validCategories)),
+		Changes:    make([]RecordDetail, 0, 50),
+	}
+	for rows.Next() {
+		var stats CategoryStats
+		if err := rows.Scan(&stats.Category, &stats.Records, &stats.Deleted, &stats.Conflicts); err != nil {
+			rows.Close()
+			return SyncDetails{}, fmt.Errorf("scan sync category statistics: %w", err)
+		}
+		details.Categories = append(details.Categories, stats)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return SyncDetails{}, fmt.Errorf("read sync category statistics: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return SyncDetails{}, fmt.Errorf("close sync category statistics: %w", err)
+	}
+
+	args := []any{userID}
+	query := `SELECT c.seq,c.category,c.record_key,c.value_json,c.deleted,c.wall,c.logical,c.device,c.uncertain,
+c.base_wall,c.base_logical,c.base_device,c.created_at,COALESCE(d.device_name,'')
+FROM change_log c
+LEFT JOIN device_sessions d ON d.user_id=c.user_id AND d.device_id=c.device
+WHERE c.user_id=?`
+	if category != "" {
+		query += ` AND c.category=?`
+		args = append(args, category)
+	}
+	if before != 0 {
+		query += ` AND c.seq<?`
+		args = append(args, before)
+	}
+	query += ` ORDER BY c.seq DESC LIMIT 51`
+	changeRows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return SyncDetails{}, fmt.Errorf("read sync changes: %w", err)
+	}
+	for changeRows.Next() {
+		var detail RecordDetail
+		var value []byte
+		var deleted, uncertain bool
+		var baseWall, baseLogical sql.NullInt64
+		var baseDevice sql.NullString
+		var receivedAt int64
+		var deviceName string
+		if err := changeRows.Scan(
+			&detail.Sequence, &detail.Category, &detail.Key, &value, &deleted,
+			&detail.Version.Wall, &detail.Version.Logical, &detail.Version.Device, &uncertain,
+			&baseWall, &baseLogical, &baseDevice, &receivedAt, &deviceName,
+		); err != nil {
+			changeRows.Close()
+			return SyncDetails{}, fmt.Errorf("scan sync change: %w", err)
+		}
+		if len(details.Changes) == 50 {
+			details.NextBefore = details.Changes[len(details.Changes)-1].Sequence
+			break
+		}
+		detail.Value = value
+		detail.Deleted = deleted
+		detail.Uncertain = uncertain
+		if baseWall.Valid && baseLogical.Valid && baseDevice.Valid {
+			detail.BaseVersion = &SyncVersion{Wall: baseWall.Int64, Logical: baseLogical.Int64, Device: baseDevice.String}
+		}
+		detail.ReceivedAt = time.UnixMilli(receivedAt).UTC()
+		detail.DeviceName = DeviceDisplayName(deviceName, detail.Version.Device)
+		details.Changes = append(details.Changes, detail)
+	}
+	if err := changeRows.Err(); err != nil {
+		changeRows.Close()
+		return SyncDetails{}, fmt.Errorf("read sync changes: %w", err)
+	}
+	if err := changeRows.Close(); err != nil {
+		return SyncDetails{}, fmt.Errorf("close sync changes: %w", err)
+	}
+	return details, nil
+}

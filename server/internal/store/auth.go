@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net"
 	"regexp"
 	"strings"
 	"time"
@@ -143,10 +144,28 @@ func (s *Store) authenticatePassword(ctx context.Context, username, password str
 	return user, hash, nil
 }
 
-func (s *Store) LoginDevice(ctx context.Context, username, password, deviceID, deviceName string, lifetime time.Duration) (string, User, error) {
-	if len(deviceID) == 0 || len(deviceID) > 128 || len(deviceName) == 0 || len(deviceName) > 128 {
-		return "", User{}, errCode(CodeBadRequest, "deviceId and deviceName must be 1-128 characters")
+func DeviceDisplayName(name, deviceID string) string {
+	if deviceID == "server-dashboard" {
+		return "Server dashboard"
 	}
+	name = strings.TrimSpace(name)
+	lower := strings.ToLower(name)
+	switch lower {
+	case "", "localhost", "localhost.localdomain", "localhost6", "localhost6.localdomain6", "ip6-localhost", "loopback":
+		return "Unknown device"
+	}
+	if ip := net.ParseIP(strings.Trim(lower, "[]")); ip != nil && ip.IsLoopback() {
+		return "Unknown device"
+	}
+	return name
+}
+
+func (s *Store) LoginDevice(ctx context.Context, username, password, deviceID, deviceName string, lifetime time.Duration) (string, User, error) {
+	deviceName = strings.TrimSpace(deviceName)
+	if len(deviceID) == 0 || len(deviceID) > 128 || len(deviceName) == 0 || len(deviceName) > 128 {
+		return "", User{}, errCode(CodeBadRequest, "deviceId and deviceName must be 1-128 bytes")
+	}
+	deviceName = DeviceDisplayName(deviceName, deviceID)
 	user, verifiedHash, err := s.authenticatePassword(ctx, username, password, false)
 	if err != nil {
 		return "", User{}, err
@@ -187,6 +206,27 @@ ON CONFLICT(user_id, device_id) DO UPDATE SET id=excluded.id, token_digest=exclu
 		return "", User{}, fmt.Errorf("commit device session: %w", err)
 	}
 	return token, user, nil
+}
+
+func (s *Store) UpdateDeviceName(ctx context.Context, token, name string) error {
+	name = strings.TrimSpace(name)
+	if len(name) == 0 || len(name) > 128 {
+		return errCode(CodeBadRequest, "deviceName must be 1-128 bytes")
+	}
+	name = DeviceDisplayName(name, "")
+	now := time.Now().UnixMilli()
+	result, err := s.db.ExecContext(ctx, `UPDATE device_sessions
+SET device_name=?, last_seen_at=?
+WHERE token_digest=? AND revoked_at IS NULL AND expires_at>?
+  AND EXISTS (SELECT 1 FROM users WHERE users.id=device_sessions.user_id AND users.disabled=0)`,
+		name, now, tokenDigest(token), now)
+	if err != nil {
+		return fmt.Errorf("update device name: %w", err)
+	}
+	if count, _ := result.RowsAffected(); count != 1 {
+		return errCode(CodeUnauthorized, "session is expired or revoked")
+	}
+	return nil
 }
 
 func (s *Store) AuthenticateDevice(ctx context.Context, token string) (User, error) {

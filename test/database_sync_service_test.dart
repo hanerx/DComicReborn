@@ -8,10 +8,12 @@ import 'package:dcomic/database/entity/config.dart';
 import 'package:dcomic/database/sync/sync_models.dart';
 import 'package:dcomic/database/sync/sync_store.dart';
 import 'package:dcomic/providers/database_sync_service.dart';
+import 'package:dcomic/view/settings/database_sync_page.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
@@ -269,6 +271,51 @@ void main() {
     expect(server.syncBodies.last['cursor'], heldCursor);
   });
 
+  testWidgets('last sync status stays within a narrow phone viewport',
+      (tester) async {
+    await tester.runAsync(() async {
+      await _loginAndEnable(service, server.url);
+      await service.syncNow();
+    });
+    tester.view.physicalSize = const Size(320, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      ChangeNotifierProvider<DatabaseSyncService>.value(
+        value: service,
+        child: const MaterialApp(home: DatabaseSyncPage()),
+      ),
+    );
+    final label = find.textContaining('Last success ');
+    expect(label, findsOneWidget);
+    final bounds = tester.getRect(label);
+    expect(bounds.left, greaterThanOrEqualTo(0));
+    expect(bounds.right, lessThanOrEqualTo(320));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  test('source device names refresh without leaking across accounts', () async {
+    server.deviceNames['other-phone'] = 'Pixel 9';
+    await _loginAndEnable(service, server.url);
+    await service.syncNow();
+    expect(service.sourceDeviceName('other-phone'), 'Pixel 9');
+
+    server.deviceNames['other-phone'] = 'Reading phone';
+    await service.syncNow();
+    expect(service.sourceDeviceName('other-phone'), 'Reading phone');
+
+    server.deviceNames.clear();
+    server.userId = 'user-2';
+    await service.login(
+      serverUrl: server.url,
+      username: 'bob',
+      password: 'correct-password',
+      migrateLocal: false,
+    );
+    expect(service.sourceDeviceName('other-phone'), 'other-phone');
+  });
+
   test('server conflict list removes a candidate resolved elsewhere', () async {
     await _loginAndEnable(service, server.url);
     await _waitFor(() => service.lastSuccess != null);
@@ -456,6 +503,7 @@ class _SyncServer {
   final HttpServer _server;
   final List<Map<String, dynamic>> syncBodies = [];
   final List<Map<String, dynamic>> conflicts = [];
+  final Map<String, String> deviceNames = {};
   bool rejectLogin = false;
   String userId = 'user-1';
   int eventRequests = 0;
@@ -510,7 +558,7 @@ class _SyncServer {
         await request.response.close();
         return;
       case '/api/v1/conflicts':
-        _json(request, {'conflicts': conflicts});
+        _json(request, {'conflicts': conflicts, 'devices': deviceNames});
         return;
       case '/api/v1/logout':
       case '/api/v1/password':

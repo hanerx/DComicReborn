@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"strings"
 	"time"
 )
@@ -408,6 +409,108 @@ func (s *Store) ResolveConflict(ctx context.Context, userID string, record SyncR
 		return SyncRecord{}, err
 	}
 	defer tx.Rollback()
+	result, err := resolveConflictTx(ctx, tx, userID, normalized, hash, rejected, now)
+	if err != nil {
+		return SyncRecord{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return SyncRecord{}, err
+	}
+	return result, nil
+}
+
+func (s *Store) ResolveDashboardConflict(ctx context.Context, userID, conflictID, choice string, expected SyncVersion, now time.Time) (SyncRecord, error) {
+	if choice != "candidate" && choice != "server" {
+		return SyncRecord{}, errCode(CodeBadRequest, "choice must be candidate or server")
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return SyncRecord{}, err
+	}
+	defer tx.Rollback()
+
+	var localJSON []byte
+	err = tx.QueryRowContext(ctx, `SELECT local_json FROM conflicts WHERE id=? AND user_id=?`, conflictID, userID).
+		Scan(&localJSON)
+	if errors.Is(err, sql.ErrNoRows) {
+		return SyncRecord{}, errCode(CodeNotFound, "conflict not found")
+	}
+	if err != nil {
+		return SyncRecord{}, fmt.Errorf("read conflict: %w", err)
+	}
+	var candidate SyncRecord
+	if err := json.Unmarshal(localJSON, &candidate); err != nil {
+		return SyncRecord{}, fmt.Errorf("decode conflict candidate: %w", err)
+	}
+	current, err := loadRecord(ctx, tx, userID, candidate.Category, candidate.Key)
+	if errors.Is(err, sql.ErrNoRows) {
+		return SyncRecord{}, errCode(CodeConflict, "canonical record changed; refresh conflicts before resolving")
+	}
+	if err != nil {
+		return SyncRecord{}, err
+	}
+	if !current.Version.Equal(expected) {
+		return SyncRecord{}, errCode(CodeConflict, "canonical record changed; refresh conflicts before resolving")
+	}
+
+	selected := current
+	if choice == "candidate" {
+		selected = candidate
+	}
+	version, err := dashboardResolutionVersion(now, current.Version, candidate.Version)
+	if err != nil {
+		return SyncRecord{}, err
+	}
+	record := SyncRecord{
+		Category:    current.Category,
+		Key:         current.Key,
+		Value:       selected.Value,
+		Deleted:     selected.Deleted,
+		Version:     version,
+		BaseVersion: &current.Version,
+	}
+	normalized, hash, err := normalizeRecord(record, now)
+	if err != nil {
+		return SyncRecord{}, err
+	}
+	result, err := resolveConflictTx(ctx, tx, userID, normalized, hash, candidate.Version, now)
+	if err != nil {
+		return SyncRecord{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return SyncRecord{}, err
+	}
+	return result, nil
+}
+
+func dashboardResolutionVersion(now time.Time, current, candidate SyncVersion) (SyncVersion, error) {
+	wall := now.UnixMilli()
+	if current.Wall > wall {
+		wall = current.Wall
+	}
+	if candidate.Wall > wall {
+		wall = candidate.Wall
+	}
+	logical := int64(-1)
+	if current.Wall == wall {
+		logical = current.Logical
+	}
+	if candidate.Wall == wall && candidate.Logical > logical {
+		logical = candidate.Logical
+	}
+	if logical == math.MaxInt64 {
+		if wall == math.MaxInt64 {
+			return SyncVersion{}, errCode(CodeConflict, "cannot advance conflict resolution version")
+		}
+		wall++
+		logical = 0
+	} else {
+		logical++
+	}
+	return SyncVersion{Wall: wall, Logical: logical, Device: "server-dashboard"}, nil
+}
+
+func resolveConflictTx(ctx context.Context, tx *sql.Tx, userID string, normalized SyncRecord, hash []byte, rejected SyncVersion, now time.Time) (SyncRecord, error) {
 	var receiptWall, receiptLogical int64
 	var receiptDevice string
 	var receiptHash, receiptCanonical []byte
@@ -430,19 +533,19 @@ FROM conflict_resolutions WHERE user_id=? AND category=? AND record_key=? AND re
 		return SyncRecord{}, fmt.Errorf("check resolution receipt: %w", receiptErr)
 	}
 	var conflictID string
-	err = tx.QueryRowContext(ctx, `SELECT id FROM conflicts WHERE user_id=? AND category=? AND record_key=? AND local_wall=? AND local_logical=? AND local_device=?`,
-		userID, record.Category, record.Key, rejected.Wall, rejected.Logical, rejected.Device).Scan(&conflictID)
+	err := tx.QueryRowContext(ctx, `SELECT id FROM conflicts WHERE user_id=? AND category=? AND record_key=? AND local_wall=? AND local_logical=? AND local_device=?`,
+		userID, normalized.Category, normalized.Key, rejected.Wall, rejected.Logical, rejected.Device).Scan(&conflictID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return SyncRecord{}, errCode(CodeNotFound, "conflict candidate not found")
 	}
 	if err != nil {
 		return SyncRecord{}, err
 	}
-	current, err := loadRecord(ctx, tx, userID, record.Category, record.Key)
+	current, err := loadRecord(ctx, tx, userID, normalized.Category, normalized.Key)
 	if err != nil {
 		return SyncRecord{}, err
 	}
-	if record.BaseVersion == nil || !record.BaseVersion.Equal(current.Version) {
+	if normalized.BaseVersion == nil || !normalized.BaseVersion.Equal(current.Version) {
 		return SyncRecord{}, errCode(CodeConflict, "canonical record changed; refresh conflicts before resolving")
 	}
 	result, err := applyIncoming(ctx, tx, userID, normalized, hash, now)
@@ -464,9 +567,6 @@ VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`,
 		return SyncRecord{}, fmt.Errorf("save resolution receipt: %w", err)
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM conflicts WHERE id=? AND user_id=?`, conflictID, userID); err != nil {
-		return SyncRecord{}, err
-	}
-	if err := tx.Commit(); err != nil {
 		return SyncRecord{}, err
 	}
 	return result.Record, nil

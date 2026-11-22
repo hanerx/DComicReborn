@@ -6,6 +6,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dcomic/database/database_instance.dart';
 import 'package:dcomic/database/sync/sync_models.dart';
 import 'package:dcomic/database/sync/sync_store.dart';
+import 'package:dcomic/utils/sync_device_name.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -19,7 +20,8 @@ class DatabaseSyncService extends ChangeNotifier with WidgetsBindingObserver {
   final Stream<bool> _onlineChanges;
   final Duration _pollInterval;
   final Duration _reconnectDelay;
-  final String _deviceName;
+  String? _deviceName;
+  final Map<String, String> _deviceNames = {};
 
   SyncStore? _store;
   StreamSubscription<Set<SyncCategory>>? _pendingSubscription;
@@ -77,7 +79,7 @@ class DatabaseSyncService extends ChangeNotifier with WidgetsBindingObserver {
        _pollInterval = pollInterval,
        // ignore: prefer_initializing_formals
        _reconnectDelay = reconnectDelay,
-       _deviceName = deviceName ?? _defaultDeviceName();
+       _deviceName = deviceName;
 
   bool get initialized => _initialized;
   bool get busy => _busy;
@@ -93,6 +95,12 @@ class DatabaseSyncService extends ChangeNotifier with WidgetsBindingObserver {
   List<SyncConflict> get conflicts => List.unmodifiable(_conflicts);
   SyncStore? get store => _initialized ? _store : null;
 
+  String sourceDeviceName(String deviceId) {
+    if (deviceId == 'server-dashboard') return 'Server dashboard';
+    if (deviceId == _store?.deviceId) return _deviceName ?? deviceId;
+    return _deviceNames[deviceId] ?? deviceId;
+  }
+
   Future<void> initialize() {
     if (_initialized || _disposed) return Future<void>.value();
     return _initializeRun ??= _initialize();
@@ -100,6 +108,7 @@ class DatabaseSyncService extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _initialize() async {
     try {
+      _deviceName ??= await readSyncDeviceName();
       final syncStore = _providedStore ?? await _defaultStore();
       _store = syncStore;
       await _loadPreferences();
@@ -202,7 +211,10 @@ class DatabaseSyncService extends ChangeNotifier with WidgetsBindingObserver {
           await _store!.calibrate(serverTime, roundTrip: stopwatch.elapsed);
           final accountPreferences = await _store!.readPreferences();
           _applyAccountPreferences(accountPreferences);
-          if (migrateLocal && replacesAccount) _cursor = 0;
+          if (replacesAccount) {
+            _deviceNames.clear();
+            if (migrateLocal) _cursor = 0;
+          }
           _serverUrl = normalizedUrl;
           _userId = newUserId;
           _username = returnedUsername;
@@ -243,6 +255,7 @@ class DatabaseSyncService extends ChangeNotifier with WidgetsBindingObserver {
       _stopTransports();
       _token = null;
       _username = null;
+      _deviceNames.clear();
       _enabled = false;
       _connected = false;
       _error = null;
@@ -585,6 +598,7 @@ class DatabaseSyncService extends ChangeNotifier with WidgetsBindingObserver {
         '/api/v1/sync',
         token: _token,
         data: {
+          'deviceName': _deviceName,
           'cursor': requestedCursor,
           'categories': requestedCategories
               .map((category) => category.name)
@@ -738,6 +752,15 @@ class DatabaseSyncService extends ChangeNotifier with WidgetsBindingObserver {
     final body = _map(response.data);
     await _withApplicationLock(() async {
       if (!_canTransport) return;
+      _deviceNames.clear();
+      final devices = body['devices'];
+      if (devices is Map) {
+        for (final entry in devices.entries) {
+          if (entry.key is String && entry.value is String) {
+            _deviceNames[entry.key as String] = entry.value as String;
+          }
+        }
+      }
       final existing = await _store!.conflicts();
       final serverCandidates = <(SyncCategory, String, SyncVersion)>{};
       for (final value in _list(body, 'conflicts')) {
@@ -1075,17 +1098,6 @@ class DatabaseSyncService extends ChangeNotifier with WidgetsBindingObserver {
       .where((category) => !category.sensitive)
       .toSet();
 
-  static String _defaultDeviceName() {
-    try {
-      final host = Platform.localHostname.trim();
-      if (host.isNotEmpty) {
-        return host.length <= 128 ? host : host.substring(0, 128);
-      }
-    } catch (_) {
-      // Use a stable non-secret fallback below.
-    }
-    return 'DComic ${Platform.operatingSystem}';
-  }
 
   static Map<String, dynamic> _map(Object? value) {
     if (value is Map<String, dynamic>) return value;

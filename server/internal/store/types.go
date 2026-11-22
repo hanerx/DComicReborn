@@ -86,6 +86,7 @@ type SyncRequest struct {
 	Cursor     int64        `json:"cursor"`
 	Categories []string     `json:"categories"`
 	Changes    []SyncRecord `json:"changes"`
+	DeviceName string       `json:"deviceName,omitempty"`
 }
 
 type SyncResult struct {
@@ -133,4 +134,24 @@ type UserSummary struct {
 	RecordCount   int
 	ConflictCount int
 	LatestCursor  int64
+}
+
+type CategoryStats struct {
+	Category  string
+	Records   int
+	Deleted   int
+	Conflicts int
+}
+
+type RecordDetail struct {
+	SyncRecord
+	Sequence   int64
+	ReceivedAt time.Time
+	DeviceName string
+}
+
+type SyncDetails struct {
+	Categories []CategoryStats
+	Changes    []RecordDetail
+	NextBefore int64
 }
