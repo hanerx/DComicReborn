@@ -68,7 +68,7 @@ func (s *Server) handleSyncDetails(w http.ResponseWriter, r *http.Request) {
 	if raw := r.URL.Query().Get("before"); raw != "" {
 		before, err = strconv.ParseInt(raw, 10, 64)
 		if err != nil || before < 0 {
-			http.Error(w, "invalid pagination cursor", http.StatusBadRequest)
+			http.Error(w, "分页游标无效，请重新打开同步详情。", http.StatusBadRequest)
 			return
 		}
 	}
@@ -79,12 +79,12 @@ func (s *Server) handleSyncDetails(w http.ResponseWriter, r *http.Request) {
 	}
 	devices, err := s.store.ListDevices(r.Context(), userID)
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		return
 	}
 	conflicts, err := s.store.ListConflicts(r.Context(), userID)
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		return
 	}
 	view := syncDetailsView{
@@ -107,7 +107,7 @@ func (s *Server) handleDashboardResolveConflict(w http.ResponseWriter, r *http.R
 	expectedLogical, logicalErr := strconv.ParseInt(r.Form.Get("expectedLogical"), 10, 64)
 	expectedDevice := r.Form.Get("expectedDevice")
 	if wallErr != nil || logicalErr != nil || expectedWall < 0 || expectedLogical < 0 || expectedDevice == "" {
-		s.redirectUser(w, r, "", "Invalid conflict version; refresh and try again")
+		s.redirectUser(w, r, "", "冲突版本无效，请刷新页面后重试。")
 		return
 	}
 	userID := r.PathValue("userID")
@@ -115,11 +115,11 @@ func (s *Server) handleDashboardResolveConflict(w http.ResponseWriter, r *http.R
 		Wall: expectedWall, Logical: expectedLogical, Device: expectedDevice,
 	}, time.Now())
 	if err != nil {
-		s.redirectUser(w, r, "", err.Error())
+		s.redirectUser(w, r, "", s.dashboardError(err))
 		return
 	}
 	s.hub.Notify(userID)
-	s.redirectUser(w, r, "Conflict resolved", "")
+	s.redirectUser(w, r, "冲突已处理。", "")
 }
 
 func dashboardSelectedStats(categories []store.CategoryStats, selected string) store.CategoryStats {
@@ -141,7 +141,7 @@ func dashboardChangeViews(changes []store.RecordDetail) []syncChangeView {
 		value, redacted := dashboardPayload(change.Category, change.Value, change.Deleted)
 		views = append(views, syncChangeView{
 			Sequence: change.Sequence, Category: change.Category, Key: change.Key, Deleted: change.Deleted,
-			Value: value, Redacted: redacted, DeviceName: store.DeviceDisplayName(change.DeviceName, change.Version.Device),
+			Value: value, Redacted: redacted, DeviceName: dashboardDeviceName(change.DeviceName, change.Version.Device),
 			DeviceID: change.Version.Device, ReceivedAt: change.ReceivedAt, Version: change.Version,
 		})
 	}
@@ -170,16 +170,16 @@ func dashboardRecordView(record store.SyncRecord, name string) syncRecordView {
 	value, redacted := dashboardPayload(record.Category, record.Value, record.Deleted)
 	return syncRecordView{
 		Category: record.Category, Key: record.Key, Deleted: record.Deleted, Value: value, Redacted: redacted,
-		DeviceName: store.DeviceDisplayName(name, record.Version.Device), DeviceID: record.Version.Device, Version: record.Version,
+		DeviceName: dashboardDeviceName(name, record.Version.Device), DeviceID: record.Version.Device, Version: record.Version,
 	}
 }
 
 func dashboardPayload(category string, value json.RawMessage, deleted bool) (string, bool) {
 	if category == "credentials" {
-		return "Redacted credential payload", true
+		return "为保护账户安全，不显示令牌与 Cookie 的内容。", true
 	}
 	if deleted {
-		return "Deleted (tombstone)", false
+		return "此记录已删除（保留同步删除标记）。", false
 	}
 	var formatted bytes.Buffer
 	if err := json.Indent(&formatted, value, "", "  "); err == nil {
@@ -191,11 +191,11 @@ func dashboardPayload(category string, value json.RawMessage, deleted bool) (str
 func (s *Server) renderSyncError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case store.IsCode(err, store.CodeNotFound):
-		http.NotFound(w, r)
+		http.Error(w, "用户或记录不存在。", http.StatusNotFound)
 	case store.IsCode(err, store.CodeBadRequest):
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, s.dashboardError(err), http.StatusBadRequest)
 	default:
 		s.logger.Error("load dashboard sync details", "error", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 	}
 }

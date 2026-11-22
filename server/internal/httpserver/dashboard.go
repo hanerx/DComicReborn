@@ -60,7 +60,7 @@ func (s *Server) clearCookie(w http.ResponseWriter, name string) {
 
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		http.Error(w, "页面不存在。", http.StatusNotFound)
 		return
 	}
 	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
@@ -69,7 +69,7 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSetupPage(w http.ResponseWriter, r *http.Request) {
 	initialized, err := s.hasAdministrator(r.Context())
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		return
 	}
 	if initialized {
@@ -78,7 +78,7 @@ func (s *Server) handleSetupPage(w http.ResponseWriter, r *http.Request) {
 	}
 	csrf, err := browserToken(24)
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		return
 	}
 	s.setCookie(w, setupCSRFCookie, csrf, time.Now().Add(20*time.Minute), true)
@@ -88,35 +88,35 @@ func (s *Server) handleSetupPage(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 	initialized, err := s.hasAdministrator(r.Context())
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		return
 	}
 	if initialized {
-		http.Error(w, "administrator setup is no longer available", http.StatusConflict)
+		http.Error(w, "管理员已创建，初始化入口已关闭。", http.StatusConflict)
 		return
 	}
 	if !s.validRequiredOrigin(r) {
-		http.Error(w, "cross-site request rejected", http.StatusForbidden)
+		http.Error(w, "已拒绝跨站请求，请从本站页面重试。", http.StatusForbidden)
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, formBodyLimit)
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "invalid form", http.StatusBadRequest)
+		http.Error(w, "表单无效，请刷新页面后重试。", http.StatusBadRequest)
 		return
 	}
 	csrfCookie, err := r.Cookie(setupCSRFCookie)
 	csrf := r.Form.Get("csrf")
 	if err != nil || csrfCookie.Value == "" || subtle.ConstantTimeCompare([]byte(csrfCookie.Value), []byte(csrf)) != 1 {
-		http.Error(w, "invalid CSRF token", http.StatusForbidden)
+		http.Error(w, "页面验证已失效，请刷新页面后重试。", http.StatusForbidden)
 		return
 	}
 	if subtle.ConstantTimeCompare([]byte(r.Form.Get("initializationCode")), []byte(s.initializationCode)) != 1 {
-		s.renderSetup(w, http.StatusUnauthorized, setupView{CSRF: csrf, Error: "Invalid initialization code"})
+		s.renderSetup(w, http.StatusUnauthorized, setupView{CSRF: csrf, Error: "初始化码不正确，请检查服务器启动日志。"})
 		return
 	}
 	password := r.Form.Get("password")
 	if password != r.Form.Get("confirmPassword") {
-		s.renderSetup(w, http.StatusBadRequest, setupView{CSRF: csrf, Error: "Passwords do not match"})
+		s.renderSetup(w, http.StatusBadRequest, setupView{CSRF: csrf, Error: "两次输入的密码不一致。"})
 		return
 	}
 	if _, err := s.store.BootstrapAdmin(r.Context(), "root", password); err != nil {
@@ -124,23 +124,23 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 			hasAdmin, checkErr := s.store.HasAdmin(r.Context())
 			if checkErr != nil {
 				s.logger.Error("check administrator after setup conflict", "error", checkErr)
-				http.Error(w, "internal server error", http.StatusInternalServerError)
+				http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 				return
 			}
 			if hasAdmin {
 				s.initialized.Store(true)
-				http.Error(w, "administrator setup is no longer available", http.StatusConflict)
+				http.Error(w, "管理员已创建，初始化入口已关闭。", http.StatusConflict)
 				return
 			}
-			s.renderSetup(w, http.StatusConflict, setupView{CSRF: csrf, Error: err.Error()})
+			s.renderSetup(w, http.StatusConflict, setupView{CSRF: csrf, Error: s.dashboardError(err)})
 			return
 		}
 		if store.IsCode(err, store.CodeBadRequest) {
-			s.renderSetup(w, http.StatusBadRequest, setupView{CSRF: csrf, Error: err.Error()})
+			s.renderSetup(w, http.StatusBadRequest, setupView{CSRF: csrf, Error: s.dashboardError(err)})
 			return
 		}
 		s.logger.Error("create root administrator", "error", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		return
 	}
 	s.initialized.Store(true)
@@ -159,7 +159,7 @@ func (s *Server) renderSetup(w http.ResponseWriter, status int, view setupView) 
 
 func (s *Server) redirectLogin(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, "/dashboard/login") {
-		http.Error(w, "administrator authentication required", http.StatusUnauthorized)
+		http.Error(w, "请先登录管理员账户。", http.StatusUnauthorized)
 		return
 	}
 	http.Redirect(w, r, "/dashboard/login", http.StatusSeeOther)
@@ -174,7 +174,7 @@ func (s *Server) handleStyles(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) handleAdminLoginPage(w http.ResponseWriter, r *http.Request) {
 	initialized, err := s.hasAdministrator(r.Context())
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		return
 	}
 	if !initialized {
@@ -189,7 +189,7 @@ func (s *Server) handleAdminLoginPage(w http.ResponseWriter, r *http.Request) {
 	}
 	csrf, err := browserToken(24)
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		return
 	}
 	s.setCookie(w, loginCSRFCookie, csrf, time.Now().Add(20*time.Minute), true)
@@ -203,42 +203,42 @@ func (s *Server) handleAdminLoginPage(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAdminLogin(w http.ResponseWriter, r *http.Request) {
 	initialized, err := s.hasAdministrator(r.Context())
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		return
 	}
 	if !initialized {
-		http.Error(w, "administrator setup is required", http.StatusConflict)
+		http.Error(w, "请先完成管理员初始化。", http.StatusConflict)
 		return
 	}
 	if !s.validOrigin(r) {
-		http.Error(w, "cross-site request rejected", http.StatusForbidden)
+		http.Error(w, "已拒绝跨站请求，请从本站页面重试。", http.StatusForbidden)
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, formBodyLimit)
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "invalid form", http.StatusBadRequest)
+		http.Error(w, "表单无效，请刷新页面后重试。", http.StatusBadRequest)
 		return
 	}
 	csrfCookie, err := r.Cookie(loginCSRFCookie)
 	if err != nil || csrfCookie.Value == "" || subtle.ConstantTimeCompare([]byte(csrfCookie.Value), []byte(r.Form.Get("csrf"))) != 1 {
-		http.Error(w, "invalid CSRF token", http.StatusForbidden)
+		http.Error(w, "页面验证已失效，请刷新页面后重试。", http.StatusForbidden)
 		return
 	}
 	username, validationErr := store.ValidateUsername(r.Form.Get("username"))
 	if validationErr != nil {
-		http.Redirect(w, r, "/dashboard/login?error="+url.QueryEscape("Invalid username or password"), http.StatusSeeOther)
+		http.Redirect(w, r, "/dashboard/login?error="+url.QueryEscape("用户名或密码不正确。"), http.StatusSeeOther)
 		return
 	}
 	ipKey := "ip:" + remoteIP(r)
 	userKey := "admin-user:" + strings.ToLower(username)
 	if !s.peerLoginLimits.Allow(ipKey) || !s.accountLoginLimits.Allow(userKey) {
 		w.Header().Set("Retry-After", "600")
-		http.Error(w, "too many login attempts", http.StatusTooManyRequests)
+		http.Error(w, "登录尝试过于频繁，请在 10 分钟后重试。", http.StatusTooManyRequests)
 		return
 	}
 	token, _, _, err := s.store.LoginAdmin(r.Context(), username, r.Form.Get("password"), s.adminTTL)
 	if err != nil {
-		http.Redirect(w, r, "/dashboard/login?error="+url.QueryEscape("Invalid username or password"), http.StatusSeeOther)
+		http.Redirect(w, r, "/dashboard/login?error="+url.QueryEscape("用户名或密码不正确。"), http.StatusSeeOther)
 		return
 	}
 	s.accountLoginLimits.Reset(userKey)
@@ -255,17 +255,17 @@ func (s *Server) handleAdminLogout(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/dashboard" {
-		http.NotFound(w, r)
+		http.Error(w, "页面不存在。", http.StatusNotFound)
 		return
 	}
 	stats, err := s.store.Stats(r.Context())
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		return
 	}
 	users, err := s.store.ListUsers(r.Context())
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		return
 	}
 	view := overviewView{Admin: r.Context().Value(adminUserKey).(store.User), CSRF: r.Context().Value(adminCSRFKey).(string), Stats: stats, Users: users, Notice: r.URL.Query().Get("notice"), Error: r.URL.Query().Get("error")}
@@ -275,10 +275,10 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	_, err := s.store.CreateUser(r.Context(), r.Form.Get("username"), r.Form.Get("password"), false)
 	if err != nil {
-		http.Redirect(w, r, "/dashboard?error="+url.QueryEscape(err.Error()), http.StatusSeeOther)
+		http.Redirect(w, r, "/dashboard?error="+url.QueryEscape(s.dashboardError(err)), http.StatusSeeOther)
 		return
 	}
-	http.Redirect(w, r, "/dashboard?notice="+url.QueryEscape("User created"), http.StatusSeeOther)
+	http.Redirect(w, r, "/dashboard?notice="+url.QueryEscape("用户已创建。"), http.StatusSeeOther)
 }
 
 func (s *Server) handleUser(w http.ResponseWriter, r *http.Request) {
@@ -289,20 +289,20 @@ func (s *Server) renderUser(w http.ResponseWriter, r *http.Request, notice, mess
 	user, err := s.store.GetUser(r.Context(), r.PathValue("userID"))
 	if err != nil {
 		if store.IsCode(err, store.CodeNotFound) {
-			http.NotFound(w, r)
+			http.Error(w, "用户不存在。", http.StatusNotFound)
 		} else {
-			http.Error(w, "internal server error", http.StatusInternalServerError)
+			http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		}
 		return
 	}
 	devices, err := s.store.ListDevices(r.Context(), user.ID)
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		return
 	}
 	conflicts, err := s.store.ListConflicts(r.Context(), user.ID)
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 		return
 	}
 	if notice == "" {
@@ -318,49 +318,49 @@ func (s *Server) renderUser(w http.ResponseWriter, r *http.Request, notice, mess
 func (s *Server) handleDisableUser(w http.ResponseWriter, r *http.Request) {
 	admin := r.Context().Value(adminUserKey).(store.User)
 	if admin.ID == r.PathValue("userID") {
-		s.redirectUser(w, r, "", "You cannot disable your current administrator account")
+		s.redirectUser(w, r, "", "不能禁用当前登录的管理员账户。")
 		return
 	}
 	if err := s.store.SetUserDisabled(r.Context(), r.PathValue("userID"), true); err != nil {
-		s.redirectUser(w, r, "", err.Error())
+		s.redirectUser(w, r, "", s.dashboardError(err))
 		return
 	}
 	s.hub.Notify(r.PathValue("userID"))
-	s.redirectUser(w, r, "Account disabled; active sessions were revoked", "")
+	s.redirectUser(w, r, "账户已禁用，所有有效会话已撤销。", "")
 }
 
 func (s *Server) handleEnableUser(w http.ResponseWriter, r *http.Request) {
 	if err := s.store.SetUserDisabled(r.Context(), r.PathValue("userID"), false); err != nil {
-		s.redirectUser(w, r, "", err.Error())
+		s.redirectUser(w, r, "", s.dashboardError(err))
 		return
 	}
-	s.redirectUser(w, r, "Account enabled", "")
+	s.redirectUser(w, r, "账户已启用。", "")
 }
 
 func (s *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	userID := r.PathValue("userID")
 	if err := s.store.AdminResetPassword(r.Context(), userID, r.Form.Get("password")); err != nil {
-		s.redirectUser(w, r, "", err.Error())
+		s.redirectUser(w, r, "", s.dashboardError(err))
 		return
 	}
 	s.hub.Notify(userID)
 	admin := r.Context().Value(adminUserKey).(store.User)
 	if admin.ID == userID {
 		s.clearCookie(w, adminCookie)
-		http.Redirect(w, r, "/dashboard/login?error="+url.QueryEscape("Password reset; sign in again"), http.StatusSeeOther)
+		http.Redirect(w, r, "/dashboard/login?error="+url.QueryEscape("密码已重置，请重新登录。"), http.StatusSeeOther)
 		return
 	}
-	s.redirectUser(w, r, "Password reset; all sessions were revoked", "")
+	s.redirectUser(w, r, "密码已重置，所有会话已撤销。", "")
 }
 
 func (s *Server) handleRevokeDevice(w http.ResponseWriter, r *http.Request) {
 	userID := r.PathValue("userID")
 	if err := s.store.RevokeDevice(r.Context(), userID, r.PathValue("deviceID")); err != nil {
-		s.redirectUser(w, r, "", err.Error())
+		s.redirectUser(w, r, "", s.dashboardError(err))
 		return
 	}
 	s.hub.Notify(userID)
-	s.redirectUser(w, r, "Device session revoked", "")
+	s.redirectUser(w, r, "设备会话已撤销。", "")
 }
 
 func (s *Server) redirectUser(w http.ResponseWriter, r *http.Request, notice, message string) {

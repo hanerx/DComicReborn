@@ -123,7 +123,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) { s.handler.S
 func (s *Server) securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if s.publicURL != nil && !strings.EqualFold(r.Host, s.publicURL.Host) {
-			http.Error(w, "misdirected request", http.StatusMisdirectedRequest)
+			message := "misdirected request"
+			if r.URL.Path == "/" || strings.HasPrefix(r.URL.Path, "/dashboard") {
+				message = "请求域名与服务器配置不一致。"
+			}
+			http.Error(w, message, http.StatusMisdirectedRequest)
 			return
 		}
 		w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'")
@@ -187,7 +191,7 @@ func (s *Server) withAdmin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		initialized, err := s.hasAdministrator(r.Context())
 		if err != nil {
-			http.Error(w, "internal server error", http.StatusInternalServerError)
+			http.Error(w, "服务器内部错误，请稍后重试。", http.StatusInternalServerError)
 			return
 		}
 		if !initialized {
@@ -207,12 +211,12 @@ func (s *Server) withAdmin(next http.HandlerFunc) http.HandlerFunc {
 		}
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			if !s.validOrigin(r) {
-				http.Error(w, "cross-site request rejected", http.StatusForbidden)
+				http.Error(w, "已拒绝跨站请求，请从本站页面重试。", http.StatusForbidden)
 				return
 			}
 			r.Body = http.MaxBytesReader(w, r.Body, formBodyLimit)
 			if err := r.ParseForm(); err != nil || subtle.ConstantTimeCompare([]byte(r.Form.Get("csrf")), []byte(csrf)) != 1 {
-				http.Error(w, "invalid CSRF token", http.StatusForbidden)
+				http.Error(w, "页面验证已失效，请刷新页面后重试。", http.StatusForbidden)
 				return
 			}
 		}

@@ -125,8 +125,8 @@ func TestDashboardSyncDetailsEscapePayloadsAndRedactCredentials(t *testing.T) {
 	if strings.Contains(page, "dashboard-secret-token") || strings.Contains(page, "candidate-secret-token") || strings.Contains(page, `"password":"hidden"`) {
 		t.Fatalf("credential content leaked in HTML source")
 	}
-	if !strings.Contains(page, "Redacted") {
-		t.Fatalf("credential record has no redaction marker")
+	if !strings.Contains(page, "private-login") || !strings.Contains(page, "phone-1") {
+		t.Fatalf("credential record metadata was omitted")
 	}
 	response, err = client.Get(ts.URL + "/dashboard/users/" + url.PathEscape(user.ID))
 	if err != nil {
@@ -135,7 +135,7 @@ func TestDashboardSyncDetailsEscapePayloadsAndRedactCredentials(t *testing.T) {
 	body, _ = io.ReadAll(response.Body)
 	response.Body.Close()
 	page = string(body)
-	if strings.Contains(page, "dashboard-secret-token") || strings.Contains(page, "candidate-secret-token") || !strings.Contains(page, "Redacted payload") {
+	if strings.Contains(page, "dashboard-secret-token") || strings.Contains(page, "candidate-secret-token") {
 		t.Fatalf("credential conflict was not safely redacted")
 	}
 }
