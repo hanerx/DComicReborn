@@ -13,6 +13,7 @@
    <application
         android:label="dcomic"
         android:name="${applicationName}"
+        android:localeConfig="@xml/locale_config"
         android:icon="@mipmap/ic_launcher">
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
